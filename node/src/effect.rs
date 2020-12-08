@@ -83,7 +83,7 @@ use tracing::{error, warn};
 use casper_execution_engine::{
     core::engine_state::{
         self,
-        era_validators::GetEraValidatorsError,
+        era_validators::{GetAuctionInfoError, GetEraValidatorsError},
         execute_request::ExecuteRequest,
         execution_result::ExecutionResults,
         genesis::GenesisResult,
@@ -94,7 +94,7 @@ use casper_execution_engine::{
     storage::{global_state::CommitResult, protocol_data::ProtocolData},
 };
 use casper_types::{
-    auction::{EraValidators, ValidatorWeights},
+    auction::{AuctionInfo, EraValidators, ValidatorWeights},
     ExecutionResult, Key, ProtocolVersion, Transfer,
 };
 
@@ -102,7 +102,9 @@ use crate::{
     components::{
         chainspec_loader::ChainspecInfo,
         consensus::BlockContext,
-        contract_runtime::{EraValidatorsRequest, ValidatorWeightsByEraIdRequest},
+        contract_runtime::{
+            AuctionInfoByEraIdRequest, EraValidatorsRequest, ValidatorWeightsByEraIdRequest,
+        },
         fetcher::FetchResult,
         linear_chain::FinalitySignature,
         small_network::GossipedAddress,
@@ -1174,6 +1176,21 @@ impl<REv> EffectBuilder<REv> {
     {
         self.make_request(
             |responder| ContractRuntimeRequest::GetValidatorWeightsByEraId { request, responder },
+            QueueKind::Regular,
+        )
+        .await
+    }
+
+    /// TODO
+    pub(crate) async fn get_auction_info_by_era_id(
+        self,
+        request: AuctionInfoByEraIdRequest,
+    ) -> Result<Option<AuctionInfo>, GetAuctionInfoError>
+    where
+        REv: From<ContractRuntimeRequest>,
+    {
+        self.make_request(
+            |responder| ContractRuntimeRequest::GetAuctionInfoByEraId { request, responder },
             QueueKind::Regular,
         )
         .await

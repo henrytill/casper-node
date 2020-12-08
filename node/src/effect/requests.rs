@@ -19,7 +19,7 @@ use casper_execution_engine::{
     core::engine_state::{
         self,
         balance::{BalanceRequest, BalanceResult},
-        era_validators::GetEraValidatorsError,
+        era_validators::{GetAuctionInfoError, GetEraValidatorsError},
         execute_request::ExecuteRequest,
         execution_result::ExecutionResults,
         genesis::GenesisResult,
@@ -31,7 +31,7 @@ use casper_execution_engine::{
     storage::{global_state::CommitResult, protocol_data::ProtocolData},
 };
 use casper_types::{
-    auction::{EraValidators, ValidatorWeights},
+    auction::{AuctionInfo, EraId, EraValidators, ValidatorWeights},
     ExecutionResult, Key, ProtocolVersion, Transfer, URef,
 };
 use hex_fmt::HexFmt;
@@ -40,7 +40,9 @@ use super::{Multiple, Responder};
 use crate::{
     components::{
         chainspec_loader::ChainspecInfo,
-        contract_runtime::{EraValidatorsRequest, ValidatorWeightsByEraIdRequest},
+        contract_runtime::{
+            AuctionInfoByEraIdRequest, EraValidatorsRequest, ValidatorWeightsByEraIdRequest,
+        },
         fetcher::FetchResult,
         linear_chain::FinalitySignature,
     },
@@ -475,6 +477,17 @@ pub enum RpcRequest<I> {
         /// Responder to call with the result.
         responder: Responder<Result<Option<Box<ProtocolData>>, engine_state::Error>>,
     },
+    /// TODO
+    QueryAuctionInfo {
+        /// The global state hash.
+        state_root_hash: Digest,
+        /// The era id.
+        era_id: EraId,
+        /// The protocol version.
+        protocol_version: ProtocolVersion,
+        /// Responder to call with result
+        responder: Responder<Result<Option<AuctionInfo>, GetAuctionInfoError>>,
+    },
     /// Query the global state at the given root hash.
     GetBalance {
         /// The state root hash.
@@ -540,6 +553,11 @@ impl<I> Display for RpcRequest<I> {
             RpcRequest::QueryEraValidators {
                 state_root_hash, ..
             } => write!(formatter, "auction {}", state_root_hash),
+            RpcRequest::QueryAuctionInfo {
+                state_root_hash, ..
+            } => {
+                write!(formatter, "auction {}", state_root_hash)
+            }
             RpcRequest::GetBalance {
                 state_root_hash,
                 purse_uref,
@@ -661,6 +679,14 @@ pub enum ContractRuntimeRequest {
         /// Responder to call with the result.
         responder: Responder<Result<Option<ValidatorWeights>, GetEraValidatorsError>>,
     },
+    /// Returns auction info for given era.
+    GetAuctionInfoByEraId {
+        /// Get auction info request.
+        #[serde(skip_serializing)]
+        request: AuctionInfoByEraIdRequest,
+        /// Responder to call with the result.
+        responder: Responder<Result<Option<AuctionInfo>, GetAuctionInfoError>>,
+    },
     /// Performs a step consisting of calculating rewards, slashing and running the auction at the
     /// end of an era.
     Step {
@@ -716,6 +742,10 @@ impl Display for ContractRuntimeRequest {
 
             ContractRuntimeRequest::GetValidatorWeightsByEraId { request, .. } => {
                 write!(formatter, "get validator weights: {:?}", request)
+            }
+
+            ContractRuntimeRequest::GetAuctionInfoByEraId { request, .. } => {
+                write!(formatter, "get auction info: {:?}", request)
             }
 
             ContractRuntimeRequest::Step { step_request, .. } => {

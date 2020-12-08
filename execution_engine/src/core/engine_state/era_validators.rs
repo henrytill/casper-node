@@ -41,3 +41,6 @@ impl GetEraValidatorsRequest {
         self.protocol_version
     }
 }
+
+#[derive(Debug, Error, DataSize)]
+pub enum GetAuctionInfoError {}

@@ -26,17 +26,21 @@ use futures::join;
 
 use casper_execution_engine::{
     core::engine_state::{
-        self, BalanceRequest, BalanceResult, GetEraValidatorsError, QueryRequest, QueryResult,
+        self, era_validators::GetAuctionInfoError, BalanceRequest, BalanceResult,
+        GetEraValidatorsError, QueryRequest, QueryResult,
     },
     storage::protocol_data::ProtocolData,
 };
-use casper_types::{auction::EraValidators, Key, ProtocolVersion, URef};
+use casper_types::{
+    auction::{AuctionInfo, EraId, EraValidators},
+    Key, ProtocolVersion, URef,
+};
 
 use self::rpcs::chain::BlockIdentifier;
 
 use super::Component;
 use crate::{
-    components::contract_runtime::EraValidatorsRequest,
+    components::contract_runtime::{AuctionInfoByEraIdRequest, EraValidatorsRequest},
     crypto::hash::Digest,
     effect::{
         announcements::RpcServerAnnouncement,
@@ -145,6 +149,24 @@ impl RpcServer {
             })
     }
 
+    fn handle_era_auction_info<REv: ReactorEventT>(
+        &mut self,
+        effect_builder: EffectBuilder<REv>,
+        state_root_hash: Digest,
+        era_id: EraId,
+        protocol_version: ProtocolVersion,
+        responder: Responder<Result<Option<AuctionInfo>, GetAuctionInfoError>>,
+    ) -> Effects<Event> {
+        let request =
+            AuctionInfoByEraIdRequest::new(state_root_hash.into(), era_id, protocol_version);
+        effect_builder
+            .get_auction_info_by_era_id(request)
+            .event(move |result| Event::QueryAuctionInfoResult {
+                result,
+                main_responder: responder,
+            })
+    }
+
     fn handle_get_balance<REv: ReactorEventT>(
         &mut self,
         effect_builder: EffectBuilder<REv>,
@@ -241,6 +263,18 @@ where
                 protocol_version,
                 responder,
             ),
+            Event::RpcRequest(RpcRequest::QueryAuctionInfo {
+                state_root_hash,
+                era_id,
+                protocol_version,
+                responder,
+            }) => self.handle_era_auction_info(
+                effect_builder,
+                state_root_hash,
+                era_id,
+                protocol_version,
+                responder,
+            ),
             Event::RpcRequest(RpcRequest::GetBalance {
                 state_root_hash,
                 purse_uref,
@@ -294,6 +328,10 @@ where
                 main_responder,
             } => main_responder.respond(result).ignore(),
             Event::QueryEraValidatorsResult {
+                result,
+                main_responder,
+            } => main_responder.respond(result).ignore(),
+            Event::QueryAuctionInfoResult {
                 result,
                 main_responder,
             } => main_responder.respond(result).ignore(),

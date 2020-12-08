@@ -7,10 +7,16 @@ use std::{
 use derive_more::From;
 
 use casper_execution_engine::{
-    core::engine_state::{self, BalanceResult, GetEraValidatorsError, QueryResult},
+    core::engine_state::{
+        self, era_validators::GetAuctionInfoError, BalanceResult, GetEraValidatorsError,
+        QueryResult,
+    },
     storage::protocol_data::ProtocolData,
 };
-use casper_types::{auction::EraValidators, Transfer};
+use casper_types::{
+    auction::{AuctionInfo, EraValidators},
+    Transfer,
+};
 
 use crate::{
     effect::{requests::RpcRequest, Responder},
@@ -43,6 +49,10 @@ pub enum Event {
     QueryEraValidatorsResult {
         result: Result<EraValidators, GetEraValidatorsError>,
         main_responder: Responder<Result<EraValidators, GetEraValidatorsError>>,
+    },
+    QueryAuctionInfoResult {
+        result: Result<Option<AuctionInfo>, GetAuctionInfoError>,
+        main_responder: Responder<Result<Option<AuctionInfo>, GetAuctionInfoError>>,
     },
     GetDeployResult {
         hash: DeployHash,
@@ -97,6 +107,9 @@ impl Display for Event {
             }
             Event::QueryEraValidatorsResult { result, .. } => {
                 write!(formatter, "query era validators result: {:?}", result)
+            }
+            Event::QueryAuctionInfoResult { result, .. } => {
+                write!(formatter, "query auction info result: {:?}", result)
             }
             Event::GetBalanceResult { result, .. } => {
                 write!(formatter, "balance result: {:?}", result)

@@ -3,7 +3,7 @@ mod config;
 mod types;
 
 pub use config::Config;
-pub use types::{EraValidatorsRequest, ValidatorWeightsByEraIdRequest};
+pub use types::{AuctionInfoByEraIdRequest, EraValidatorsRequest, ValidatorWeightsByEraIdRequest};
 
 use std::{
     fmt::{self, Debug, Display, Formatter},
@@ -31,7 +31,10 @@ use casper_execution_engine::{
         transaction_source::lmdb::LmdbEnvironment, trie_store::lmdb::LmdbTrieStore,
     },
 };
-use casper_types::{auction::ValidatorWeights, ProtocolVersion};
+use casper_types::{
+    auction::{AuctionInfo, ValidatorWeights},
+    ProtocolVersion,
+};
 
 use crate::{
     components::Component,
@@ -345,6 +348,20 @@ where
                     })
                     .await
                     .expect("should run");
+                    trace!(?result, "get validator weights by era id response");
+                    responder.respond(result).await
+                }
+                .ignore()
+            }
+            Event::Request(ContractRuntimeRequest::GetAuctionInfoByEraId {
+                request,
+                responder,
+            }) => {
+                trace!(?request, "get auction info by era id request");
+                async move {
+                    let result = task::spawn_blocking(move || Ok(Some(AuctionInfo::new())))
+                        .await
+                        .expect("should run");
                     trace!(?result, "get validator weights by era id response");
                     responder.respond(result).await
                 }
