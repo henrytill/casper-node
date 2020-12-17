@@ -1,8 +1,7 @@
 use std::{cell::RefCell, convert::TryFrom, rc::Rc};
 
 use casper_types::{
-    account::AccountHash, mint, AccessRights, ApiError, CLType, CLValueError, Key, RuntimeArgs,
-    URef, U512,
+    mint, AccessRights, ApiError, CLType, CLValueError, Key, PublicKey, RuntimeArgs, URef, U512,
 };
 
 use crate::{
@@ -19,12 +18,12 @@ use crate::{
 pub enum TransferTargetMode {
     Unknown,
     PurseExists(URef),
-    CreateAccount(AccountHash),
+    CreateAccount(PublicKey),
 }
 
 #[derive(Debug, Clone, Copy)]
 pub struct TransferArgs {
-    to: Option<AccountHash>,
+    to: Option<PublicKey>,
     source: URef,
     target: URef,
     amount: U512,
@@ -33,7 +32,7 @@ pub struct TransferArgs {
 
 impl TransferArgs {
     pub fn new(
-        to: Option<AccountHash>,
+        to: Option<PublicKey>,
         source: URef,
         target: URef,
         amount: U512,
@@ -48,7 +47,7 @@ impl TransferArgs {
         }
     }
 
-    pub fn to(&self) -> Option<AccountHash> {
+    pub fn to(&self) -> Option<PublicKey> {
         self.to
     }
 
@@ -81,7 +80,7 @@ impl TryFrom<TransferArgs> for RuntimeArgs {
 pub struct TransferRuntimeArgsBuilder {
     inner: RuntimeArgs,
     transfer_target_mode: TransferTargetMode,
-    to: Option<AccountHash>,
+    to: Option<PublicKey>,
 }
 
 impl TransferRuntimeArgsBuilder {
@@ -195,30 +194,22 @@ impl TransferRuntimeArgsBuilder {
 
                 Ok(TransferTargetMode::PurseExists(uref))
             }
-            Some(cl_value) if *cl_value.cl_type() == CLType::ByteArray(32) => {
-                let account_key: Key = {
-                    let hash: AccountHash = match cl_value.clone().into_t() {
-                        Ok(hash) => hash,
-                        Err(error) => {
-                            return Err(Error::Exec(ExecError::Revert(error.into())));
-                        }
-                    };
-                    self.to = Some(hash.to_owned());
-                    Key::Account(hash)
-                };
-                match account_key.into_account() {
-                    Some(public_key) => {
-                        match tracking_copy
-                            .borrow_mut()
-                            .read_account(correlation_id, public_key)
-                        {
-                            Ok(account) => Ok(TransferTargetMode::PurseExists(
-                                account.main_purse().with_access_rights(AccessRights::ADD),
-                            )),
-                            Err(_) => Ok(TransferTargetMode::CreateAccount(public_key)),
-                        }
+            Some(cl_value) if *cl_value.cl_type() == CLType::PublicKey => {
+                let public_key: PublicKey = match cl_value.clone().into_t() {
+                    Ok(public_key) => public_key,
+                    Err(error) => {
+                        return Err(Error::Exec(ExecError::Revert(error.into())));
                     }
-                    None => Err(Error::Exec(ExecError::Revert(ApiError::Transfer))),
+                };
+                self.to = Some(public_key.to_owned());
+                match tracking_copy
+                    .borrow_mut()
+                    .read_account(correlation_id, public_key)
+                {
+                    Ok(account) => Ok(TransferTargetMode::PurseExists(
+                        account.main_purse().with_access_rights(AccessRights::ADD),
+                    )),
+                    Err(_) => Ok(TransferTargetMode::CreateAccount(public_key)),
                 }
             }
             Some(cl_value) if *cl_value.cl_type() == CLType::Key => {
@@ -228,7 +219,7 @@ impl TransferRuntimeArgsBuilder {
                         return Err(Error::Exec(ExecError::Revert(error.into())));
                     }
                 };
-                match account_key.into_account() {
+                match account_key.into_public_key() {
                     Some(account_hash) => {
                         self.to = Some(account_hash.to_owned());
                         match tracking_copy

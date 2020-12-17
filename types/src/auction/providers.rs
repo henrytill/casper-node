@@ -1,15 +1,14 @@
 use crate::{
-    account::AccountHash,
     auction::{EraId, EraInfo},
     bytesrepr::{FromBytes, ToBytes},
     system_contract_errors::auction::Error,
-    CLTyped, Key, TransferredTo, URef, BLAKE2B_DIGEST_LENGTH, U512,
+    CLTyped, Key, PublicKey, TransferredTo, URef, BLAKE2B_DIGEST_LENGTH, U512,
 };
 
 /// Provider of runtime host functionality.
 pub trait RuntimeProvider {
     /// This method should return the caller of the current context.
-    fn get_caller(&self) -> AccountHash;
+    fn get_caller(&self) -> PublicKey;
 
     /// Gets named key under a `name`.
     fn get_key(&self, name: &str) -> Option<Key>;
@@ -53,7 +52,7 @@ pub trait MintProvider {
     fn transfer_purse_to_account(
         &mut self,
         source: URef,
-        target: AccountHash,
+        target: PublicKey,
         amount: U512,
     ) -> Result<TransferredTo, Error>;
 

@@ -61,7 +61,6 @@ impl TestChain {
             .map(|(public_key, bounded_amounts_u64)| {
                 GenesisAccount::new(
                     *public_key,
-                    public_key.to_account_hash(),
                     Motes::new(U512::from(rng.gen_range(10000, 99999999))),
                     Motes::new(U512::from(*bounded_amounts_u64)),
                 )

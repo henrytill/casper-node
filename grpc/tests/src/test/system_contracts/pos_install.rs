@@ -3,17 +3,16 @@ use casper_engine_test_support::{
         exec_with_return, ExecuteRequestBuilder, WasmTestBuilder, DEFAULT_BLOCK_TIME,
         DEFAULT_RUN_GENESIS_REQUEST,
     },
-    DEFAULT_ACCOUNT_ADDR,
+    DEFAULT_ACCOUNT_PUBLIC_KEY,
 };
 use casper_execution_engine::core::engine_state::EngineConfig;
 use casper_types::{
-    account::AccountHash, contracts::NamedKeys, runtime_args, ContractHash, ContractPackageHash,
-    DeployHash, RuntimeArgs, URef, U512,
+    contracts::NamedKeys, runtime_args, ContractHash, ContractPackageHash, DeployHash, RuntimeArgs,
+    URef, SYSTEM_ACCOUNT, U512,
 };
 
 const CONTRACT_TRANSFER_TO_ACCOUNT: &str = "transfer_to_account_u512.wasm";
 const TRANSFER_AMOUNT: u64 = 250_000_000 + 1000;
-const SYSTEM_ADDR: AccountHash = AccountHash::new([0u8; 32]);
 const DEPLOY_HASH_2: DeployHash = DeployHash::new([2u8; 32]);
 
 const EXPECTED_KNOWN_KEYS_LEN: usize = 1;
@@ -30,9 +29,9 @@ fn should_run_pos_install_contract() {
         EngineConfig::new().with_use_system_contracts(cfg!(feature = "use-system-contracts"));
 
     let exec_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
-        runtime_args! { "target" =>SYSTEM_ADDR, "amount" => U512::from(TRANSFER_AMOUNT) },
+        runtime_args! { "target" =>SYSTEM_ACCOUNT, "amount" => U512::from(TRANSFER_AMOUNT) },
     )
     .build();
 
@@ -53,7 +52,7 @@ fn should_run_pos_install_contract() {
     let res = exec_with_return::exec(
         engine_config,
         &mut builder,
-        SYSTEM_ADDR,
+        SYSTEM_ACCOUNT,
         "pos_install.wasm",
         DEFAULT_BLOCK_TIME,
         DEPLOY_HASH_2,

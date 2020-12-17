@@ -1,23 +1,25 @@
-use casper_engine_test_support::{
-    internal::{
-        utils, ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_RUN_GENESIS_REQUEST,
-    },
-    DEFAULT_ACCOUNT_ADDR,
+use once_cell::sync::Lazy;
+
+use casper_engine_test_support::internal::{
+    utils, ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_ACCOUNT_PUBLIC_KEY,
+    DEFAULT_RUN_GENESIS_REQUEST,
 };
-use casper_types::{account::AccountHash, runtime_args, ApiError, RuntimeArgs, U512};
+use casper_types::{runtime_args, ApiError, PublicKey, RuntimeArgs, SecretKey, U512};
 
 const FAUCET: &str = "faucet";
 const CALL_FAUCET: &str = "call_faucet";
-const NEW_ACCOUNT_ADDR: AccountHash = AccountHash::new([99u8; 32]);
 const ARG_TARGET: &str = "target";
 const ARG_AMOUNT: &str = "amount";
+
+static NEW_ACCOUNT_PUBLIC_KEY: Lazy<PublicKey> =
+    Lazy::new(|| SecretKey::ed25519([99u8; SecretKey::ED25519_LENGTH]).into());
 
 fn get_builder() -> InMemoryWasmTestBuilder {
     let mut builder = InMemoryWasmTestBuilder::default();
     {
         // first, store contract
         let store_request = ExecuteRequestBuilder::standard(
-            *DEFAULT_ACCOUNT_ADDR,
+            *DEFAULT_ACCOUNT_PUBLIC_KEY,
             &format!("{}_stored.wasm", FAUCET),
             runtime_args! {},
         )
@@ -35,7 +37,7 @@ fn should_get_funds_from_faucet_stored() {
     let mut builder = get_builder();
 
     let default_account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     let contract_hash = default_account
@@ -49,16 +51,16 @@ fn should_get_funds_from_faucet_stored() {
 
     // call stored faucet
     let exec_request = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         contract_hash,
         CALL_FAUCET,
-        runtime_args! { ARG_TARGET => NEW_ACCOUNT_ADDR, ARG_AMOUNT => amount },
+        runtime_args! { ARG_TARGET => *NEW_ACCOUNT_PUBLIC_KEY, ARG_AMOUNT => amount },
     )
     .build();
     builder.exec(exec_request).expect_success().commit();
 
     let account = builder
-        .get_account(NEW_ACCOUNT_ADDR)
+        .get_account(*NEW_ACCOUNT_PUBLIC_KEY)
         .expect("should get account");
 
     let account_purse = account.main_purse();
@@ -75,7 +77,7 @@ fn should_fail_if_already_funded() {
     let mut builder = get_builder();
 
     let default_account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     let contract_hash = default_account
@@ -89,10 +91,10 @@ fn should_fail_if_already_funded() {
 
     // call stored faucet
     let exec_request_1 = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         contract_hash,
         CALL_FAUCET,
-        runtime_args! { ARG_TARGET => NEW_ACCOUNT_ADDR, ARG_AMOUNT => amount },
+        runtime_args! { ARG_TARGET => *NEW_ACCOUNT_PUBLIC_KEY, ARG_AMOUNT => amount },
     )
     .build();
 
@@ -100,10 +102,10 @@ fn should_fail_if_already_funded() {
 
     // call stored faucet again; should error
     let exec_request_2 = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         contract_hash,
         CALL_FAUCET,
-        runtime_args! { ARG_TARGET => NEW_ACCOUNT_ADDR, ARG_AMOUNT => amount },
+        runtime_args! { ARG_TARGET => *NEW_ACCOUNT_PUBLIC_KEY, ARG_AMOUNT => amount },
     )
     .build();
 

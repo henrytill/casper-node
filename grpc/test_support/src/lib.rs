@@ -30,10 +30,9 @@
 //! const ARG_MESSAGE: &str = "message";
 //!
 //! let public_key: PublicKey = SecretKey::ed25519(MY_ACCOUNT).into();
-//! let account_addr = AccountHash::new(MY_ADDR);
 //!
 //! let mut context = TestContextBuilder::new()
-//!     .with_public_key(public_key, account_addr, U512::from(128_000_000_000_000u64))
+//!     .with_public_key(public_key, U512::from(128_000_000_000_000u64))
 //!     .build();
 //!
 //! // The test framework checks for compiled Wasm files in '<current working dir>/wasm'.  Paths
@@ -44,8 +43,8 @@
 //!     ARG_MESSAGE => VALUE,
 //! };
 //! let session = SessionBuilder::new(session_code, session_args)
-//!     .with_address(account_addr)
-//!     .with_authorization_keys(&[account_addr])
+//!     .with_public_key(public_key)
+//!     .with_authorization_keys(&[public_key])
 //!     .build();
 //!
 //! let result_of_query: Result<Value, Error> = context.run(session).query(account_addr, &[KEY]);
@@ -89,7 +88,7 @@ pub type URefAddr = [u8; 32];
 pub type Hash = [u8; 32];
 
 /// Default test account address.
-pub use crate::internal::DEFAULT_ACCOUNT_ADDR;
+pub use crate::internal::DEFAULT_ACCOUNT_PUBLIC_KEY;
 
 /// Default initial balance of a test account in motes.
 pub const DEFAULT_ACCOUNT_INITIAL_BALANCE: u64 = 100_000_000_000_000_000u64;

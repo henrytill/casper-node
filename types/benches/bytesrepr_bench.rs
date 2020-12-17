@@ -3,9 +3,8 @@ use criterion::{black_box, criterion_group, criterion_main, Bencher, Criterion};
 use std::{collections::BTreeMap, iter};
 
 use casper_types::{
-    account::AccountHash,
     bytesrepr::{self, Bytes, FromBytes, ToBytes},
-    AccessRights, CLTyped, CLValue, Key, URef, U128, U256, U512,
+    AccessRights, CLTyped, CLValue, Key, SecretKey, URef, U128, U256, U512,
 };
 
 static KB: usize = 1024;
@@ -190,13 +189,13 @@ fn deserialize_unit(b: &mut Bencher) {
 }
 
 fn serialize_key_account(b: &mut Bencher) {
-    let account = Key::Account(AccountHash::new([0u8; 32]));
+    let account = Key::Account(SecretKey::ed25519([0u8; SecretKey::ED25519_LENGTH]).into());
 
     b.iter(|| ToBytes::to_bytes(black_box(&account)))
 }
 
 fn deserialize_key_account(b: &mut Bencher) {
-    let account = Key::Account(AccountHash::new([0u8; 32]));
+    let account = Key::Account(SecretKey::ed25519([0u8; SecretKey::ED25519_LENGTH]).into());
     let account_bytes = account.to_bytes().unwrap();
 
     b.iter(|| Key::from_bytes(black_box(&account_bytes)))
@@ -386,7 +385,7 @@ fn serialize_cl_value_namedkey(b: &mut Bencher) {
     b.iter(|| {
         serialize_cl_value((
             TEST_STR_1.to_string(),
-            Key::Account(AccountHash::new([0xffu8; 32])),
+            Key::Account(SecretKey::ed25519([0xffu8; SecretKey::ED25519_LENGTH]).into()),
         ))
     });
 }
@@ -396,7 +395,7 @@ fn deserialize_cl_value_namedkey(b: &mut Bencher) {
         b,
         (
             TEST_STR_1.to_string(),
-            Key::Account(AccountHash::new([0xffu8; 32])),
+            Key::Account(SecretKey::ed25519([0xffu8; SecretKey::ED25519_LENGTH]).into()),
         ),
     );
 }

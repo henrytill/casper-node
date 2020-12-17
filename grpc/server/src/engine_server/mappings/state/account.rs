@@ -5,11 +5,11 @@ use std::{
 };
 
 use casper_execution_engine::shared::account::{Account, ActionThresholds, AssociatedKeys};
-use casper_types::account::{AccountHash, Weight};
+use casper_types::{account::Weight, PublicKey};
 
 use super::NamedKeyMap;
 use crate::engine_server::{
-    mappings::{self, ParsingError},
+    mappings::ParsingError,
     state::{self, Account_AssociatedKey, NamedKey},
 };
 
@@ -17,8 +17,7 @@ impl From<Account> for state::Account {
     fn from(mut account: Account) -> Self {
         let mut pb_account = state::Account::new();
 
-        pb_account.public_key = account.account_hash().as_bytes().to_vec();
-
+        pb_account.set_public_key(account.public_key().into());
         let named_keys = mem::replace(account.named_keys_mut(), BTreeMap::new());
         let pb_named_keys: Vec<NamedKey> = NamedKeyMap::new(named_keys).into();
         pb_account.set_named_keys(pb_named_keys.into());
@@ -45,8 +44,7 @@ impl TryFrom<state::Account> for Account {
     type Error = ParsingError;
 
     fn try_from(pb_account: state::Account) -> Result<Self, Self::Error> {
-        let account_hash =
-            mappings::vec_to_array(pb_account.public_key, "Protobuf Account::AccountHash")?;
+        let public_key = PublicKey::try_from(pb_account.get_public_key().to_owned())?;
 
         let named_keys: NamedKeyMap = pb_account.named_keys.into_vec().try_into()?;
 
@@ -92,7 +90,7 @@ impl TryFrom<state::Account> for Account {
         };
 
         let account = Account::new(
-            AccountHash::new(account_hash),
+            public_key,
             named_keys.into_inner(),
             main_purse,
             associated_keys,
@@ -102,27 +100,22 @@ impl TryFrom<state::Account> for Account {
     }
 }
 
-impl From<(&AccountHash, &Weight)> for Account_AssociatedKey {
-    fn from((account_hash, weight): (&AccountHash, &Weight)) -> Self {
+impl From<(&PublicKey, &Weight)> for Account_AssociatedKey {
+    fn from((public_key, weight): (&PublicKey, &Weight)) -> Self {
         let mut pb_associated_key = Account_AssociatedKey::new();
-        pb_associated_key.public_key = account_hash.as_bytes().to_vec();
+        pb_associated_key.set_public_key(public_key.to_owned().into());
         pb_associated_key.set_weight(weight.value().into());
         pb_associated_key
     }
 }
 
-impl TryFrom<Account_AssociatedKey> for (AccountHash, Weight) {
+impl TryFrom<Account_AssociatedKey> for (PublicKey, Weight) {
     type Error = ParsingError;
 
     fn try_from(pb_associated_key: Account_AssociatedKey) -> Result<Self, Self::Error> {
-        let account_hash = AccountHash::new(mappings::vec_to_array(
-            pb_associated_key.public_key,
-            "Protobuf Account::AssociatedKey",
-        )?);
-
+        let public_key = PublicKey::try_from(pb_associated_key.get_public_key().to_owned())?;
         let weight = weight_from(pb_associated_key.weight, "Protobuf AssociatedKey::Weight")?;
-
-        Ok((account_hash, weight))
+        Ok((public_key, weight))
     }
 }
 

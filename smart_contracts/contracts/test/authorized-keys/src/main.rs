@@ -6,8 +6,8 @@ use casper_contract::{
     unwrap_or_revert::UnwrapOrRevert,
 };
 use casper_types::{
-    account::{AccountHash, ActionType, AddKeyFailure, Weight},
-    ApiError,
+    account::{ActionType, AddKeyFailure, Weight},
+    ApiError, SecretKey,
 };
 
 const ARG_KEY_MANAGEMENT_THRESHOLD: &str = "key_management_threshold";
@@ -15,7 +15,9 @@ const ARG_DEPLOY_THRESHOLD: &str = "deploy_threshold";
 
 #[no_mangle]
 pub extern "C" fn call() {
-    match account::add_associated_key(AccountHash::new([123; 32]), Weight::new(100)) {
+    let account = SecretKey::ed25519([123; SecretKey::ED25519_LENGTH]).into();
+
+    match account::add_associated_key(account, Weight::new(100)) {
         Err(AddKeyFailure::DuplicateKey) => {}
         Err(_) => runtime::revert(ApiError::User(50)),
         Ok(_) => {}

@@ -23,7 +23,7 @@ mod tests {
     use casper_engine_test_support::{
         Code, Error, SessionBuilder, TestContextBuilder, Value,
     };
-    use casper_types::{runtime_args, RuntimeArgs, U512, account::AccountHash, PublicKey, SecretKey};
+    use casper_types::{runtime_args, RuntimeArgs, U512, PublicKey, SecretKey};
 
     const MY_ACCOUNT: [u8; 32] = [7u8; 32];
     const MY_ADDR: [u8; 32] = [8u8; 32];
@@ -35,10 +35,9 @@ mod tests {
     #[test]
     fn should_store_hello_world() {
         let public_key: PublicKey = SecretKey::ed25519(MY_ACCOUNT).into();
-        let account_addr = AccountHash::new(MY_ADDR);
 
         let mut context = TestContextBuilder::new()
-            .with_public_key(public_key, account_addr, U512::from(500_000_000_000_000_000u64))
+            .with_public_key(public_key, U512::from(500_000_000_000_000_000u64))
             .build();
 
         // The test framework checks for compiled Wasm files in '<current working dir>/wasm'.  Paths
@@ -49,12 +48,12 @@ mod tests {
             ARG_MESSAGE => VALUE,
         };
         let session = SessionBuilder::new(session_code, session_args)
-            .with_address(account_addr)
-            .with_authorization_keys(&[account_addr])
+            .with_public_key(public_key)
+            .with_authorization_keys(&[public_key])
             .build();
 
         let result_of_query: Result<Value, Error> =
-            context.run(session).query(account_addr, &[KEY]);
+            context.run(session).query(public_key, &[KEY]);
 
         let returned_value = result_of_query.expect("should be a value");
 

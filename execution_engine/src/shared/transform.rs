@@ -311,7 +311,7 @@ impl From<&Transform> for casper_types::Transform {
                 casper_types::Transform::WriteCLValue(cl_value.clone())
             }
             Transform::Write(StoredValue::Account(account)) => {
-                casper_types::Transform::WriteAccount(account.account_hash())
+                casper_types::Transform::WriteAccount(account.public_key())
             }
             Transform::Write(StoredValue::ContractWasm(_)) => {
                 casper_types::Transform::WriteContractWasm
@@ -381,8 +381,7 @@ mod tests {
     use num::{Bounded, Num};
 
     use casper_types::{
-        account::AccountHash, bytesrepr::Bytes, AccessRights, ContractWasm, Key, URef, U128, U256,
-        U512,
+        bytesrepr::Bytes, AccessRights, ContractWasm, Key, URef, SYSTEM_ACCOUNT, U128, U256, U512,
     };
 
     use super::*;
@@ -390,7 +389,6 @@ mod tests {
     use std::collections::BTreeMap;
 
     const ZERO_ARRAY: [u8; 32] = [0; 32];
-    const ZERO_PUBLIC_KEY: AccountHash = AccountHash::new(ZERO_ARRAY);
     const TEST_STR: &str = "a";
     const TEST_BOOL: bool = true;
 
@@ -518,7 +516,7 @@ mod tests {
 
         let uref = URef::new(ZERO_ARRAY, AccessRights::READ);
         let account = StoredValue::Account(Account::new(
-            ZERO_PUBLIC_KEY,
+            SYSTEM_ACCOUNT,
             NamedKeys::new(),
             uref,
             AssociatedKeys::default(),

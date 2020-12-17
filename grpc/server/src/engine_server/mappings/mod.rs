@@ -11,7 +11,7 @@ use std::{
 };
 
 use casper_execution_engine::core::engine_state;
-use casper_types::{account::ACCOUNT_HASH_LENGTH, bytesrepr, DEPLOY_HASH_LENGTH, KEY_HASH_LENGTH};
+use casper_types::{bytesrepr, DEPLOY_HASH_LENGTH, KEY_HASH_LENGTH};
 
 pub use transforms::TransformMap;
 
@@ -26,7 +26,7 @@ pub(crate) fn vec_to_array(input: Vec<u8>, input_name: &str) -> Result<[u8; 32],
 #[derive(Debug, PartialEq)]
 pub enum MappingError {
     InvalidStateHashLength { expected: usize, actual: usize },
-    InvalidAccountHashLength { expected: usize, actual: usize },
+    InvalidPublicKey,
     InvalidDeployHashLength { expected: usize, actual: usize },
     InvalidHashLength { expected: usize, actual: usize },
     Parsing(ParsingError),
@@ -37,9 +37,8 @@ pub enum MappingError {
 }
 
 impl MappingError {
-    pub fn invalid_account_hash_length(actual: usize) -> Self {
-        let expected = ACCOUNT_HASH_LENGTH;
-        MappingError::InvalidAccountHashLength { expected, actual }
+    pub fn invalid_public_key() -> Self {
+        MappingError::InvalidPublicKey
     }
 
     pub fn invalid_deploy_hash_length(actual: usize) -> Self {
@@ -85,11 +84,7 @@ impl Display for MappingError {
                 "Invalid hash length: expected {}, actual {}",
                 expected, actual
             ),
-            MappingError::InvalidAccountHashLength { expected, actual } => write!(
-                f,
-                "Invalid public key length: expected {}, actual {}",
-                expected, actual
-            ),
+            MappingError::InvalidPublicKey => write!(f, "Invalid public key",),
             MappingError::InvalidDeployHashLength { expected, actual } => write!(
                 f,
                 "Invalid deploy hash length: expected {}, actual {}",

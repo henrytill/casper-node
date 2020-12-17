@@ -66,27 +66,18 @@ pub const ARG_AMOUNT: &str = "amount";
 pub static DEFAULT_GENESIS_CONFIG_HASH: Lazy<Blake2bHash> = Lazy::new(|| [42; 32].into());
 pub static DEFAULT_ACCOUNT_PUBLIC_KEY: Lazy<PublicKey> =
     Lazy::new(|| SecretKey::ed25519([199; SecretKey::ED25519_LENGTH]).into());
-pub static DEFAULT_ACCOUNT_ADDR: Lazy<AccountHash> =
-    Lazy::new(|| AccountHash::from(&*DEFAULT_ACCOUNT_PUBLIC_KEY));
-// Declaring DEFAULT_ACCOUNT_KEY as *DEFAULT_ACCOUNT_ADDR causes tests to stall.
-pub static DEFAULT_ACCOUNT_KEY: Lazy<AccountHash> =
-    Lazy::new(|| AccountHash::from(&*DEFAULT_ACCOUNT_PUBLIC_KEY));
 pub static DEFAULT_PROPOSER_PUBLIC_KEY: Lazy<PublicKey> =
     Lazy::new(|| SecretKey::ed25519([198; SecretKey::ED25519_LENGTH]).into());
-pub static DEFAULT_PROPOSER_ADDR: Lazy<AccountHash> =
-    Lazy::new(|| AccountHash::from(&*DEFAULT_PROPOSER_PUBLIC_KEY));
 pub static DEFAULT_ACCOUNTS: Lazy<Vec<GenesisAccount>> = Lazy::new(|| {
     let mut ret = Vec::new();
     let genesis_account = GenesisAccount::new(
         *DEFAULT_ACCOUNT_PUBLIC_KEY,
-        *DEFAULT_ACCOUNT_ADDR,
         Motes::new(DEFAULT_ACCOUNT_INITIAL_BALANCE.into()),
         Motes::zero(),
     );
     ret.push(genesis_account);
     let proposer_account = GenesisAccount::new(
         *DEFAULT_PROPOSER_PUBLIC_KEY,
-        *DEFAULT_PROPOSER_ADDR,
         Motes::new(DEFAULT_ACCOUNT_INITIAL_BALANCE.into()),
         Motes::zero(),
     );

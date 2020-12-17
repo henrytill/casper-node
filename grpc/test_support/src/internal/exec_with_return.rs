@@ -15,10 +15,9 @@ use casper_execution_engine::{
     storage::{global_state::StateProvider, protocol_data::ProtocolData},
 };
 use casper_types::{
-    account::AccountHash,
     bytesrepr::{Bytes, FromBytes},
-    BlockTime, CLTyped, DeployHash, EntryPointType, Key, Phase, ProtocolVersion, RuntimeArgs, URef,
-    U512,
+    BlockTime, CLTyped, DeployHash, EntryPointType, Key, Phase, ProtocolVersion, PublicKey,
+    RuntimeArgs, URef, U512,
 };
 
 use crate::internal::{utils, WasmTestBuilder, DEFAULT_WASM_CONFIG};
@@ -33,7 +32,7 @@ use super::DEFAULT_SYSTEM_CONFIG;
 pub fn exec<S, T>(
     config: EngineConfig,
     builder: &mut WasmTestBuilder<S>,
-    address: AccountHash,
+    address: PublicKey,
     wasm_file: &str,
     block_time: u64,
     deploy_hash: DeployHash,

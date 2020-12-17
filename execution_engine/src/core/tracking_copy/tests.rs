@@ -4,10 +4,8 @@ use assert_matches::assert_matches;
 use proptest::prelude::*;
 
 use casper_types::{
-    account::{AccountHash, Weight, ACCOUNT_HASH_LENGTH},
-    contracts::NamedKeys,
-    gens::*,
-    AccessRights, CLValue, Contract, EntryPoints, Key, ProtocolVersion, URef, U512,
+    account::Weight, contracts::NamedKeys, crypto::gens::public_key_arb, gens::*, AccessRights,
+    CLValue, Contract, EntryPoints, Key, ProtocolVersion, SecretKey, URef, U512,
 };
 
 use super::{
@@ -188,12 +186,12 @@ fn tracking_copy_add_i32() {
 
 #[test]
 fn tracking_copy_add_named_key() {
-    let zero_account_hash = AccountHash::new([0u8; ACCOUNT_HASH_LENGTH]);
+    let public_key = SecretKey::ed25519([0u8; SecretKey::ED25519_LENGTH]).into();
     let correlation_id = CorrelationId::new();
     // DB now holds an `Account` so that we can test adding a `NamedKey`
-    let associated_keys = AssociatedKeys::new(zero_account_hash, Weight::new(1));
+    let associated_keys = AssociatedKeys::new(public_key, Weight::new(1));
     let account = Account::new(
-        zero_account_hash,
+        public_key,
         NamedKeys::new(),
         URef::new([0u8; 32], AccessRights::READ_ADD_WRITE),
         associated_keys,
@@ -365,8 +363,7 @@ proptest! {
         v in stored_value_arb(), // value in account state
         name in "\\PC*", // human-readable name for state
         missing_name in "\\PC*",
-        pk in account_hash_arb(), // account hash
-        address in account_hash_arb(), // address for account hash
+        pk in public_key_arb(),
     ) {
         let correlation_id = CorrelationId::new();
         let named_keys = iter::once((name.clone(), k)).collect();
@@ -379,7 +376,7 @@ proptest! {
             associated_keys,
             Default::default(),
         );
-        let account_key = Key::Account(address);
+        let account_key = Key::Account(pk);
 
         let (gs, root_hash) = InMemoryGlobalState::from_pairs(
             correlation_id,
@@ -406,8 +403,7 @@ proptest! {
         v in stored_value_arb(), // value in contract state
         state_name in "\\PC*", // human-readable name for state
         contract_name in "\\PC*", // human-readable name for contract
-        pk in account_hash_arb(), // account hash
-        address in account_hash_arb(), // address for account hash
+        pk in public_key_arb(),
         hash in u8_slice_32(), // hash for contract key
     ) {
         let correlation_id = CorrelationId::new();
@@ -436,7 +432,7 @@ proptest! {
             associated_keys,
             Default::default(),
         );
-        let account_key = Key::Account(address);
+        let account_key = Key::Account(pk);
 
         let (gs, root_hash) = InMemoryGlobalState::from_pairs(correlation_id, &[
             (k, v.to_owned()),
@@ -561,14 +557,14 @@ fn query_for_circular_references_should_fail() {
 #[test]
 fn validate_query_proof_should_work() {
     // create account
-    let account_hash = AccountHash::new([3; 32]);
+    let public_key = SecretKey::ed25519([0u8; SecretKey::ED25519_LENGTH]).into();
     let fake_purse = URef::new([4; 32], AccessRights::READ_ADD_WRITE);
     let account_value = StoredValue::Account(Account::create(
-        account_hash,
+        public_key,
         NamedKeys::default(),
         fake_purse,
     ));
-    let account_key = Key::Account(account_hash);
+    let account_key = Key::Account(public_key);
 
     // create contract that refers to that account
     let account_name = "account".to_string();
@@ -587,7 +583,6 @@ fn validate_query_proof_should_work() {
     let contract_key = Key::Hash([5; 32]);
 
     // create account that refers to that contract
-    let account_hash = AccountHash::new([7; 32]);
     let fake_purse = URef::new([6; 32], AccessRights::READ_ADD_WRITE);
     let contract_name = "contract".to_string();
     let named_keys = {
@@ -596,8 +591,8 @@ fn validate_query_proof_should_work() {
         tmp
     };
     let main_account_value =
-        StoredValue::Account(Account::create(account_hash, named_keys, fake_purse));
-    let main_account_key = Key::Account(account_hash);
+        StoredValue::Account(Account::create(public_key, named_keys, fake_purse));
+    let main_account_key = Key::Account(public_key);
 
     // random value for proof injection attack
     let cl_value = CLValue::from_t(U512::zero()).expect("should convert");

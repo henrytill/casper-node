@@ -6,11 +6,10 @@ use casper_engine_test_support::{
         UpgradeRequestBuilder, DEFAULT_ACCOUNTS, DEFAULT_ACCOUNT_PUBLIC_KEY, DEFAULT_PAYMENT,
         DEFAULT_PROTOCOL_VERSION, DEFAULT_RUN_GENESIS_REQUEST,
     },
-    AccountHash, DEFAULT_ACCOUNT_ADDR, DEFAULT_ACCOUNT_INITIAL_BALANCE,
-    MINIMUM_ACCOUNT_CREATION_BALANCE,
+    DEFAULT_ACCOUNT_INITIAL_BALANCE, MINIMUM_ACCOUNT_CREATION_BALANCE,
 };
 use casper_execution_engine::{
-    core::engine_state::{upgrade::ActivationPoint, GenesisAccount, SYSTEM_ACCOUNT_ADDR},
+    core::engine_state::{upgrade::ActivationPoint, GenesisAccount},
     shared::{
         host_function_costs::{Cost, HostFunction, HostFunctionCosts},
         motes::Motes,
@@ -42,17 +41,13 @@ use casper_types::{
     auction::{self, DelegationRate},
     mint, proof_of_stake, runtime_args,
     system_contract_type::AUCTION,
-    ProtocolVersion, PublicKey, RuntimeArgs, SecretKey, U512,
+    ProtocolVersion, PublicKey, RuntimeArgs, SecretKey, SYSTEM_ACCOUNT, U512,
 };
 
 const SYSTEM_CONTRACT_HASHES_NAME: &str = "system_contract_hashes.wasm";
 const CONTRACT_TRANSFER_TO_ACCOUNT: &str = "transfer_to_account_u512.wasm";
 const CONTRACT_ADD_BID: &str = "add_bid.wasm";
 
-const VALIDATOR_1_SECRET_KEY: Lazy<SecretKey> =
-    Lazy::new(|| SecretKey::ed25519([123; SecretKey::ED25519_LENGTH]));
-const VALIDATOR_1: Lazy<PublicKey> = Lazy::new(|| PublicKey::from(&*VALIDATOR_1_SECRET_KEY));
-static VALIDATOR_1_ADDR: Lazy<AccountHash> = Lazy::new(|| AccountHash::from(&*VALIDATOR_1));
 const VALIDATOR_1_STAKE: u64 = 250_000;
 const BOND_AMOUNT: u64 = 42;
 const BID_AMOUNT: u64 = 99;
@@ -65,6 +60,11 @@ const NEW_WITHDRAW_BID_COST: u32 = DEFAULT_WITHDRAW_BID_COST * 3;
 const NEW_DELEGATE_COST: u32 = DEFAULT_DELEGATE_COST * 4;
 const NEW_UNDELEGATE_COST: u32 = DEFAULT_UNDELEGATE_COST * 5;
 const DEFAULT_ACTIVATION_POINT: ActivationPoint = 1;
+
+static VALIDATOR_1_SECRET_KEY: Lazy<SecretKey> =
+    Lazy::new(|| SecretKey::ed25519([123; SecretKey::ED25519_LENGTH]));
+static VALIDATOR_1_PUBLIC_KEY: Lazy<PublicKey> =
+    Lazy::new(|| PublicKey::from(&*VALIDATOR_1_SECRET_KEY));
 
 static OLD_PROTOCOL_VERSION: Lazy<ProtocolVersion> = Lazy::new(|| *DEFAULT_PROTOCOL_VERSION);
 static NEW_PROTOCOL_VERSION: Lazy<ProtocolVersion> = Lazy::new(|| {
@@ -86,7 +86,7 @@ fn add_bid_and_withdraw_bid_have_expected_costs() {
     builder.run_genesis(&*DEFAULT_RUN_GENESIS_REQUEST);
 
     let system_contract_hashes_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         SYSTEM_CONTRACT_HASHES_NAME,
         RuntimeArgs::default(),
     )
@@ -97,11 +97,11 @@ fn add_bid_and_withdraw_bid_have_expected_costs() {
         .commit();
 
     let account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     let add_bid_request = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         account
             .named_keys()
             .get(AUCTION)
@@ -131,7 +131,7 @@ fn add_bid_and_withdraw_bid_have_expected_costs() {
 
     // Withdraw bid
     let withdraw_bid_request = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         account
             .named_keys()
             .get(AUCTION)
@@ -193,7 +193,7 @@ fn upgraded_add_bid_and_withdraw_bid_have_expected_costs() {
     builder.upgrade_with_upgrade_request(&mut upgrade_request);
 
     let system_contract_hashes_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         SYSTEM_CONTRACT_HASHES_NAME,
         RuntimeArgs::default(),
     )
@@ -205,11 +205,11 @@ fn upgraded_add_bid_and_withdraw_bid_have_expected_costs() {
         .commit();
 
     let account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     let add_bid_request = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         account
             .named_keys()
             .get(AUCTION)
@@ -240,7 +240,7 @@ fn upgraded_add_bid_and_withdraw_bid_have_expected_costs() {
 
     // Withdraw bid
     let withdraw_bid_request = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         account
             .named_keys()
             .get(AUCTION)
@@ -272,8 +272,7 @@ fn delegate_and_undelegate_have_expected_costs() {
     let mut builder = InMemoryWasmTestBuilder::default();
     let accounts = {
         let validator_1 = GenesisAccount::new(
-            *VALIDATOR_1,
-            *VALIDATOR_1_ADDR,
+            *VALIDATOR_1_PUBLIC_KEY,
             Motes::new(DEFAULT_ACCOUNT_INITIAL_BALANCE.into()),
             Motes::new(VALIDATOR_1_STAKE.into()),
         );
@@ -288,7 +287,7 @@ fn delegate_and_undelegate_have_expected_costs() {
     builder.run_genesis(&run_genesis_request);
 
     let system_contract_hashes_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         SYSTEM_CONTRACT_HASHES_NAME,
         RuntimeArgs::default(),
     )
@@ -299,13 +298,13 @@ fn delegate_and_undelegate_have_expected_costs() {
         .commit();
 
     let account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     let source_purse = account.main_purse();
 
     let delegate_request = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         account
             .named_keys()
             .get(AUCTION)
@@ -315,7 +314,7 @@ fn delegate_and_undelegate_have_expected_costs() {
         auction::METHOD_DELEGATE,
         runtime_args! {
             auction::ARG_DELEGATOR => *DEFAULT_ACCOUNT_PUBLIC_KEY,
-            auction::ARG_VALIDATOR => *VALIDATOR_1,
+            auction::ARG_VALIDATOR => *VALIDATOR_1_PUBLIC_KEY,
             auction::ARG_SOURCE_PURSE => source_purse,
             auction::ARG_AMOUNT => U512::from(BID_AMOUNT),
         },
@@ -335,7 +334,7 @@ fn delegate_and_undelegate_have_expected_costs() {
 
     // Withdraw bid
     let undelegate_request = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         account
             .named_keys()
             .get(AUCTION)
@@ -345,7 +344,7 @@ fn delegate_and_undelegate_have_expected_costs() {
         auction::METHOD_UNDELEGATE,
         runtime_args! {
             auction::ARG_DELEGATOR => *DEFAULT_ACCOUNT_PUBLIC_KEY,
-            auction::ARG_VALIDATOR => *VALIDATOR_1,
+            auction::ARG_VALIDATOR => *VALIDATOR_1_PUBLIC_KEY,
             auction::ARG_AMOUNT => U512::from(BID_AMOUNT),
             auction::ARG_UNBOND_PURSE => source_purse,
         },
@@ -386,8 +385,7 @@ fn upgraded_delegate_and_undelegate_have_expected_costs() {
     let mut builder = InMemoryWasmTestBuilder::default();
     let accounts = {
         let validator_1 = GenesisAccount::new(
-            *VALIDATOR_1,
-            *VALIDATOR_1_ADDR,
+            *VALIDATOR_1_PUBLIC_KEY,
             Motes::new(DEFAULT_ACCOUNT_INITIAL_BALANCE.into()),
             Motes::new(VALIDATOR_1_STAKE.into()),
         );
@@ -413,7 +411,7 @@ fn upgraded_delegate_and_undelegate_have_expected_costs() {
     builder.upgrade_with_upgrade_request(&mut upgrade_request);
 
     let system_contract_hashes_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         SYSTEM_CONTRACT_HASHES_NAME,
         RuntimeArgs::default(),
     )
@@ -425,13 +423,13 @@ fn upgraded_delegate_and_undelegate_have_expected_costs() {
         .commit();
 
     let account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     let source_purse = account.main_purse();
 
     let delegate_request = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         account
             .named_keys()
             .get(AUCTION)
@@ -441,7 +439,7 @@ fn upgraded_delegate_and_undelegate_have_expected_costs() {
         auction::METHOD_DELEGATE,
         runtime_args! {
             auction::ARG_DELEGATOR => *DEFAULT_ACCOUNT_PUBLIC_KEY,
-            auction::ARG_VALIDATOR => *VALIDATOR_1,
+            auction::ARG_VALIDATOR => *VALIDATOR_1_PUBLIC_KEY,
             auction::ARG_SOURCE_PURSE => source_purse,
             auction::ARG_AMOUNT => U512::from(BID_AMOUNT),
         },
@@ -462,7 +460,7 @@ fn upgraded_delegate_and_undelegate_have_expected_costs() {
 
     // Withdraw bid
     let undelegate_request = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         account
             .named_keys()
             .get(AUCTION)
@@ -472,7 +470,7 @@ fn upgraded_delegate_and_undelegate_have_expected_costs() {
         auction::METHOD_UNDELEGATE,
         runtime_args! {
             auction::ARG_DELEGATOR => *DEFAULT_ACCOUNT_PUBLIC_KEY,
-            auction::ARG_VALIDATOR => *VALIDATOR_1,
+            auction::ARG_VALIDATOR => *VALIDATOR_1_PUBLIC_KEY,
             auction::ARG_AMOUNT => U512::from(BID_AMOUNT),
             auction::ARG_UNBOND_PURSE => source_purse,
         },
@@ -496,8 +494,7 @@ fn mint_transfer_has_expected_costs() {
 
     let accounts = {
         let validator_1 = GenesisAccount::new(
-            *VALIDATOR_1,
-            *VALIDATOR_1_ADDR,
+            *VALIDATOR_1_PUBLIC_KEY,
             Motes::new(DEFAULT_ACCOUNT_INITIAL_BALANCE.into()),
             Motes::new(VALIDATOR_1_STAKE.into()),
         );
@@ -512,11 +509,11 @@ fn mint_transfer_has_expected_costs() {
     builder.run_genesis(&run_genesis_request);
 
     let default_account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     let validator_1_account = builder
-        .get_account(*VALIDATOR_1_ADDR)
+        .get_account(*VALIDATOR_1_PUBLIC_KEY)
         .expect("should have account");
 
     let mint_hash = builder.get_mint_contract_hash();
@@ -529,11 +526,11 @@ fn mint_transfer_has_expected_costs() {
     let transfer_amount = U512::from(TRANSFER_AMOUNT);
 
     let transfer_request = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         mint_hash,
         mint::METHOD_TRANSFER,
         runtime_args! {
-            mint::ARG_TO => Some(*VALIDATOR_1_ADDR),
+            mint::ARG_TO => Some(*VALIDATOR_1_PUBLIC_KEY),
             mint::ARG_SOURCE => source,
             mint::ARG_TARGET => target,
             mint::ARG_AMOUNT => U512::from(TRANSFER_AMOUNT),
@@ -566,7 +563,7 @@ fn should_charge_for_erroneous_system_contract_calls() {
     let pos_hash = builder.get_pos_contract_hash();
 
     let account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     // Entrypoints that could fail early due to missing arguments
@@ -630,7 +627,7 @@ fn should_charge_for_erroneous_system_contract_calls() {
 
     for (contract_hash, entrypoint, expected_cost) in entrypoint_calls {
         let exec_request = ExecuteRequestBuilder::contract_call_by_hash(
-            *DEFAULT_ACCOUNT_ADDR,
+            *DEFAULT_ACCOUNT_PUBLIC_KEY,
             contract_hash,
             entrypoint,
             RuntimeArgs::default(),
@@ -671,9 +668,9 @@ fn should_not_charge_system_account_for_running_auction() {
     // shouldn't be charged for doing so. Otherwise if that happens the system could fail as in
     // production code system account is most likely empty.
     let fund_system_account_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
-        runtime_args! { ARG_TARGET => SYSTEM_ACCOUNT_ADDR, ARG_AMOUNT => U512::from(MINIMUM_ACCOUNT_CREATION_BALANCE) },
+        runtime_args! { ARG_TARGET => SYSTEM_ACCOUNT, ARG_AMOUNT => U512::from(MINIMUM_ACCOUNT_CREATION_BALANCE) },
     )
     .build();
 
@@ -689,14 +686,14 @@ fn should_not_charge_system_account_for_running_auction() {
         .expect_success();
 
     let system_account = builder
-        .get_account(SYSTEM_ACCOUNT_ADDR)
+        .get_account(SYSTEM_ACCOUNT)
         .expect("should have system account");
     let default_account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have default account");
 
     let run_auction_as_system_request = ExecuteRequestBuilder::contract_call_by_hash(
-        SYSTEM_ACCOUNT_ADDR,
+        SYSTEM_ACCOUNT,
         auction_hash,
         auction::METHOD_RUN_AUCTION,
         RuntimeArgs::default(),
@@ -704,7 +701,7 @@ fn should_not_charge_system_account_for_running_auction() {
     .build();
 
     let run_auction_as_user_request = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         auction_hash,
         auction::METHOD_RUN_AUCTION,
         RuntimeArgs::default(),
@@ -739,17 +736,17 @@ fn should_verify_do_nothing_charges_only_for_standard_payment() {
     builder.run_genesis(&*DEFAULT_RUN_GENESIS_REQUEST);
 
     let default_account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have default account");
 
     let do_nothing_request = {
         let deploy_item = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_ADDR)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_session_bytes(wasm::do_nothing_bytes(), RuntimeArgs::default())
             .with_empty_payment_bytes(runtime_args! {
                 ARG_AMOUNT => *DEFAULT_PAYMENT
             })
-            .with_authorization_keys(&[*DEFAULT_ACCOUNT_ADDR])
+            .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
             .with_deploy_hash([42; 32])
             .build();
 
@@ -879,11 +876,11 @@ fn should_verify_wasm_add_bid_wasm_cost_is_not_recursive() {
     builder.upgrade_with_upgrade_request(&mut upgrade_request);
 
     let default_account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have default account");
 
     let add_bid_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_ADD_BID,
         runtime_args! {
             auction::ARG_PUBLIC_KEY => *DEFAULT_ACCOUNT_PUBLIC_KEY,

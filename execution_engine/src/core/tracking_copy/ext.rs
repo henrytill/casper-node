@@ -3,8 +3,8 @@ use std::convert::TryInto;
 use parity_wasm::elements::Module;
 
 use casper_types::{
-    account::AccountHash, CLValue, Contract, ContractHash, ContractPackage, ContractPackageHash,
-    ContractWasm, ContractWasmHash, Key,
+    CLValue, Contract, ContractHash, ContractPackage, ContractPackageHash, ContractWasm,
+    ContractWasmHash, Key, PublicKey,
 };
 
 use crate::{
@@ -28,14 +28,14 @@ pub trait TrackingCopyExt<R> {
     fn get_account(
         &mut self,
         correlation_id: CorrelationId,
-        account_hash: AccountHash,
+        public_key: PublicKey,
     ) -> Result<Account, Self::Error>;
 
     /// Reads the account at a given account address
     fn read_account(
         &mut self,
         correlation_id: CorrelationId,
-        account_hash: AccountHash,
+        public_key: PublicKey,
     ) -> Result<Account, Self::Error>;
 
     /// Gets the purse balance key for a given purse id
@@ -106,9 +106,9 @@ where
     fn get_account(
         &mut self,
         correlation_id: CorrelationId,
-        account_hash: AccountHash,
+        public_key: PublicKey,
     ) -> Result<Account, Self::Error> {
-        let account_key = Key::Account(account_hash);
+        let account_key = Key::Account(public_key);
         match self.get(correlation_id, &account_key).map_err(Into::into)? {
             Some(StoredValue::Account(account)) => Ok(account),
             Some(other) => Err(execution::Error::TypeMismatch(TypeMismatch::new(
@@ -122,9 +122,9 @@ where
     fn read_account(
         &mut self,
         correlation_id: CorrelationId,
-        account_hash: AccountHash,
+        public_key: PublicKey,
     ) -> Result<Account, Self::Error> {
-        let account_key = Key::Account(account_hash);
+        let account_key = Key::Account(public_key);
         match self
             .read(correlation_id, &account_key)
             .map_err(Into::into)?

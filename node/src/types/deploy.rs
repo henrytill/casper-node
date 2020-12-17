@@ -703,13 +703,13 @@ impl Display for Deploy {
 
 impl From<Deploy> for DeployItem {
     fn from(deploy: Deploy) -> Self {
-        let account_hash = deploy.header().account().to_account_hash();
+        let account = deploy.header().account().to_owned();
         DeployItem::new(
-            account_hash,
+            account,
             deploy.session().clone(),
             deploy.payment().clone(),
             deploy.header().gas_price(),
-            BTreeSet::from_iter(vec![account_hash]),
+            BTreeSet::from_iter(vec![account]),
             casper_types::DeployHash::new(deploy.id().inner().to_array()),
         )
     }

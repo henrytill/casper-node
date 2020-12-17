@@ -5,18 +5,17 @@ use casper_engine_test_support::{
         utils, ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_ACCOUNTS,
         DEFAULT_ACCOUNT_PUBLIC_KEY, DEFAULT_LOCKED_FUNDS_PERIOD,
     },
-    DEFAULT_ACCOUNT_ADDR, DEFAULT_ACCOUNT_INITIAL_BALANCE, MINIMUM_ACCOUNT_CREATION_BALANCE,
+    DEFAULT_ACCOUNT_INITIAL_BALANCE, MINIMUM_ACCOUNT_CREATION_BALANCE,
 };
 use casper_execution_engine::{core::engine_state::genesis::GenesisAccount, shared::motes::Motes};
 use casper_types::{
-    account::AccountHash,
     auction::{
         Bids, UnbondingPurses, ARG_DELEGATOR, ARG_UNBOND_PURSE, ARG_VALIDATOR,
         ARG_VALIDATOR_PUBLIC_KEYS, BIDS_KEY, METHOD_RUN_AUCTION, METHOD_SLASH,
         UNBONDING_PURSES_KEY,
     },
     mint::TOTAL_SUPPLY_KEY,
-    runtime_args, PublicKey, RuntimeArgs, SecretKey, URef, U512,
+    runtime_args, PublicKey, RuntimeArgs, SecretKey, URef, SYSTEM_ACCOUNT, U512,
 };
 
 const CONTRACT_TRANSFER_TO_ACCOUNT: &str = "transfer_to_account_u512.wasm";
@@ -32,10 +31,8 @@ const TRANSFER_AMOUNT: u64 = MINIMUM_ACCOUNT_CREATION_BALANCE;
 const ARG_AMOUNT: &str = "amount";
 const ARG_PUBLIC_KEY: &str = "public_key";
 
-const SYSTEM_ADDR: AccountHash = AccountHash::new([0u8; 32]);
 static VALIDATOR_1: Lazy<PublicKey> =
     Lazy::new(|| SecretKey::ed25519([3; SecretKey::ED25519_LENGTH]).into());
-static VALIDATOR_1_ADDR: Lazy<AccountHash> = Lazy::new(|| AccountHash::from(&*VALIDATOR_1));
 const VALIDATOR_1_STAKE: u64 = 250_000;
 
 #[ignore]
@@ -44,7 +41,6 @@ fn should_run_ee_1119_dont_slash_delegated_validators() {
     let accounts = {
         let validator_1 = GenesisAccount::new(
             *VALIDATOR_1,
-            *VALIDATOR_1_ADDR,
             Motes::new(DEFAULT_ACCOUNT_INITIAL_BALANCE.into()),
             Motes::new(VALIDATOR_1_STAKE.into()),
         );
@@ -59,10 +55,10 @@ fn should_run_ee_1119_dont_slash_delegated_validators() {
     builder.run_genesis(&run_genesis_request);
 
     let fund_system_exec_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
         runtime_args! {
-            "target" => SYSTEM_ADDR,
+            "target" => SYSTEM_ACCOUNT,
             "amount" => U512::from(TRANSFER_AMOUNT)
         },
     )
@@ -80,7 +76,7 @@ fn should_run_ee_1119_dont_slash_delegated_validators() {
     //
 
     let delegate_exec_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_DELEGATE,
         runtime_args! {
             ARG_AMOUNT => U512::from(DELEGATE_AMOUNT_1),
@@ -112,7 +108,7 @@ fn should_run_ee_1119_dont_slash_delegated_validators() {
 
     for _ in 0..=DEFAULT_LOCKED_FUNDS_PERIOD {
         let run_auction_request = ExecuteRequestBuilder::contract_call_by_hash(
-            SYSTEM_ADDR,
+            SYSTEM_ACCOUNT,
             auction,
             METHOD_RUN_AUCTION,
             runtime_args! {},
@@ -129,7 +125,7 @@ fn should_run_ee_1119_dont_slash_delegated_validators() {
     let unbond_amount = U512::from(VALIDATOR_1_STAKE) - 1;
 
     let undelegate_exec_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_UNDELEGATE,
         runtime_args! {
             ARG_AMOUNT => U512::from(UNDELEGATE_AMOUNT_1),
@@ -149,7 +145,7 @@ fn should_run_ee_1119_dont_slash_delegated_validators() {
     //
 
     let withdraw_bid_request = ExecuteRequestBuilder::standard(
-        *VALIDATOR_1_ADDR,
+        *VALIDATOR_1,
         CONTRACT_WITHDRAW_BID,
         runtime_args! {
             ARG_AMOUNT => unbond_amount,
@@ -194,7 +190,7 @@ fn should_run_ee_1119_dont_slash_delegated_validators() {
     );
 
     let slash_request_1 = ExecuteRequestBuilder::contract_call_by_hash(
-        SYSTEM_ADDR,
+        SYSTEM_ACCOUNT,
         auction,
         METHOD_SLASH,
         runtime_args! {
@@ -222,7 +218,7 @@ fn should_run_ee_1119_dont_slash_delegated_validators() {
         builder.get_value(builder.get_mint_contract_hash(), TOTAL_SUPPLY_KEY);
 
     let slash_request_2 = ExecuteRequestBuilder::contract_call_by_hash(
-        SYSTEM_ADDR,
+        SYSTEM_ACCOUNT,
         auction,
         METHOD_SLASH,
         runtime_args! {

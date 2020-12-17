@@ -3,13 +3,11 @@ use std::{collections::BTreeSet, convert::TryFrom};
 use wasmi::{Externals, RuntimeArgs, RuntimeValue, Trap};
 
 use casper_types::{
-    account,
-    account::AccountHash,
-    api_error,
+    account, api_error,
     auction::{EraId, EraInfo},
     bytesrepr::{self, ToBytes},
     contracts::{EntryPoints, NamedKeys},
-    ContractHash, ContractPackageHash, ContractVersion, Group, Key, URef, U512,
+    ContractHash, ContractPackageHash, ContractVersion, Group, Key, PublicKey, URef, U512,
 };
 
 use super::{args::Args, scoped_instrumenter::ScopedInstrumenter, Error, Runtime};
@@ -355,7 +353,7 @@ where
                         result_ptr,
                     ],
                 )?;
-                let account_hash: AccountHash = {
+                let target_account: PublicKey = {
                     let bytes = self.bytes_from_mem(key_ptr, key_size as usize)?;
                     bytesrepr::deserialize(bytes).map_err(Error::BytesRepr)?
                 };
@@ -368,7 +366,7 @@ where
                     bytesrepr::deserialize(bytes).map_err(Error::BytesRepr)?
                 };
 
-                let ret = match self.transfer_to_account(account_hash, amount, id)? {
+                let ret = match self.transfer_to_account(target_account, amount, id)? {
                     Ok(transferred_to) => {
                         let result_value: u32 = transferred_to as u32;
                         let result_value_bytes = result_value.to_le_bytes();
@@ -421,7 +419,7 @@ where
                     let bytes = self.bytes_from_mem(source_ptr, source_size as usize)?;
                     bytesrepr::deserialize(bytes).map_err(Error::BytesRepr)?
                 };
-                let account_hash: AccountHash = {
+                let target_account: PublicKey = {
                     let bytes = self.bytes_from_mem(key_ptr, key_size as usize)?;
                     bytesrepr::deserialize(bytes).map_err(Error::BytesRepr)?
                 };
@@ -435,7 +433,7 @@ where
                 };
                 let ret = match self.transfer_from_purse_to_account(
                     source_purse,
-                    account_hash,
+                    target_account,
                     amount,
                     id,
                 )? {
@@ -972,7 +970,7 @@ where
                 scoped_instrumenter.add_property("target_size", target_size.to_string());
                 scoped_instrumenter.add_property("amount_size", amount_size.to_string());
                 scoped_instrumenter.add_property("id_size", id_size.to_string());
-                let maybe_to: Option<AccountHash> = self.t_from_mem(maybe_to_ptr, maybe_to_size)?;
+                let maybe_to: Option<PublicKey> = self.t_from_mem(maybe_to_ptr, maybe_to_size)?;
                 let source: URef = self.t_from_mem(source_ptr, source_size)?;
                 let target: URef = self.t_from_mem(target_ptr, target_size)?;
                 let amount: U512 = self.t_from_mem(amount_ptr, amount_size)?;

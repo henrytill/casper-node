@@ -1,8 +1,8 @@
 use casper_engine_test_support::{
     internal::{ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_RUN_GENESIS_REQUEST},
-    DEFAULT_ACCOUNT_ADDR,
+    DEFAULT_ACCOUNT_PUBLIC_KEY,
 };
-use casper_types::{account::AccountHash, contracts::NamedKeys, runtime_args, Key, RuntimeArgs};
+use casper_types::{contracts::NamedKeys, runtime_args, Key, RuntimeArgs, SecretKey};
 
 const CONTRACT_LIST_NAMED_KEYS: &str = "list_named_keys.wasm";
 const NEW_NAME_ACCOUNT: &str = "Account";
@@ -19,10 +19,10 @@ fn should_list_named_keys() {
     let initial_named_keys: NamedKeys = NamedKeys::new();
 
     let new_named_keys = {
-        let account_hash = AccountHash::new([1; 32]);
+        let account = SecretKey::ed25519([1; SecretKey::ED25519_LENGTH]).into();
         let mut named_keys = NamedKeys::new();
         assert!(named_keys
-            .insert(NEW_NAME_ACCOUNT.to_string(), Key::Account(account_hash))
+            .insert(NEW_NAME_ACCOUNT.to_string(), Key::Account(account))
             .is_none());
         assert!(named_keys
             .insert(NEW_NAME_HASH.to_string(), Key::Hash([2; 32]))
@@ -31,7 +31,7 @@ fn should_list_named_keys() {
     };
 
     let exec_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_LIST_NAMED_KEYS,
         runtime_args! {
             ARG_INITIAL_NAMED_KEYS => initial_named_keys,

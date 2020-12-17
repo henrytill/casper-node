@@ -1,6 +1,6 @@
 use casper_engine_test_support::{
     internal::{ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_RUN_GENESIS_REQUEST},
-    DEFAULT_ACCOUNT_ADDR,
+    DEFAULT_ACCOUNT_PUBLIC_KEY,
 };
 use casper_execution_engine::storage::global_state::in_memory::InMemoryGlobalState;
 use casper_types::RuntimeArgs;
@@ -13,7 +13,7 @@ fn regression_test_genesis_hash_mismatch() {
     let mut builder_base = InMemoryWasmTestBuilder::default();
 
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_DO_NOTHING,
         RuntimeArgs::default(),
     )

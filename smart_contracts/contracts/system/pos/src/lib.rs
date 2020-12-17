@@ -7,13 +7,12 @@ use casper_contract::{
     unwrap_or_revert::UnwrapOrRevert,
 };
 use casper_types::{
-    account::AccountHash,
     mint::ARG_TARGET,
     proof_of_stake::{
         MintProvider, ProofOfStake, RuntimeProvider, ARG_ACCOUNT, ARG_AMOUNT, ARG_PURSE,
     },
     system_contract_errors::pos::Error,
-    BlockTime, CLValue, Key, Phase, TransferredTo, URef, U512,
+    BlockTime, CLValue, Key, Phase, PublicKey, TransferredTo, URef, U512,
 };
 
 pub struct ProofOfStakeContract;
@@ -22,7 +21,7 @@ impl MintProvider for ProofOfStakeContract {
     fn transfer_purse_to_account(
         &mut self,
         source: URef,
-        target: AccountHash,
+        target: PublicKey,
         amount: U512,
     ) -> Result<TransferredTo, Error> {
         system::transfer_from_purse_to_account(source, target, amount, None)
@@ -67,7 +66,7 @@ impl RuntimeProvider for ProofOfStakeContract {
         runtime::get_blocktime()
     }
 
-    fn get_caller(&self) -> AccountHash {
+    fn get_caller(&self) -> PublicKey {
         runtime::get_caller()
     }
 }
@@ -104,7 +103,7 @@ pub fn finalize_payment() {
     let mut pos_contract = ProofOfStakeContract;
 
     let amount_spent: U512 = runtime::get_named_arg(ARG_AMOUNT);
-    let account: AccountHash = runtime::get_named_arg(ARG_ACCOUNT);
+    let account: PublicKey = runtime::get_named_arg(ARG_ACCOUNT);
     let target: URef = runtime::get_named_arg(ARG_TARGET);
     pos_contract
         .finalize_payment(amount_spent, account, target)

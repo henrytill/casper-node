@@ -8,9 +8,8 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    account::AccountHash,
     bytesrepr::{self, FromBytes, ToBytes},
-    DeployHash, TransferAddr, URef, U512,
+    DeployHash, PublicKey, TransferAddr, URef, U512,
 };
 
 /// Information relating to the given Deploy.
@@ -22,8 +21,8 @@ pub struct DeployInfo {
     pub deploy_hash: DeployHash,
     /// Transfers performed by the Deploy.
     pub transfers: Vec<TransferAddr>,
-    /// Account identifier of the creator of the Deploy.
-    pub from: AccountHash,
+    /// Public key of the creator of the Deploy.
+    pub from: PublicKey,
     /// Source purse used for payment of the Deploy.
     pub source: URef,
     /// Gas cost of executing the Deploy.
@@ -35,7 +34,7 @@ impl DeployInfo {
     pub fn new(
         deploy_hash: DeployHash,
         transfers: &[TransferAddr],
-        from: AccountHash,
+        from: PublicKey,
         source: URef,
         gas: U512,
     ) -> Self {
@@ -54,7 +53,7 @@ impl FromBytes for DeployInfo {
     fn from_bytes(bytes: &[u8]) -> Result<(Self, &[u8]), bytesrepr::Error> {
         let (deploy_hash, rem) = DeployHash::from_bytes(bytes)?;
         let (transfers, rem) = Vec::<TransferAddr>::from_bytes(rem)?;
-        let (from, rem) = AccountHash::from_bytes(rem)?;
+        let (from, rem) = PublicKey::from_bytes(rem)?;
         let (source, rem) = URef::from_bytes(rem)?;
         let (gas, rem) = U512::from_bytes(rem)?;
         Ok((
@@ -101,7 +100,7 @@ pub(crate) mod gens {
     };
 
     use crate::{
-        account::AccountHash,
+        crypto::gens::public_key_arb,
         gens::{u512_arb, uref_arb},
         DeployHash, DeployInfo, TransferAddr,
     };
@@ -118,16 +117,12 @@ pub(crate) mod gens {
         collection::vec(transfer_addr_arb(), size)
     }
 
-    pub fn account_hash_arb() -> impl Strategy<Value = AccountHash> {
-        array::uniform32(<u8>::arbitrary()).prop_map(AccountHash::new)
-    }
-
     pub fn deploy_info_arb() -> impl Strategy<Value = DeployInfo> {
         let transfers_length_range = 0..5;
         (
             deploy_hash_arb(),
             transfers_arb(transfers_length_range),
-            account_hash_arb(),
+            public_key_arb(),
             uref_arb(),
             u512_arb(),
         )

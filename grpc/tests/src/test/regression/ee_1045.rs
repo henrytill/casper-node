@@ -5,13 +5,12 @@ use casper_engine_test_support::{
         utils, ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_ACCOUNTS,
         DEFAULT_AUCTION_DELAY,
     },
-    DEFAULT_ACCOUNT_ADDR, MINIMUM_ACCOUNT_CREATION_BALANCE,
+    DEFAULT_ACCOUNT_PUBLIC_KEY, MINIMUM_ACCOUNT_CREATION_BALANCE,
 };
 use casper_execution_engine::{core::engine_state::genesis::GenesisAccount, shared::motes::Motes};
 use casper_types::{
-    account::AccountHash,
     auction::{ARG_VALIDATOR_PUBLIC_KEYS, INITIAL_ERA_ID, METHOD_RUN_AUCTION, METHOD_SLASH},
-    runtime_args, PublicKey, RuntimeArgs, SecretKey, U512,
+    runtime_args, PublicKey, RuntimeArgs, SecretKey, SYSTEM_ACCOUNT, U512,
 };
 use once_cell::sync::Lazy;
 
@@ -23,62 +22,52 @@ const ARG_ENTRY_POINT: &str = "entry_point";
 
 const TRANSFER_AMOUNT: u64 = MINIMUM_ACCOUNT_CREATION_BALANCE + 1000;
 
-static ACCOUNT_1_PK: Lazy<PublicKey> =
+static ACCOUNT_1_PUBLIC_KEY: Lazy<PublicKey> =
     Lazy::new(|| SecretKey::ed25519([200; SecretKey::ED25519_LENGTH]).into());
-static ACCOUNT_1_ADDR: Lazy<AccountHash> = Lazy::new(|| AccountHash::from(&*ACCOUNT_1_PK));
 const ACCOUNT_1_BALANCE: u64 = MINIMUM_ACCOUNT_CREATION_BALANCE;
 const ACCOUNT_1_BOND: u64 = 100_000;
 
-static ACCOUNT_2_PK: Lazy<PublicKey> =
+static ACCOUNT_2_PUBLIC_KEY: Lazy<PublicKey> =
     Lazy::new(|| SecretKey::ed25519([202; SecretKey::ED25519_LENGTH]).into());
-static ACCOUNT_2_ADDR: Lazy<AccountHash> = Lazy::new(|| AccountHash::from(&*ACCOUNT_2_PK));
 const ACCOUNT_2_BALANCE: u64 = MINIMUM_ACCOUNT_CREATION_BALANCE;
 const ACCOUNT_2_BOND: u64 = 200_000;
 
-static ACCOUNT_3_PK: Lazy<PublicKey> =
+static ACCOUNT_3_PUBLIC_KEY: Lazy<PublicKey> =
     Lazy::new(|| SecretKey::ed25519([204; SecretKey::ED25519_LENGTH]).into());
-static ACCOUNT_3_ADDR: Lazy<AccountHash> = Lazy::new(|| AccountHash::from(&*ACCOUNT_3_PK));
 const ACCOUNT_3_BALANCE: u64 = MINIMUM_ACCOUNT_CREATION_BALANCE;
 const ACCOUNT_3_BOND: u64 = 200_000;
 
-static ACCOUNT_4_PK: Lazy<PublicKey> =
+static ACCOUNT_4_PUBLIC_KEY: Lazy<PublicKey> =
     Lazy::new(|| SecretKey::ed25519([206; SecretKey::ED25519_LENGTH]).into());
-static ACCOUNT_4_ADDR: Lazy<AccountHash> = Lazy::new(|| AccountHash::from(&*ACCOUNT_4_PK));
 const ACCOUNT_4_BALANCE: u64 = MINIMUM_ACCOUNT_CREATION_BALANCE;
 const ACCOUNT_4_BOND: u64 = 200_000;
-
-const SYSTEM_ADDR: AccountHash = AccountHash::new([0u8; 32]);
 
 #[ignore]
 #[test]
 fn should_run_ee_1045_squash_validators() {
     let account_1 = GenesisAccount::new(
-        *ACCOUNT_1_PK,
-        *ACCOUNT_1_ADDR,
+        *ACCOUNT_1_PUBLIC_KEY,
         Motes::new(ACCOUNT_1_BALANCE.into()),
         Motes::new(ACCOUNT_1_BOND.into()),
     );
     let account_2 = GenesisAccount::new(
-        *ACCOUNT_2_PK,
-        *ACCOUNT_2_ADDR,
+        *ACCOUNT_2_PUBLIC_KEY,
         Motes::new(ACCOUNT_2_BALANCE.into()),
         Motes::new(ACCOUNT_2_BOND.into()),
     );
     let account_3 = GenesisAccount::new(
-        *ACCOUNT_3_PK,
-        *ACCOUNT_3_ADDR,
+        *ACCOUNT_3_PUBLIC_KEY,
         Motes::new(ACCOUNT_3_BALANCE.into()),
         Motes::new(ACCOUNT_3_BOND.into()),
     );
     let account_4 = GenesisAccount::new(
-        *ACCOUNT_4_PK,
-        *ACCOUNT_4_ADDR,
+        *ACCOUNT_4_PUBLIC_KEY,
         Motes::new(ACCOUNT_4_BALANCE.into()),
         Motes::new(ACCOUNT_4_BOND.into()),
     );
 
-    let round_1_validator_squash = vec![*ACCOUNT_2_PK, *ACCOUNT_4_PK];
-    let round_2_validator_squash = vec![*ACCOUNT_1_PK, *ACCOUNT_3_PK];
+    let round_1_validator_squash = vec![*ACCOUNT_2_PUBLIC_KEY, *ACCOUNT_4_PUBLIC_KEY];
+    let round_2_validator_squash = vec![*ACCOUNT_1_PUBLIC_KEY, *ACCOUNT_3_PUBLIC_KEY];
 
     let extra_accounts = vec![account_1, account_2, account_3, account_4];
 
@@ -91,10 +80,10 @@ fn should_run_ee_1045_squash_validators() {
     let run_genesis_request = utils::create_run_genesis_request(accounts);
 
     let transfer_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
         runtime_args! {
-            "target" => SYSTEM_ADDR,
+            "target" => SYSTEM_ACCOUNT,
             ARG_AMOUNT => U512::from(TRANSFER_AMOUNT)
         },
     )
@@ -121,7 +110,7 @@ fn should_run_ee_1045_squash_validators() {
             ARG_VALIDATOR_PUBLIC_KEYS => round_1_validator_squash.clone(),
         };
         ExecuteRequestBuilder::contract_call_by_hash(
-            SYSTEM_ADDR,
+            SYSTEM_ACCOUNT,
             auction_contract,
             METHOD_SLASH,
             args,
@@ -134,7 +123,7 @@ fn should_run_ee_1045_squash_validators() {
             ARG_VALIDATOR_PUBLIC_KEYS => round_2_validator_squash.clone(),
         };
         ExecuteRequestBuilder::contract_call_by_hash(
-            SYSTEM_ADDR,
+            SYSTEM_ACCOUNT,
             auction_contract,
             METHOD_SLASH,
             args,
@@ -143,7 +132,7 @@ fn should_run_ee_1045_squash_validators() {
     };
 
     let run_auction_request_1 = ExecuteRequestBuilder::standard(
-        SYSTEM_ADDR,
+        SYSTEM_ACCOUNT,
         CONTRACT_AUCTION_BIDS,
         runtime_args! {
             ARG_ENTRY_POINT => METHOD_RUN_AUCTION
@@ -152,7 +141,7 @@ fn should_run_ee_1045_squash_validators() {
     .build();
 
     let run_auction_request_2 = ExecuteRequestBuilder::standard(
-        SYSTEM_ADDR,
+        SYSTEM_ACCOUNT,
         CONTRACT_AUCTION_BIDS,
         runtime_args! {
             ARG_ENTRY_POINT => METHOD_RUN_AUCTION

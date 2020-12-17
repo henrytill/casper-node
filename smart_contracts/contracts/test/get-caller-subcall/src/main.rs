@@ -10,8 +10,8 @@ use casper_contract::{
     unwrap_or_revert::UnwrapOrRevert,
 };
 use casper_types::{
-    account::AccountHash, CLType, CLValue, EntryPoint, EntryPointAccess, EntryPointType,
-    EntryPoints, RuntimeArgs,
+    ApiError, CLType, CLValue, EntryPoint, EntryPointAccess, EntryPointType, EntryPoints,
+    PublicKey, RuntimeArgs,
 };
 
 const ENTRY_POINT_NAME: &str = "get_caller_ext";
@@ -21,18 +21,17 @@ const ARG_ACCOUNT: &str = "account";
 
 #[no_mangle]
 pub extern "C" fn get_caller_ext() {
-    let caller_account_hash: AccountHash = runtime::get_caller();
-    runtime::ret(CLValue::from_t(caller_account_hash).unwrap_or_revert());
+    let caller: PublicKey = runtime::get_caller();
+    runtime::ret(CLValue::from_t(caller).unwrap_or_revert());
 }
 
 #[no_mangle]
 pub extern "C" fn call() {
-    let known_account_hash: AccountHash = runtime::get_named_arg(ARG_ACCOUNT);
-    let caller_account_hash: AccountHash = runtime::get_caller();
-    assert_eq!(
-        caller_account_hash, known_account_hash,
-        "caller account hash was not known account hash"
-    );
+    let expected_caller: PublicKey = runtime::get_named_arg(ARG_ACCOUNT);
+    let caller: PublicKey = runtime::get_caller();
+    if expected_caller != caller {
+        runtime::revert(ApiError::User(0))
+    }
 
     let entry_points = {
         let mut entry_points = EntryPoints::new();
@@ -55,10 +54,9 @@ pub extern "C" fn call() {
         Some(ACCESS_KEY_NAME.to_string()),
     );
 
-    let subcall_account_hash: AccountHash =
+    let subcall_caller: PublicKey =
         runtime::call_contract(contract_hash, ENTRY_POINT_NAME, RuntimeArgs::default());
-    assert_eq!(
-        subcall_account_hash, known_account_hash,
-        "subcall account hash was not known account hash"
-    );
+    if expected_caller != subcall_caller {
+        runtime::revert(ApiError::User(1))
+    }
 }

@@ -5,14 +5,18 @@ use casper_contract::{
     contract_api::{account, runtime},
     unwrap_or_revert::UnwrapOrRevert,
 };
-use casper_types::account::{AccountHash, ActionType, Weight};
+use casper_types::{
+    account::{ActionType, Weight},
+    SecretKey,
+};
 
 const ARG_KEY_MANAGEMENT_THRESHOLD: &str = "key_management_threshold";
 const ARG_DEPLOYMENT_THRESHOLD: &str = "deployment_threshold";
 
 #[no_mangle]
 pub extern "C" fn call() {
-    account::add_associated_key(AccountHash::new([123; 32]), Weight::new(254)).unwrap_or_revert();
+    let account = SecretKey::ed25519([123; SecretKey::ED25519_LENGTH]).into();
+    account::add_associated_key(account, Weight::new(254)).unwrap_or_revert();
     let key_management_threshold: Weight = runtime::get_named_arg(ARG_KEY_MANAGEMENT_THRESHOLD);
     let deployment_threshold: Weight = runtime::get_named_arg(ARG_DEPLOYMENT_THRESHOLD);
 

@@ -6,8 +6,8 @@ extern crate alloc;
 
 use casper_contract::contract_api::{runtime, storage};
 use casper_types::{
-    account::AccountHash, CLType, CLTyped, ContractHash, ContractVersion, EntryPoint,
-    EntryPointAccess, EntryPointType, EntryPoints, Parameter,
+    CLType, CLTyped, ContractHash, ContractVersion, EntryPoint, EntryPointAccess, EntryPointType,
+    EntryPoints, Parameter, PublicKey,
 };
 
 const CONTRACT_NAME: &str = "transfer_to_account";
@@ -29,7 +29,7 @@ fn store() -> (ContractHash, ContractVersion) {
         let entry_point = EntryPoint::new(
             FUNCTION_NAME,
             vec![
-                Parameter::new(ARG_TARGET, AccountHash::cl_type()),
+                Parameter::new(ARG_TARGET, PublicKey::cl_type()),
                 Parameter::new(ARG_AMOUNT, CLType::U512),
             ],
             CLType::URef,

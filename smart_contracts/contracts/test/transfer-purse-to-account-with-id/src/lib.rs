@@ -8,7 +8,7 @@ use casper_contract::{
     contract_api::{account, runtime, storage, system},
     unwrap_or_revert::UnwrapOrRevert,
 };
-use casper_types::{account::AccountHash, ApiError, Key, URef, U512};
+use casper_types::{ApiError, Key, PublicKey, URef, U512};
 
 const TRANSFER_RESULT_UREF_NAME: &str = "transfer_result";
 const MAIN_PURSE_FINAL_BALANCE_UREF_NAME: &str = "final_balance";
@@ -19,7 +19,7 @@ const ARG_ID: &str = "id";
 
 pub fn delegate() {
     let source: URef = account::get_main_purse();
-    let target: AccountHash = runtime::get_named_arg(ARG_TARGET);
+    let target: PublicKey = runtime::get_named_arg(ARG_TARGET);
     let amount: U512 = runtime::get_named_arg(ARG_AMOUNT);
     let id: Option<u64> = runtime::get_named_arg(ARG_ID);
 

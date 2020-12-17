@@ -5,7 +5,7 @@ mod runtime_provider;
 
 use core::marker::Sized;
 
-use crate::{account::AccountHash, system_contract_errors::pos::Result, AccessRights, URef, U512};
+use crate::{system_contract_errors::pos::Result, AccessRights, PublicKey, URef, U512};
 
 pub use crate::proof_of_stake::{
     constants::*, mint_provider::MintProvider, runtime_provider::RuntimeProvider,
@@ -38,7 +38,7 @@ pub trait ProofOfStake: MintProvider + RuntimeProvider + Sized {
     fn finalize_payment(
         &mut self,
         amount_spent: U512,
-        account: AccountHash,
+        account: PublicKey,
         target: URef,
     ) -> Result<()> {
         internal::finalize_payment(self, amount_spent, account, target)
@@ -47,16 +47,12 @@ pub trait ProofOfStake: MintProvider + RuntimeProvider + Sized {
 
 mod internal {
     use crate::{
-        account::AccountHash,
         proof_of_stake::{MintProvider, RuntimeProvider},
         system_contract_errors::pos::{Error, Result},
-        Key, Phase, URef, U512,
+        Key, Phase, PublicKey, URef, SYSTEM_ACCOUNT, U512,
     };
 
     use super::{PAYMENT_PURSE_KEY, REFUND_PURSE_KEY};
-
-    /// Account used to run system functions (in particular `finalize_payment`).
-    const SYSTEM_ACCOUNT: AccountHash = AccountHash::new([0u8; 32]);
 
     /// Returns the purse for accepting payment for transactions.
     pub fn get_payment_purse<R: RuntimeProvider>(runtime_provider: &R) -> Result<URef> {
@@ -94,7 +90,7 @@ mod internal {
     pub fn finalize_payment<P: MintProvider + RuntimeProvider>(
         provider: &mut P,
         amount_spent: U512,
-        account: AccountHash,
+        account: PublicKey,
         target: URef,
     ) -> Result<()> {
         let caller = provider.get_caller();
@@ -145,7 +141,7 @@ mod internal {
     pub fn refund_to_account<M: MintProvider>(
         mint_provider: &mut M,
         payment_purse: URef,
-        account: AccountHash,
+        account: PublicKey,
         amount: U512,
     ) -> Result<()> {
         match mint_provider.transfer_purse_to_account(payment_purse, account, amount) {

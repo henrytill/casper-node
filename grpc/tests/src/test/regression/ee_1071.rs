@@ -1,6 +1,6 @@
-use casper_engine_test_support::{
-    internal::{ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_RUN_GENESIS_REQUEST},
-    DEFAULT_ACCOUNT_ADDR,
+use casper_engine_test_support::internal::{
+    ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_ACCOUNT_PUBLIC_KEY,
+    DEFAULT_RUN_GENESIS_REQUEST,
 };
 use casper_types::RuntimeArgs;
 
@@ -12,7 +12,7 @@ const NEW_UREF_ENTRYPOINT: &str = "new_uref";
 #[test]
 fn should_run_ee_1071_regression() {
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_EE_1071_REGRESSION,
         RuntimeArgs::default(),
     )
@@ -25,7 +25,7 @@ fn should_run_ee_1071_regression() {
     builder.exec(exec_request_1).expect_success().commit();
 
     let account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     let contract_hash = account
@@ -37,7 +37,7 @@ fn should_run_ee_1071_regression() {
         .expect("should be hash");
 
     let exec_request_2 = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         contract_hash,
         NEW_UREF_ENTRYPOINT,
         RuntimeArgs::default(),

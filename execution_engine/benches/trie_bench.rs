@@ -5,14 +5,13 @@ use casper_execution_engine::{
     storage::trie::{Pointer, PointerBlock, Trie},
 };
 use casper_types::{
-    account::AccountHash,
     bytesrepr::{FromBytes, ToBytes},
-    CLValue, Key,
+    CLValue, Key, SecretKey,
 };
 
 fn serialize_trie_leaf(b: &mut Bencher) {
     let leaf = Trie::Leaf {
-        key: Key::Account(AccountHash::new([0; 32])),
+        key: Key::Account(SecretKey::ed25519([0; SecretKey::ED25519_LENGTH]).into()),
         value: StoredValue::CLValue(CLValue::from_t(42_i32).unwrap()),
     };
     b.iter(|| ToBytes::to_bytes(black_box(&leaf)));
@@ -20,7 +19,7 @@ fn serialize_trie_leaf(b: &mut Bencher) {
 
 fn deserialize_trie_leaf(b: &mut Bencher) {
     let leaf = Trie::Leaf {
-        key: Key::Account(AccountHash::new([0; 32])),
+        key: Key::Account(SecretKey::ed25519([0; SecretKey::ED25519_LENGTH]).into()),
         value: StoredValue::CLValue(CLValue::from_t(42_i32).unwrap()),
     };
     let leaf_bytes = leaf.to_bytes().unwrap();

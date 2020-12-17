@@ -3,7 +3,7 @@ use core::convert::TryFrom;
 
 use casper_engine_test_support::{
     internal::DEFAULT_ACCOUNT_PUBLIC_KEY, Code, SessionBuilder, SessionTransferInfo,
-    TestContextBuilder, DEFAULT_ACCOUNT_ADDR, DEFAULT_ACCOUNT_INITIAL_BALANCE,
+    TestContextBuilder, DEFAULT_ACCOUNT_INITIAL_BALANCE,
 };
 
 const ARG_AMOUNT: &str = "amount";
@@ -25,14 +25,13 @@ fn test_check_transfer_success_with_source_only() {
     let mut test_context = TestContextBuilder::new()
         .with_public_key(
             *DEFAULT_ACCOUNT_PUBLIC_KEY,
-            *DEFAULT_ACCOUNT_ADDR,
             U512::from(DEFAULT_ACCOUNT_INITIAL_BALANCE),
         )
         .build();
 
     // Getting main purse URef to verify transfer
     let source_purse = test_context
-        .main_purse_address(*DEFAULT_ACCOUNT_ADDR)
+        .main_purse_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("main purse address");
     // Target purse doesn't exist yet, so only verifying removal from source
     let maybe_target_purse = None;
@@ -47,8 +46,8 @@ fn test_check_transfer_success_with_source_only() {
         ARG_AMOUNT => transfer_amount
     };
     let session = SessionBuilder::new(session_code, session_args)
-        .with_address(*DEFAULT_ACCOUNT_ADDR)
-        .with_authorization_keys(&[*DEFAULT_ACCOUNT_ADDR])
+        .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+        .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
         .with_check_transfer_success(source_only_session_transfer_info)
         .build();
     test_context.run(session);
@@ -61,14 +60,13 @@ fn test_check_transfer_success_with_source_only_errors() {
     let mut test_context = TestContextBuilder::new()
         .with_public_key(
             *DEFAULT_ACCOUNT_PUBLIC_KEY,
-            *DEFAULT_ACCOUNT_ADDR,
             U512::from(DEFAULT_ACCOUNT_INITIAL_BALANCE),
         )
         .build();
 
     // Getting main purse Uref to verify transfer
     let source_purse = test_context
-        .main_purse_address(*DEFAULT_ACCOUNT_ADDR)
+        .main_purse_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("main purse address");
     let maybe_target_purse = None;
     // Setup mismatch between transfer_amount performed and given to trigger assertion.
@@ -85,8 +83,8 @@ fn test_check_transfer_success_with_source_only_errors() {
     };
     // Handle expected assertion fail.
     let session = SessionBuilder::new(session_code, session_args)
-        .with_address(*DEFAULT_ACCOUNT_ADDR)
-        .with_authorization_keys(&[*DEFAULT_ACCOUNT_ADDR])
+        .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+        .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
         .with_check_transfer_success(source_only_session_transfer_info)
         .build();
     test_context.run(session); // will panic if transfer does not work
@@ -98,14 +96,13 @@ fn test_check_transfer_success_with_source_and_target() {
     let mut test_context = TestContextBuilder::new()
         .with_public_key(
             *DEFAULT_ACCOUNT_PUBLIC_KEY,
-            *DEFAULT_ACCOUNT_ADDR,
             U512::from(DEFAULT_ACCOUNT_INITIAL_BALANCE),
         )
         .build();
 
     // Getting main purse URef to verify transfer
     let source_purse = test_context
-        .main_purse_address(*DEFAULT_ACCOUNT_ADDR)
+        .main_purse_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("main purse address");
 
     let maybe_target_purse = None;
@@ -120,15 +117,15 @@ fn test_check_transfer_success_with_source_and_target() {
         ARG_AMOUNT => transfer_amount
     };
     let session = SessionBuilder::new(session_code, session_args)
-        .with_address(*DEFAULT_ACCOUNT_ADDR)
-        .with_authorization_keys(&[*DEFAULT_ACCOUNT_ADDR])
+        .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+        .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
         .with_check_transfer_success(source_and_target_session_transfer_info)
         .build();
     test_context.run(session);
 
     // retrieve newly created purse URef
     test_context
-        .query(*DEFAULT_ACCOUNT_ADDR, &[NEW_PURSE_NAME])
+        .query(*DEFAULT_ACCOUNT_PUBLIC_KEY, &[NEW_PURSE_NAME])
         .expect("new purse should exist");
 }
 
@@ -139,14 +136,13 @@ fn test_check_transfer_success_with_target_error() {
     let mut test_context = TestContextBuilder::new()
         .with_public_key(
             *DEFAULT_ACCOUNT_PUBLIC_KEY,
-            *DEFAULT_ACCOUNT_ADDR,
             U512::from(DEFAULT_ACCOUNT_INITIAL_BALANCE),
         )
         .build();
 
     // Getting main purse URef to verify transfer
     let source_purse = test_context
-        .main_purse_address(*DEFAULT_ACCOUNT_ADDR)
+        .main_purse_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("main purse address");
     let maybe_target_purse = None;
 
@@ -170,15 +166,15 @@ fn test_check_transfer_success_with_target_error() {
         TRANSFER_AMOUNT_TWO => transfer_two_amount,
     };
     let session = SessionBuilder::new(session_code, session_args)
-        .with_address(*DEFAULT_ACCOUNT_ADDR)
-        .with_authorization_keys(&[*DEFAULT_ACCOUNT_ADDR])
+        .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+        .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
         .with_check_transfer_success(source_only_session_transfer_info)
         .build();
     test_context.run(session);
 
     // get account purse by name via get_account()
     let account = test_context
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("account");
 
     let new_purse_address = account
@@ -206,8 +202,8 @@ fn test_check_transfer_success_with_target_error() {
         TRANSFER_AMOUNT_TWO => transfer_two_amount,
     };
     let session = SessionBuilder::new(session_code, session_args)
-        .with_address(*DEFAULT_ACCOUNT_ADDR)
-        .with_authorization_keys(&[*DEFAULT_ACCOUNT_ADDR])
+        .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+        .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
         .with_check_transfer_success(source_and_target_session_transfer_info)
         .build();
     test_context.run(session); // will panic because maybe_target_purse balance isn't correct

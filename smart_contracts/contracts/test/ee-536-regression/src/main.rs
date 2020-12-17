@@ -6,17 +6,15 @@ use casper_contract::{
     unwrap_or_revert::UnwrapOrRevert,
 };
 use casper_types::{
-    account::{
-        AccountHash, ActionType, RemoveKeyFailure, SetThresholdFailure, UpdateKeyFailure, Weight,
-    },
-    ApiError,
+    account::{ActionType, RemoveKeyFailure, SetThresholdFailure, UpdateKeyFailure, Weight},
+    ApiError, SecretKey,
 };
 
 #[no_mangle]
 pub extern "C" fn call() {
     // Starts with deployment=1, key_management=1
-    let key_1 = AccountHash::new([42; 32]);
-    let key_2 = AccountHash::new([43; 32]);
+    let key_1 = SecretKey::ed25519([42; SecretKey::ED25519_LENGTH]).into();
+    let key_2 = SecretKey::ed25519([43; SecretKey::ED25519_LENGTH]).into();
 
     // Total keys weight = 11 (identity + new key's weight)
     account::add_associated_key(key_1, Weight::new(10)).unwrap_or_revert();

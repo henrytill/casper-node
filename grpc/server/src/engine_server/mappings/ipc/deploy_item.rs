@@ -4,7 +4,7 @@ use std::{
 };
 
 use casper_execution_engine::core::engine_state::deploy_item::DeployItem;
-use casper_types::{account::AccountHash, DeployHash};
+use casper_types::{bytesrepr, bytesrepr::ToBytes, DeployHash, PublicKey};
 
 use crate::engine_server::{ipc, mappings::MappingError};
 
@@ -12,8 +12,8 @@ impl TryFrom<ipc::DeployItem> for DeployItem {
     type Error = MappingError;
 
     fn try_from(mut pb_deploy_item: ipc::DeployItem) -> Result<Self, Self::Error> {
-        let address = AccountHash::try_from(pb_deploy_item.get_address())
-            .map_err(|_| MappingError::invalid_account_hash_length(pb_deploy_item.address.len()))?;
+        let address: PublicKey = bytesrepr::deserialize(pb_deploy_item.get_address().to_vec())
+            .map_err(|_| MappingError::invalid_public_key())?;
 
         let session = pb_deploy_item
             .take_session()
@@ -33,10 +33,10 @@ impl TryFrom<ipc::DeployItem> for DeployItem {
             .get_authorization_keys()
             .iter()
             .map(|raw: &Vec<u8>| {
-                AccountHash::try_from(raw.as_slice())
-                    .map_err(|_| MappingError::invalid_account_hash_length(raw.len()))
+                bytesrepr::deserialize(raw.to_owned())
+                    .map_err(|_| MappingError::invalid_public_key())
             })
-            .collect::<Result<BTreeSet<AccountHash>, Self::Error>>()?;
+            .collect::<Result<BTreeSet<PublicKey>, Self::Error>>()?;
 
         let deploy_hash =
             DeployHash::new(pb_deploy_item.get_deploy_hash().try_into().map_err(|_| {
@@ -57,7 +57,7 @@ impl TryFrom<ipc::DeployItem> for DeployItem {
 impl From<DeployItem> for ipc::DeployItem {
     fn from(deploy_item: DeployItem) -> Self {
         let mut result = ipc::DeployItem::new();
-        result.set_address(deploy_item.address.as_bytes().to_vec());
+        result.set_address(deploy_item.public_key.to_bytes().unwrap()); // TODO
         result.set_session(deploy_item.session.into());
         result.set_payment(deploy_item.payment.into());
         result.set_gas_price(deploy_item.gas_price);
@@ -65,7 +65,7 @@ impl From<DeployItem> for ipc::DeployItem {
             deploy_item
                 .authorization_keys
                 .into_iter()
-                .map(|key| key.as_bytes().to_vec())
+                .map(|key| key.to_bytes().unwrap()) // TODO
                 .collect(),
         );
         result.set_deploy_hash(deploy_item.deploy_hash.value().to_vec());

@@ -1,6 +1,6 @@
-use casper_engine_test_support::{
-    internal::{ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_RUN_GENESIS_REQUEST},
-    DEFAULT_ACCOUNT_ADDR,
+use casper_engine_test_support::internal::{
+    ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_ACCOUNT_PUBLIC_KEY,
+    DEFAULT_RUN_GENESIS_REQUEST,
 };
 use casper_types::{bytesrepr::Bytes, runtime_args, ContractHash, RuntimeArgs};
 
@@ -24,7 +24,7 @@ fn should_measure_gas_cost() {
     let mut builder = InMemoryWasmTestBuilder::default();
 
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         HOST_FUNCTION_COSTS_NAME,
         RuntimeArgs::default(),
     )
@@ -36,7 +36,7 @@ fn should_measure_gas_cost() {
     builder.exec(exec_request_1).expect_success().commit();
 
     let account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     let contract_hash: ContractHash = account
@@ -51,7 +51,7 @@ fn should_measure_gas_cost() {
     //
 
     let exec_request_2 = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         contract_hash,
         DO_NOTHING_NAME,
         RuntimeArgs::default(),
@@ -66,7 +66,7 @@ fn should_measure_gas_cost() {
     // Measure opcodes (doing something)
     //
     let exec_request_2 = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         contract_hash,
         DO_SOMETHING_NAME,
         RuntimeArgs::default(),
@@ -86,11 +86,11 @@ fn should_measure_gas_cost() {
     // Measure host functions
     //
     let exec_request_3 = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         contract_hash,
         ACCOUNT_FUNCTION_NAME,
         runtime_args! {
-            "source_account" => *DEFAULT_ACCOUNT_ADDR,
+            "source_account" => *DEFAULT_ACCOUNT_PUBLIC_KEY,
         },
     )
     .build();
@@ -118,7 +118,7 @@ fn should_measure_nested_host_function_call_cost() {
     let mut builder = InMemoryWasmTestBuilder::default();
 
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         HOST_FUNCTION_COSTS_NAME,
         RuntimeArgs::default(),
     )
@@ -130,7 +130,7 @@ fn should_measure_nested_host_function_call_cost() {
     builder.exec(exec_request_1).expect_success().commit();
 
     let account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     let contract_hash: ContractHash = account
@@ -145,7 +145,7 @@ fn should_measure_nested_host_function_call_cost() {
     //
 
     let exec_request_2 = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         contract_hash,
         CALLS_DO_NOTHING_LEVEL1_NAME,
         RuntimeArgs::default(),
@@ -165,7 +165,7 @@ fn should_measure_nested_host_function_call_cost() {
     //
 
     let exec_request_3 = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         contract_hash,
         CALLS_DO_NOTHING_LEVEL2_NAME,
         RuntimeArgs::default(),
@@ -195,7 +195,7 @@ fn should_measure_argument_size_in_host_function_call() {
     let mut builder = InMemoryWasmTestBuilder::default();
 
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         HOST_FUNCTION_COSTS_NAME,
         RuntimeArgs::default(),
     )
@@ -207,7 +207,7 @@ fn should_measure_argument_size_in_host_function_call() {
     builder.exec(exec_request_1).expect_success().commit();
 
     let account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     let contract_hash: ContractHash = account
@@ -221,7 +221,7 @@ fn should_measure_argument_size_in_host_function_call() {
     // Measurement 1 - empty vector (argument with 0 bytes value)
     //
     let exec_request_2 = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         contract_hash,
         ARG_SIZE_FUNCTION_CALL_1_NAME,
         runtime_args! {
@@ -243,7 +243,7 @@ fn should_measure_argument_size_in_host_function_call() {
     //
 
     let exec_request_3 = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         contract_hash,
         ARG_SIZE_FUNCTION_CALL_100_NAME,
         RuntimeArgs::default(),

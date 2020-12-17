@@ -309,10 +309,8 @@ mod tests {
 
     use super::*;
     use crate::{
-        account::{AccountHash, ACCOUNT_HASH_LENGTH},
-        key::KEY_HASH_LENGTH,
-        AccessRights, DeployHash, TransferAddr, DEPLOY_HASH_LENGTH, TRANSFER_ADDR_LENGTH,
-        UREF_ADDR_LENGTH,
+        key::KEY_HASH_LENGTH, AccessRights, DeployHash, TransferAddr, DEPLOY_HASH_LENGTH,
+        TRANSFER_ADDR_LENGTH, UREF_ADDR_LENGTH,
     };
 
     #[test]
@@ -454,7 +452,8 @@ mod tests {
 
         #[test]
         fn key_cl_value_should_encode_to_json() {
-            let key_account = Key::Account(AccountHash::new([1; ACCOUNT_HASH_LENGTH]));
+            let key_account =
+                Key::Account(SecretKey::ed25519([1; SecretKey::ED25519_LENGTH]).into());
             check_to_json(
                 key_account,
                 r#"{"cl_type":"Key","parsed_to_json":{"Account":"account-hash-0101010101010101010101010101010101010101010101010101010101010101"}}"#,
@@ -693,7 +692,8 @@ mod tests {
 
         #[test]
         fn key_cl_value_should_encode_to_json() {
-            let key_account = Key::Account(AccountHash::new([1; ACCOUNT_HASH_LENGTH]));
+            let key_account =
+                Key::Account(SecretKey::ed25519([1; SecretKey::ED25519_LENGTH]).into());
             check_to_json(
                 Some(key_account),
                 r#"{"cl_type":{"Option":"Key"},"parsed_to_json":{"Account":"account-hash-0101010101010101010101010101010101010101010101010101010101010101"}}"#,

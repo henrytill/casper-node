@@ -13,11 +13,11 @@ use hex_fmt::HexFmt;
 use serde::{de::Error as SerdeError, Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{
-    account::{self, AccountHash, TryFromSliceForAccountHashError},
+    account::TryFromSliceForAccountHashError,
     auction::EraId,
     bytesrepr::{self, Error, FromBytes, ToBytes, U64_SERIALIZED_LENGTH},
     uref::{self, URef, UREF_SERIALIZED_LENGTH},
-    DeployHash, TransferAddr, DEPLOY_HASH_LENGTH, TRANSFER_ADDR_LENGTH,
+    AsymmetricType, DeployHash, PublicKey, TransferAddr, DEPLOY_HASH_LENGTH, TRANSFER_ADDR_LENGTH,
 };
 
 const ACCOUNT_ID: u8 = 0;
@@ -27,6 +27,7 @@ const TRANSFER_ID: u8 = 3;
 const DEPLOY_INFO_ID: u8 = 4;
 const ERA_INFO_ID: u8 = 5;
 
+const ACCOUNT_PREFIX: &str = "account-";
 const HASH_PREFIX: &str = "hash-";
 const DEPLOY_INFO_PREFIX: &str = "deploy-";
 const ERA_INFO_PREFIX: &str = "era-";
@@ -70,7 +71,7 @@ pub type ContractPackageHash = HashAddr;
 #[derive(PartialEq, Eq, Clone, Copy, PartialOrd, Ord, Hash)]
 pub enum Key {
     /// A `Key` under which a user account is stored.
-    Account(AccountHash),
+    Account(PublicKey),
     /// A `Key` under which a smart contract is stored and which is the pseudo-hash of the
     /// contract.
     Hash(HashAddr),
@@ -90,7 +91,7 @@ pub enum FromStrError {
     Hex(base16::DecodeError),
     Account(TryFromSliceForAccountHashError),
     Hash(TryFromSliceError),
-    AccountHash(account::FromStrError),
+    // PublicKey(public_key::FromStrError),
     URef(uref::FromStrError),
 }
 
@@ -112,11 +113,11 @@ impl From<TryFromSliceError> for FromStrError {
     }
 }
 
-impl From<account::FromStrError> for FromStrError {
-    fn from(error: account::FromStrError) -> Self {
-        FromStrError::AccountHash(error)
-    }
-}
+// impl From<public_key::FromStrError> for FromStrError {
+//     fn from(error: public_key::FromStrError) -> Self {
+//         FromStrError::PublicKey(error)
+//     }
+// }
 
 impl From<uref::FromStrError> for FromStrError {
     fn from(error: uref::FromStrError) -> Self {
@@ -131,9 +132,9 @@ impl Display for FromStrError {
             FromStrError::Hex(error) => write!(f, "decode from hex: {}", error),
             FromStrError::Account(error) => write!(f, "account from string error: {:?}", error),
             FromStrError::Hash(error) => write!(f, "hash from string error: {}", error),
-            FromStrError::AccountHash(error) => {
-                write!(f, "account hash from string error: {:?}", error)
-            }
+            // FromStrError::PublicKey(error) => {
+            //     write!(f, "public key from string error: {:?}", error)
+            // }
             FromStrError::URef(error) => write!(f, "uref from string error: {:?}", error),
         }
     }
@@ -171,7 +172,9 @@ impl Key {
     /// Returns a human-readable version of `self`, with the inner bytes encoded to Base16.
     pub fn to_formatted_string(&self) -> String {
         match self {
-            Key::Account(account_hash) => account_hash.to_formatted_string(),
+            Key::Account(public_key) => {
+                format!("{}{}", ACCOUNT_PREFIX, public_key.to_formatted_string())
+            }
             Key::Hash(addr) => format!("{}{}", HASH_PREFIX, base16::encode_lower(addr)),
             Key::URef(uref) => uref.to_formatted_string(),
             Key::Transfer(transfer_addr) => transfer_addr.to_formatted_string(),
@@ -190,8 +193,9 @@ impl Key {
 
     /// Parses a string formatted as per `Self::to_formatted_string()` into a `Key`.
     pub fn from_formatted_str(input: &str) -> Result<Key, FromStrError> {
-        if let Ok(account_hash) = AccountHash::from_formatted_str(input) {
-            Ok(Key::Account(account_hash))
+        if let Some(hex) = input.strip_prefix(ACCOUNT_PREFIX) {
+            let public_key = PublicKey::from_formatted_str(hex).unwrap(); //TODO
+            Ok(Key::Account(public_key))
         } else if let Some(hex) = input.strip_prefix(HASH_PREFIX) {
             Ok(Key::Hash(HashAddr::try_from(
                 base16::decode(hex)?.as_ref(),
@@ -207,11 +211,10 @@ impl Key {
         }
     }
 
-    /// Returns the inner bytes of `self` if `self` is of type [`Key::Account`], otherwise returns
-    /// `None`.
-    pub fn into_account(self) -> Option<AccountHash> {
+    /// TODO
+    pub fn into_public_key(self) -> Option<PublicKey> {
         match self {
-            Key::Account(bytes) => Some(bytes),
+            Key::Account(public_key) => Some(public_key),
             _ => None,
         }
     }
@@ -253,7 +256,7 @@ impl Key {
 impl Display for Key {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self {
-            Key::Account(account_hash) => write!(f, "Key::Account({})", account_hash),
+            Key::Account(public_key) => write!(f, "Key::Account({})", public_key.to_hex()),
             Key::Hash(addr) => write!(f, "Key::Hash({})", HexFmt(addr)),
             Key::URef(uref) => write!(f, "Key::{}", uref), /* Display impl for URef will append */
             Key::Transfer(transfer_addr) => write!(f, "Key::Transfer({})", transfer_addr),
@@ -275,9 +278,9 @@ impl From<URef> for Key {
     }
 }
 
-impl From<AccountHash> for Key {
-    fn from(account_hash: AccountHash) -> Key {
-        Key::Account(account_hash)
+impl From<PublicKey> for Key {
+    fn from(public_key: PublicKey) -> Key {
+        Key::Account(public_key)
     }
 }
 
@@ -291,9 +294,9 @@ impl ToBytes for Key {
     fn to_bytes(&self) -> Result<Vec<u8>, Error> {
         let mut result = bytesrepr::unchecked_allocate_buffer(self);
         match self {
-            Key::Account(account_hash) => {
+            Key::Account(public_key) => {
                 result.push(ACCOUNT_ID);
-                result.append(&mut account_hash.to_bytes()?);
+                result.append(&mut public_key.to_bytes()?);
             }
             Key::Hash(hash) => {
                 result.push(HASH_ID);
@@ -321,9 +324,7 @@ impl ToBytes for Key {
 
     fn serialized_length(&self) -> usize {
         match self {
-            Key::Account(account_hash) => {
-                KEY_ID_SERIALIZED_LENGTH + account_hash.serialized_length()
-            }
+            Key::Account(public_key) => KEY_ID_SERIALIZED_LENGTH + public_key.serialized_length(),
             Key::Hash(_) => KEY_HASH_SERIALIZED_LENGTH,
             Key::URef(_) => KEY_UREF_SERIALIZED_LENGTH,
             Key::Transfer(_) => KEY_TRANSFER_SERIALIZED_LENGTH,
@@ -338,8 +339,8 @@ impl FromBytes for Key {
         let (id, remainder) = u8::from_bytes(bytes)?;
         match id {
             ACCOUNT_ID => {
-                let (account_hash, rem) = AccountHash::from_bytes(remainder)?;
-                Ok((Key::Account(account_hash), rem))
+                let (public_key, rem) = PublicKey::from_bytes(remainder)?;
+                Ok((Key::Account(public_key), rem))
             }
             HASH_ID => {
                 let (hash, rem) = FromBytes::from_bytes(remainder)?;
@@ -412,7 +413,7 @@ mod serde_helpers {
 
     #[derive(Serialize)]
     pub(super) enum BinarySerHelper<'a> {
-        Account(&'a AccountHash),
+        Account(&'a PublicKey),
         Hash(&'a HashAddr),
         URef(&'a URef),
         Transfer(&'a TransferAddr),
@@ -423,7 +424,7 @@ mod serde_helpers {
     impl<'a> From<&'a Key> for BinarySerHelper<'a> {
         fn from(key: &'a Key) -> Self {
             match key {
-                Key::Account(account_hash) => BinarySerHelper::Account(account_hash),
+                Key::Account(public_key) => BinarySerHelper::Account(public_key),
                 Key::Hash(hash_addr) => BinarySerHelper::Hash(hash_addr),
                 Key::URef(uref) => BinarySerHelper::URef(uref),
                 Key::Transfer(transfer_addr) => BinarySerHelper::Transfer(transfer_addr),
@@ -435,7 +436,7 @@ mod serde_helpers {
 
     #[derive(Deserialize)]
     pub(super) enum BinaryDeserHelper {
-        Account(AccountHash),
+        Account(PublicKey),
         Hash(HashAddr),
         URef(URef),
         Transfer(TransferAddr),
@@ -446,7 +447,7 @@ mod serde_helpers {
     impl From<BinaryDeserHelper> for Key {
         fn from(helper: BinaryDeserHelper) -> Self {
             match helper {
-                BinaryDeserHelper::Account(account_hash) => Key::Account(account_hash),
+                BinaryDeserHelper::Account(public_key) => Key::Account(public_key),
                 BinaryDeserHelper::Hash(hash_addr) => Key::Hash(hash_addr),
                 BinaryDeserHelper::URef(uref) => Key::URef(uref),
                 BinaryDeserHelper::Transfer(transfer_addr) => Key::Transfer(transfer_addr),
@@ -484,7 +485,7 @@ mod tests {
     use super::*;
     use crate::{
         bytesrepr::{Error, FromBytes},
-        AccessRights, URef,
+        AccessRights, SecretKey, URef,
     };
 
     fn test_readable(right: AccessRights, is_true: bool) {
@@ -535,9 +536,9 @@ mod tests {
     #[test]
     fn should_display_key() {
         let expected_hash = core::iter::repeat("0").take(64).collect::<String>();
-        let addr_array = [0u8; 32];
-        let account_hash = AccountHash::new(addr_array);
-        let account_key = Key::Account(account_hash);
+        let addr_array = [0u8; SecretKey::ED25519_LENGTH];
+        let public_key = SecretKey::ed25519(addr_array).into();
+        let account_key = Key::Account(public_key);
         assert_eq!(
             format!("{}", account_key),
             format!("Key::Account({})", expected_hash)
@@ -577,10 +578,9 @@ mod tests {
 
     #[test]
     fn check_key_account_getters() {
-        let account = [42; 32];
-        let account_hash = AccountHash::new(account);
-        let key1 = Key::Account(account_hash);
-        assert_eq!(key1.into_account(), Some(account_hash));
+        let public_key = SecretKey::ed25519([42; SecretKey::ED25519_LENGTH]).into();
+        let key1 = Key::Account(public_key);
+        assert_eq!(key1.into_public_key(), Some(public_key));
         assert!(key1.into_hash().is_none());
         assert!(key1.as_uref().is_none());
     }
@@ -589,7 +589,7 @@ mod tests {
     fn check_key_hash_getters() {
         let hash = [42; KEY_HASH_LENGTH];
         let key1 = Key::Hash(hash);
-        assert!(key1.into_account().is_none());
+        assert!(key1.into_public_key().is_none());
         assert_eq!(key1.into_hash(), Some(hash));
         assert!(key1.as_uref().is_none());
     }
@@ -598,14 +598,14 @@ mod tests {
     fn check_key_uref_getters() {
         let uref = URef::new([42; 32], AccessRights::READ_ADD_WRITE);
         let key1 = Key::URef(uref);
-        assert!(key1.into_account().is_none());
+        assert!(key1.into_public_key().is_none());
         assert!(key1.into_hash().is_none());
         assert_eq!(key1.as_uref(), Some(&uref));
     }
 
     #[test]
     fn key_max_serialized_length() {
-        let key_account = Key::Account(AccountHash::new([42; BLAKE2B_DIGEST_LENGTH]));
+        let key_account = Key::Account(SecretKey::ed25519([42; SecretKey::ED25519_LENGTH]).into());
         assert!(key_account.serialized_length() <= Key::max_serialized_length());
 
         let key_hash = Key::Hash([42; KEY_HASH_LENGTH]);
@@ -629,7 +629,9 @@ mod tests {
 
     #[test]
     fn key_from_str() {
-        round_trip(Key::Account(AccountHash::new([42; BLAKE2B_DIGEST_LENGTH])));
+        round_trip(Key::Account(
+            SecretKey::ed25519([42; SecretKey::ED25519_LENGTH]).into(),
+        ));
         round_trip(Key::Hash([42; KEY_HASH_LENGTH]));
         round_trip(Key::URef(URef::new(
             [255; BLAKE2B_DIGEST_LENGTH],
@@ -656,10 +658,10 @@ mod tests {
 
     #[test]
     fn key_to_json() {
-        let array = [42; BLAKE2B_DIGEST_LENGTH];
+        let array = [42; 32];
         let hex_bytes = "2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a";
 
-        let key_account = Key::Account(AccountHash::new(array));
+        let key_account = Key::Account(SecretKey::ed25519(array).into());
         assert_eq!(
             serde_json::to_string(&key_account).unwrap(),
             format!(r#"{{"Account":"account-hash-{}"}}"#, hex_bytes)

@@ -90,12 +90,12 @@ fn main() {
         profiling::parse_hash(input.trim_end())
     });
 
-    let account_1_account_hash = profiling::account_1_account_hash();
-    let account_2_account_hash = profiling::account_2_account_hash();
+    let account_1_account_hash = profiling::account_1_public_key();
+    let account_2_account_hash = profiling::account_2_public_key();
 
     let exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(account_1_account_hash)
+            .with_public_key(account_1_account_hash)
             .with_deploy_hash([1; 32])
             .with_session_code(
                 "simple_transfer.wasm",

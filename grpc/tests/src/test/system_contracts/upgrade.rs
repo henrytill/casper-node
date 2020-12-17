@@ -4,7 +4,7 @@ use casper_engine_test_support::internal::{
     DEFAULT_UNBONDING_DELAY, DEFAULT_WASM_CONFIG,
 };
 #[cfg(feature = "use-system-contracts")]
-use casper_engine_test_support::{internal::ExecuteRequestBuilder, DEFAULT_ACCOUNT_ADDR};
+use casper_engine_test_support::{internal::ExecuteRequestBuilder, DEFAULT_ACCOUNT_PUBLIC_KEY};
 #[cfg(feature = "use-system-contracts")]
 use casper_execution_engine::shared::{stored_value::StoredValue, transform::Transform};
 use casper_execution_engine::{
@@ -150,7 +150,7 @@ fn should_upgrade_system_contract() {
 
     let exec_request = {
         ExecuteRequestBuilder::standard(
-            *DEFAULT_ACCOUNT_ADDR,
+            *DEFAULT_ACCOUNT_PUBLIC_KEY,
             &MODIFIED_MINT_CALLER_CONTRACT_NAME,
             runtime_args! { "amount" => U512::from(PAYMENT_AMOUNT) },
         )
@@ -164,7 +164,7 @@ fn should_upgrade_system_contract() {
     let transform = &transforms[0];
 
     let new_keys = if let Some(Transform::AddKeys(keys)) =
-        transform.get(&Key::Account(*DEFAULT_ACCOUNT_ADDR))
+        transform.get(&Key::Account(*DEFAULT_ACCOUNT_PUBLIC_KEY))
     {
         keys
     } else {
@@ -229,7 +229,7 @@ fn should_upgrade_system_contract_on_patch_bump() {
 
     let exec_request = {
         ExecuteRequestBuilder::standard(
-            *DEFAULT_ACCOUNT_ADDR,
+            *DEFAULT_ACCOUNT_PUBLIC_KEY,
             &MODIFIED_MINT_CALLER_CONTRACT_NAME,
             runtime_args! { ARG_TARGET => U512::from(PAYMENT_AMOUNT) },
         )
@@ -243,7 +243,7 @@ fn should_upgrade_system_contract_on_patch_bump() {
     let transform = &transforms[0];
 
     let new_keys = if let Some(Transform::AddKeys(keys)) =
-        transform.get(&Key::Account(*DEFAULT_ACCOUNT_ADDR))
+        transform.get(&Key::Account(*DEFAULT_ACCOUNT_PUBLIC_KEY))
     {
         keys
     } else {
@@ -308,7 +308,7 @@ fn should_upgrade_system_contract_on_minor_bump() {
 
     let exec_request = {
         ExecuteRequestBuilder::standard(
-            *DEFAULT_ACCOUNT_ADDR,
+            *DEFAULT_ACCOUNT_PUBLIC_KEY,
             &MODIFIED_MINT_CALLER_CONTRACT_NAME,
             runtime_args! {ARG_TARGET => U512::from(PAYMENT_AMOUNT) },
         )
@@ -322,7 +322,7 @@ fn should_upgrade_system_contract_on_minor_bump() {
     let transform = &transforms[0];
 
     let new_keys = if let Some(Transform::AddKeys(keys)) =
-        transform.get(&Key::Account(*DEFAULT_ACCOUNT_ADDR))
+        transform.get(&Key::Account(*DEFAULT_ACCOUNT_PUBLIC_KEY))
     {
         keys
     } else {
@@ -478,7 +478,7 @@ fn should_upgrade_system_contract_and_wasm_costs_major() {
 
     let exec_request = {
         ExecuteRequestBuilder::standard(
-            *DEFAULT_ACCOUNT_ADDR,
+            *DEFAULT_ACCOUNT_PUBLIC_KEY,
             &MODIFIED_MINT_CALLER_CONTRACT_NAME,
             runtime_args! {ARG_TARGET => U512::from(PAYMENT_AMOUNT) },
         )
@@ -492,7 +492,7 @@ fn should_upgrade_system_contract_and_wasm_costs_major() {
     let transform = &transforms[0];
 
     let new_keys = if let Some(Transform::AddKeys(keys)) =
-        transform.get(&Key::Account(*DEFAULT_ACCOUNT_ADDR))
+        transform.get(&Key::Account(*DEFAULT_ACCOUNT_PUBLIC_KEY))
     {
         keys
     } else {

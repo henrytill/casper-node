@@ -28,10 +28,9 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "std")]
 use crate::KEY_HASH_LENGTH;
 use crate::{
-    account::AccountHash,
     auction::EraInfo,
     bytesrepr::{self, FromBytes, ToBytes, U8_SERIALIZED_LENGTH},
-    CLValue, DeployInfo, NamedKey, Transfer, TransferAddr, U128, U256, U512,
+    CLValue, DeployInfo, NamedKey, PublicKey, SecretKey, Transfer, TransferAddr, U128, U256, U512,
 };
 
 /// Constants to track ExecutionResult serialization.
@@ -435,7 +434,7 @@ pub enum Transform {
     /// Writes the given CLValue to global state.
     WriteCLValue(CLValue),
     /// Writes the given Account to global state.
-    WriteAccount(AccountHash),
+    WriteAccount(PublicKey),
     /// Writes a smart contract as Wasm to global state.
     WriteContractWasm,
     /// Writes a smart contract to global state.
@@ -555,8 +554,8 @@ impl FromBytes for Transform {
                 Ok((Transform::WriteCLValue(cl_value), remainder))
             }
             TRANSFORM_WRITE_ACCOUNT_TAG => {
-                let (account_hash, remainder) = AccountHash::from_bytes(remainder)?;
-                Ok((Transform::WriteAccount(account_hash), remainder))
+                let (public_key, remainder) = PublicKey::from_bytes(remainder)?;
+                Ok((Transform::WriteAccount(public_key), remainder))
             }
             TRANSFORM_WRITE_CONTRACT_WASM_TAG => Ok((Transform::WriteContractWasm, remainder)),
             TRANSFORM_WRITE_CONTRACT_TAG => Ok((Transform::WriteContract, remainder)),
@@ -614,7 +613,7 @@ impl Distribution<Transform> for Standard {
         match rng.gen_range(0, 13) {
             0 => Transform::Identity,
             1 => Transform::WriteCLValue(CLValue::from_t(true).unwrap()),
-            2 => Transform::WriteAccount(AccountHash::new(rng.gen())),
+            2 => Transform::WriteAccount(SecretKey::ed25519(rng.gen()).into()),
             3 => Transform::WriteContractWasm,
             4 => Transform::WriteContract,
             5 => Transform::WriteContractPackage,

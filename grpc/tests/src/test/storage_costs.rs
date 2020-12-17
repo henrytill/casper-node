@@ -2,12 +2,9 @@ use once_cell::sync::Lazy;
 
 #[cfg(not(any(feature = "use-system-contracts", feature = "use-as-wasm")))]
 use casper_engine_test_support::internal::DEFAULT_ACCOUNT_PUBLIC_KEY;
-use casper_engine_test_support::{
-    internal::{
-        ExecuteRequestBuilder, InMemoryWasmTestBuilder, UpgradeRequestBuilder,
-        DEFAULT_PROTOCOL_VERSION, DEFAULT_RUN_GENESIS_REQUEST,
-    },
-    DEFAULT_ACCOUNT_ADDR,
+use casper_engine_test_support::internal::{
+    ExecuteRequestBuilder, InMemoryWasmTestBuilder, UpgradeRequestBuilder,
+    DEFAULT_PROTOCOL_VERSION, DEFAULT_RUN_GENESIS_REQUEST,
 };
 #[cfg(not(any(feature = "use-system-contracts", feature = "use-as-wasm")))]
 use casper_execution_engine::shared::system_config::{
@@ -172,7 +169,7 @@ fn should_verify_isolate_host_side_payment_code_is_free() {
     let mut builder = initialize_isolated_storage_costs();
 
     let exec_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         DO_NOTHING_WASM,
         RuntimeArgs::default(),
     )
@@ -180,7 +177,7 @@ fn should_verify_isolate_host_side_payment_code_is_free() {
     .build();
 
     let account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
     let balance_before = builder.get_purse_balance(account.main_purse());
     builder.exec(exec_request).expect_success().commit();
@@ -203,7 +200,7 @@ fn should_verify_isolated_auction_storage_is_free() {
     let mut builder = initialize_isolated_storage_costs();
 
     let exec_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         SYSTEM_CONTRACT_HASHES_NAME,
         RuntimeArgs::default(),
     )
@@ -212,11 +209,11 @@ fn should_verify_isolated_auction_storage_is_free() {
     builder.exec(exec_request).expect_success().commit();
 
     let account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     let exec_request = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         account
             .named_keys()
             .get(AUCTION)
@@ -254,7 +251,7 @@ fn should_measure_gas_cost_for_storage_usage_write() {
     let mut builder = initialize_isolated_storage_costs();
 
     let install_exec_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         STORAGE_COSTS_NAME,
         RuntimeArgs::default(),
     )
@@ -266,7 +263,7 @@ fn should_measure_gas_cost_for_storage_usage_write() {
     assert!(!builder.last_exec_gas_cost().value().is_zero());
 
     let account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     let contract_hash: ContractHash = account
@@ -284,7 +281,7 @@ fn should_measure_gas_cost_for_storage_usage_write() {
         let mut builder_a = builder.clone();
 
         let small_write_exec_request = ExecuteRequestBuilder::contract_call_by_hash(
-            *DEFAULT_ACCOUNT_ADDR,
+            *DEFAULT_ACCOUNT_PUBLIC_KEY,
             contract_hash,
             WRITE_FUNCTION_SMALL_NAME,
             RuntimeArgs::default(),
@@ -325,7 +322,7 @@ fn should_measure_gas_cost_for_storage_usage_write() {
         let mut builder_b = builder;
 
         let large_write_exec_request = ExecuteRequestBuilder::contract_call_by_hash(
-            *DEFAULT_ACCOUNT_ADDR,
+            *DEFAULT_ACCOUNT_PUBLIC_KEY,
             contract_hash,
             WRITE_FUNCTION_LARGE_NAME,
             RuntimeArgs::default(),
@@ -368,7 +365,7 @@ fn should_measure_unisolated_gas_cost_for_storage_usage_write() {
     builder.run_genesis(&*DEFAULT_RUN_GENESIS_REQUEST);
 
     let install_exec_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         STORAGE_COSTS_NAME,
         RuntimeArgs::default(),
     )
@@ -377,7 +374,7 @@ fn should_measure_unisolated_gas_cost_for_storage_usage_write() {
     builder.exec(install_exec_request).expect_success().commit();
 
     let account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     let contract_hash: ContractHash = account
@@ -395,7 +392,7 @@ fn should_measure_unisolated_gas_cost_for_storage_usage_write() {
         let mut builder_a = builder.clone();
 
         let small_write_exec_request = ExecuteRequestBuilder::contract_call_by_hash(
-            *DEFAULT_ACCOUNT_ADDR,
+            *DEFAULT_ACCOUNT_PUBLIC_KEY,
             contract_hash,
             WRITE_FUNCTION_SMALL_NAME,
             RuntimeArgs::default(),
@@ -435,7 +432,7 @@ fn should_measure_unisolated_gas_cost_for_storage_usage_write() {
         let mut builder_b = builder;
 
         let large_write_exec_request = ExecuteRequestBuilder::contract_call_by_hash(
-            *DEFAULT_ACCOUNT_ADDR,
+            *DEFAULT_ACCOUNT_PUBLIC_KEY,
             contract_hash,
             WRITE_FUNCTION_LARGE_NAME,
             RuntimeArgs::default(),
@@ -476,7 +473,7 @@ fn should_measure_gas_cost_for_storage_usage_add() {
     let mut builder = initialize_isolated_storage_costs();
 
     let install_exec_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         STORAGE_COSTS_NAME,
         RuntimeArgs::default(),
     )
@@ -488,7 +485,7 @@ fn should_measure_gas_cost_for_storage_usage_add() {
     // let mut builder_a = builder.clone();
 
     let account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     let contract_hash: ContractHash = account
@@ -506,7 +503,7 @@ fn should_measure_gas_cost_for_storage_usage_add() {
         let mut builder_a = builder.clone();
 
         let small_add_exec_request = ExecuteRequestBuilder::contract_call_by_hash(
-            *DEFAULT_ACCOUNT_ADDR,
+            *DEFAULT_ACCOUNT_PUBLIC_KEY,
             contract_hash,
             ADD_FUNCTION_SMALL_NAME,
             RuntimeArgs::default(),
@@ -547,7 +544,7 @@ fn should_measure_gas_cost_for_storage_usage_add() {
         let mut builder_b = builder;
 
         let large_write_exec_request = ExecuteRequestBuilder::contract_call_by_hash(
-            *DEFAULT_ACCOUNT_ADDR,
+            *DEFAULT_ACCOUNT_PUBLIC_KEY,
             contract_hash,
             ADD_FUNCTION_LARGE_NAME,
             RuntimeArgs::default(),
@@ -592,7 +589,7 @@ fn should_measure_unisolated_gas_cost_for_storage_usage_add() {
     builder.run_genesis(&*DEFAULT_RUN_GENESIS_REQUEST);
 
     let install_exec_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         STORAGE_COSTS_NAME,
         RuntimeArgs::default(),
     )
@@ -603,7 +600,7 @@ fn should_measure_unisolated_gas_cost_for_storage_usage_add() {
     // let mut builder_a = builder.clone();
 
     let account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     let contract_hash: ContractHash = account
@@ -621,7 +618,7 @@ fn should_measure_unisolated_gas_cost_for_storage_usage_add() {
         let mut builder_a = builder.clone();
 
         let small_add_exec_request = ExecuteRequestBuilder::contract_call_by_hash(
-            *DEFAULT_ACCOUNT_ADDR,
+            *DEFAULT_ACCOUNT_PUBLIC_KEY,
             contract_hash,
             ADD_FUNCTION_SMALL_NAME,
             RuntimeArgs::default(),
@@ -661,7 +658,7 @@ fn should_measure_unisolated_gas_cost_for_storage_usage_add() {
         let mut builder_b = builder;
 
         let large_write_exec_request = ExecuteRequestBuilder::contract_call_by_hash(
-            *DEFAULT_ACCOUNT_ADDR,
+            *DEFAULT_ACCOUNT_PUBLIC_KEY,
             contract_hash,
             ADD_FUNCTION_LARGE_NAME,
             RuntimeArgs::default(),
@@ -702,7 +699,7 @@ fn should_verify_new_uref_is_charging_for_storage() {
     let mut builder = initialize_isolated_storage_costs();
 
     let install_exec_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         STORAGE_COSTS_NAME,
         RuntimeArgs::default(),
     )
@@ -712,7 +709,7 @@ fn should_verify_new_uref_is_charging_for_storage() {
     builder.exec(install_exec_request).expect_success().commit();
 
     let account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     let balance_before = builder.get_purse_balance(account.main_purse());
@@ -725,7 +722,7 @@ fn should_verify_new_uref_is_charging_for_storage() {
         .expect("should be hash");
 
     let exec_request = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         contract_hash,
         NEW_UREF_FUNCTION,
         RuntimeArgs::default(),
@@ -746,7 +743,7 @@ fn should_verify_put_key_is_charging_for_storage() {
     let mut builder = initialize_isolated_storage_costs();
 
     let install_exec_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         STORAGE_COSTS_NAME,
         RuntimeArgs::default(),
     )
@@ -756,7 +753,7 @@ fn should_verify_put_key_is_charging_for_storage() {
     builder.exec(install_exec_request).expect_success().commit();
 
     let account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     let balance_before = builder.get_purse_balance(account.main_purse());
@@ -769,7 +766,7 @@ fn should_verify_put_key_is_charging_for_storage() {
         .expect("should be hash");
 
     let exec_request = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         contract_hash,
         PUT_KEY_FUNCTION,
         RuntimeArgs::default(),
@@ -790,7 +787,7 @@ fn should_verify_remove_key_is_charging_for_storage() {
     let mut builder = initialize_isolated_storage_costs();
 
     let install_exec_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         STORAGE_COSTS_NAME,
         RuntimeArgs::default(),
     )
@@ -800,7 +797,7 @@ fn should_verify_remove_key_is_charging_for_storage() {
     builder.exec(install_exec_request).expect_success().commit();
 
     let account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     let balance_before = builder.get_purse_balance(account.main_purse());
@@ -813,7 +810,7 @@ fn should_verify_remove_key_is_charging_for_storage() {
         .expect("should be hash");
 
     let exec_request = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         contract_hash,
         REMOVE_KEY_FUNCTION,
         RuntimeArgs::default(),
@@ -834,7 +831,7 @@ fn should_verify_create_contract_at_hash_is_charging_for_storage() {
     let mut builder = initialize_isolated_storage_costs();
 
     let install_exec_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         STORAGE_COSTS_NAME,
         RuntimeArgs::default(),
     )
@@ -844,7 +841,7 @@ fn should_verify_create_contract_at_hash_is_charging_for_storage() {
     builder.exec(install_exec_request).expect_success().commit();
 
     let account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     let balance_before = builder.get_purse_balance(account.main_purse());
@@ -857,7 +854,7 @@ fn should_verify_create_contract_at_hash_is_charging_for_storage() {
         .expect("should be hash");
 
     let exec_request = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         contract_hash,
         CREATE_CONTRACT_PACKAGE_AT_HASH_FUNCTION,
         RuntimeArgs::default(),
@@ -878,7 +875,7 @@ fn should_verify_create_contract_user_group_is_charging_for_storage() {
     let mut builder = initialize_isolated_storage_costs();
 
     let install_exec_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         STORAGE_COSTS_NAME,
         RuntimeArgs::default(),
     )
@@ -888,7 +885,7 @@ fn should_verify_create_contract_user_group_is_charging_for_storage() {
     builder.exec(install_exec_request).expect_success().commit();
 
     let account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     let balance_before = builder.get_purse_balance(account.main_purse());
@@ -901,7 +898,7 @@ fn should_verify_create_contract_user_group_is_charging_for_storage() {
         .expect("should be hash");
 
     let exec_request = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         contract_hash,
         CREATE_CONTRACT_USER_GROUP_FUNCTION_FUNCTION,
         RuntimeArgs::default(),
@@ -918,7 +915,7 @@ fn should_verify_create_contract_user_group_is_charging_for_storage() {
     let balance_before = balance_after;
 
     let exec_request = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         contract_hash,
         PROVISION_UREFS_FUNCTION,
         RuntimeArgs::default(),
@@ -935,7 +932,7 @@ fn should_verify_create_contract_user_group_is_charging_for_storage() {
     let balance_before = balance_after;
 
     let exec_request = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         contract_hash,
         REMOVE_CONTRACT_USER_GROUP_FUNCTION,
         RuntimeArgs::default(),
@@ -956,7 +953,7 @@ fn should_verify_subcall_new_uref_is_charging_for_storage() {
     let mut builder = initialize_isolated_storage_costs();
 
     let install_exec_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         STORAGE_COSTS_NAME,
         RuntimeArgs::default(),
     )
@@ -966,7 +963,7 @@ fn should_verify_subcall_new_uref_is_charging_for_storage() {
     builder.exec(install_exec_request).expect_success().commit();
 
     let account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     let balance_before = builder.get_purse_balance(account.main_purse());
@@ -979,7 +976,7 @@ fn should_verify_subcall_new_uref_is_charging_for_storage() {
         .expect("should be hash");
 
     let exec_request = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         contract_hash,
         CREATE_CONTRACT_USER_GROUP_FUNCTION_FUNCTION,
         RuntimeArgs::default(),
@@ -995,7 +992,7 @@ fn should_verify_subcall_new_uref_is_charging_for_storage() {
     let balance_before = balance_after;
 
     let exec_request = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         contract_hash,
         PROVISION_UREFS_FUNCTION,
         RuntimeArgs::default(),
@@ -1011,7 +1008,7 @@ fn should_verify_subcall_new_uref_is_charging_for_storage() {
     let balance_before = balance_after;
 
     let exec_request = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         contract_hash,
         NEW_UREF_SUBCALL_FUNCTION,
         RuntimeArgs::default(),

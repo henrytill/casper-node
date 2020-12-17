@@ -11,7 +11,6 @@ use casper_contract::{
     unwrap_or_revert::UnwrapOrRevert,
 };
 use casper_types::{
-    account::AccountHash,
     auction::{
         Auction, DelegationRate, EraId, EraInfo, MintProvider, RuntimeProvider,
         SeigniorageRecipients, StorageProvider, SystemProvider, ValidatorWeights, ARG_AMOUNT,
@@ -68,7 +67,7 @@ impl SystemProvider for AuctionContract {
 }
 
 impl RuntimeProvider for AuctionContract {
-    fn get_caller(&self) -> AccountHash {
+    fn get_caller(&self) -> PublicKey {
         runtime::get_caller()
     }
 
@@ -85,7 +84,7 @@ impl MintProvider for AuctionContract {
     fn transfer_purse_to_account(
         &mut self,
         source: URef,
-        target: AccountHash,
+        target: PublicKey,
         amount: U512,
     ) -> Result<TransferredTo, Error> {
         system::transfer_from_purse_to_account(source, target, amount, None)
@@ -301,7 +300,7 @@ pub fn get_entry_points() -> EntryPoints {
     let entry_point = EntryPoint::new(
         METHOD_ADD_BID,
         vec![
-            Parameter::new(ARG_PUBLIC_KEY, AccountHash::cl_type()),
+            Parameter::new(ARG_PUBLIC_KEY, PublicKey::cl_type()),
             Parameter::new(ARG_SOURCE_PURSE, URef::cl_type()),
             Parameter::new(ARG_DELEGATION_RATE, DelegationRate::cl_type()),
             Parameter::new(ARG_AMOUNT, U512::cl_type()),
@@ -315,7 +314,7 @@ pub fn get_entry_points() -> EntryPoints {
     let entry_point = EntryPoint::new(
         METHOD_WITHDRAW_BID,
         vec![
-            Parameter::new(ARG_PUBLIC_KEY, AccountHash::cl_type()),
+            Parameter::new(ARG_PUBLIC_KEY, PublicKey::cl_type()),
             Parameter::new(ARG_AMOUNT, U512::cl_type()),
             Parameter::new(ARG_UNBOND_PURSE, URef::cl_type()),
         ],
@@ -342,8 +341,8 @@ pub fn get_entry_points() -> EntryPoints {
     let entry_point = EntryPoint::new(
         METHOD_UNDELEGATE,
         vec![
-            Parameter::new(ARG_DELEGATOR, AccountHash::cl_type()),
-            Parameter::new(ARG_VALIDATOR, AccountHash::cl_type()),
+            Parameter::new(ARG_DELEGATOR, PublicKey::cl_type()),
+            Parameter::new(ARG_VALIDATOR, PublicKey::cl_type()),
             Parameter::new(ARG_AMOUNT, U512::cl_type()),
             Parameter::new(ARG_UNBOND_PURSE, URef::cl_type()),
         ],

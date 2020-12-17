@@ -1,11 +1,11 @@
 use rand::Rng;
 
 use casper_execution_engine::core::engine_state::execute_request::ExecuteRequest;
-use casper_types::{runtime_args, ProtocolVersion, RuntimeArgs, URef, U512};
+use casper_types::{runtime_args, ProtocolVersion, PublicKey, RuntimeArgs, URef, U512};
 
 use crate::{
     internal::{DeployItemBuilder, ExecuteRequestBuilder, DEFAULT_PAYMENT},
-    AccountHash, Code,
+    Code,
 };
 
 const ARG_AMOUNT: &str = "amount";
@@ -82,9 +82,9 @@ impl SessionBuilder {
         }
     }
 
-    /// Returns `self` with the provided account address set.
-    pub fn with_address(mut self, address: AccountHash) -> Self {
-        self.di_builder = self.di_builder.with_address(address);
+    /// Returns `self` with the provided account public key.
+    pub fn with_public_key(mut self, public_key: PublicKey) -> Self {
+        self.di_builder = self.di_builder.with_public_key(public_key);
         self
     }
 
@@ -117,7 +117,7 @@ impl SessionBuilder {
     }
 
     /// Returns `self` with the provided authorization keys set.
-    pub fn with_authorization_keys(mut self, keys: &[AccountHash]) -> Self {
+    pub fn with_authorization_keys(mut self, keys: &[PublicKey]) -> Self {
         self.di_builder = self.di_builder.with_authorization_keys(keys);
         self
     }

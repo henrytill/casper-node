@@ -6,7 +6,7 @@ use casper_engine_test_support::{
         utils, DeployItemBuilder, ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_ACCOUNTS,
         DEFAULT_ACCOUNT_PUBLIC_KEY, DEFAULT_PAYMENT, DEFAULT_RUN_GENESIS_REQUEST,
     },
-    DEFAULT_ACCOUNT_ADDR, DEFAULT_ACCOUNT_INITIAL_BALANCE,
+    DEFAULT_ACCOUNT_INITIAL_BALANCE,
 };
 use casper_execution_engine::{
     core::{
@@ -16,7 +16,6 @@ use casper_execution_engine::{
     shared::{motes::Motes, wasm::do_nothing_bytes, wasm_prep::PreprocessingError},
 };
 use casper_types::{
-    account::AccountHash,
     auction::{self, DelegationRate},
     contracts::DEFAULT_ENTRY_POINT_NAME,
     runtime_args, PublicKey, RuntimeArgs, SecretKey, U512,
@@ -31,7 +30,6 @@ const ARG_AMOUNT: &str = "amount";
 
 static VALIDATOR_1: Lazy<PublicKey> =
     Lazy::new(|| SecretKey::ed25519([3; SecretKey::ED25519_LENGTH]).into());
-static VALIDATOR_1_ADDR: Lazy<AccountHash> = Lazy::new(|| AccountHash::from(&*VALIDATOR_1));
 const VALIDATOR_1_STAKE: u64 = 250_000;
 static UNDERFUNDED_PAYMENT_AMOUNT: Lazy<U512> = Lazy::new(|| U512::from(10_001));
 static CALL_STORED_CONTRACT_OVERHEAD: Lazy<U512> = Lazy::new(|| U512::from(10_001));
@@ -42,7 +40,6 @@ fn should_run_ee_1129_underfunded_delegate_call() {
     let accounts = {
         let validator_1 = GenesisAccount::new(
             *VALIDATOR_1,
-            *VALIDATOR_1_ADDR,
             Motes::new(DEFAULT_ACCOUNT_INITIAL_BALANCE.into()),
             Motes::new(VALIDATOR_1_STAKE.into()),
         );
@@ -60,7 +57,7 @@ fn should_run_ee_1129_underfunded_delegate_call() {
     let auction = builder.get_auction_contract_hash();
 
     let account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     let bid_amount = U512::one();
@@ -77,12 +74,12 @@ fn should_run_ee_1129_underfunded_delegate_call() {
     };
 
     let deploy = DeployItemBuilder::new()
-        .with_address(*DEFAULT_ACCOUNT_ADDR)
+        .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .with_stored_session_hash(auction, auction::METHOD_DELEGATE, args)
         .with_empty_payment_bytes(runtime_args! {
             ARG_AMOUNT => *UNDERFUNDED_PAYMENT_AMOUNT, // underfunded deploy
         })
-        .with_authorization_keys(&[*DEFAULT_ACCOUNT_ADDR])
+        .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
         .with_deploy_hash(deploy_hash)
         .build();
 
@@ -112,7 +109,6 @@ fn should_run_ee_1129_underfunded_add_bid_call() {
     let accounts = {
         let validator_1 = GenesisAccount::new(
             *VALIDATOR_1,
-            *VALIDATOR_1_ADDR,
             Motes::new(DEFAULT_ACCOUNT_INITIAL_BALANCE.into()),
             Motes::new(U512::zero()),
         );
@@ -130,7 +126,7 @@ fn should_run_ee_1129_underfunded_add_bid_call() {
     let auction = builder.get_auction_contract_hash();
 
     let account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     let amount = U512::one();
@@ -149,12 +145,12 @@ fn should_run_ee_1129_underfunded_add_bid_call() {
     };
 
     let deploy = DeployItemBuilder::new()
-        .with_address(*VALIDATOR_1_ADDR)
+        .with_public_key(*VALIDATOR_1)
         .with_stored_session_hash(auction, auction::METHOD_ADD_BID, args)
         .with_empty_payment_bytes(runtime_args! {
             ARG_AMOUNT => *UNDERFUNDED_PAYMENT_AMOUNT,
         })
-        .with_authorization_keys(&[*VALIDATOR_1_ADDR])
+        .with_authorization_keys(&[*VALIDATOR_1])
         .with_deploy_hash(deploy_hash)
         .build();
 
@@ -186,7 +182,7 @@ fn should_run_ee_1129_underfunded_mint_contract_call() {
     builder.run_genesis(&*DEFAULT_RUN_GENESIS_REQUEST);
 
     let install_exec_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_EE_1129_REGRESSION,
         RuntimeArgs::default(),
     )
@@ -194,12 +190,12 @@ fn should_run_ee_1129_underfunded_mint_contract_call() {
 
     let exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_ADDR)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_session_named_key(CONTRACT_KEY, ENTRY_POINT_NAME, RuntimeArgs::default())
             .with_empty_payment_bytes(runtime_args! {
                 ARG_AMOUNT => *CALL_STORED_CONTRACT_OVERHEAD,
             })
-            .with_authorization_keys(&[*DEFAULT_ACCOUNT_ADDR])
+            .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
             .with_deploy_hash([42; 32])
             .build();
 
@@ -234,7 +230,7 @@ fn should_not_panic_when_calling_session_contract_by_uref() {
     builder.run_genesis(&*DEFAULT_RUN_GENESIS_REQUEST);
 
     let install_exec_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_EE_1129_REGRESSION,
         RuntimeArgs::default(),
     )
@@ -242,12 +238,12 @@ fn should_not_panic_when_calling_session_contract_by_uref() {
 
     let exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_ADDR)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_session_named_key(ACCESS_KEY, ENTRY_POINT_NAME, RuntimeArgs::default())
             .with_empty_payment_bytes(runtime_args! {
                 ARG_AMOUNT => *CALL_STORED_CONTRACT_OVERHEAD,
             })
-            .with_authorization_keys(&[*DEFAULT_ACCOUNT_ADDR])
+            .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
             .with_deploy_hash([42; 32])
             .build();
 
@@ -282,7 +278,7 @@ fn should_not_panic_when_calling_payment_contract_by_uref() {
     builder.run_genesis(&*DEFAULT_RUN_GENESIS_REQUEST);
 
     let install_exec_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_EE_1129_REGRESSION,
         RuntimeArgs::default(),
     )
@@ -290,10 +286,10 @@ fn should_not_panic_when_calling_payment_contract_by_uref() {
 
     let exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_ADDR)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_session_bytes(do_nothing_bytes(), RuntimeArgs::new())
             .with_stored_payment_named_key(ACCESS_KEY, ENTRY_POINT_NAME, RuntimeArgs::new())
-            .with_authorization_keys(&[*DEFAULT_ACCOUNT_ADDR])
+            .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
             .with_deploy_hash([42; 32])
             .build();
 
@@ -328,7 +324,7 @@ fn should_not_panic_when_calling_contract_package_by_uref() {
     builder.run_genesis(&*DEFAULT_RUN_GENESIS_REQUEST);
 
     let install_exec_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_EE_1129_REGRESSION,
         RuntimeArgs::default(),
     )
@@ -336,7 +332,7 @@ fn should_not_panic_when_calling_contract_package_by_uref() {
 
     let exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_ADDR)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 ACCESS_KEY,
                 None,
@@ -346,7 +342,7 @@ fn should_not_panic_when_calling_contract_package_by_uref() {
             .with_empty_payment_bytes(runtime_args! {
                 ARG_AMOUNT => *CALL_STORED_CONTRACT_OVERHEAD,
             })
-            .with_authorization_keys(&[*DEFAULT_ACCOUNT_ADDR])
+            .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
             .with_deploy_hash([42; 32])
             .build();
 
@@ -381,7 +377,7 @@ fn should_not_panic_when_calling_payment_versioned_contract_by_uref() {
     builder.run_genesis(&*DEFAULT_RUN_GENESIS_REQUEST);
 
     let install_exec_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_EE_1129_REGRESSION,
         RuntimeArgs::default(),
     )
@@ -389,7 +385,7 @@ fn should_not_panic_when_calling_payment_versioned_contract_by_uref() {
 
     let exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_ADDR)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_session_bytes(do_nothing_bytes(), RuntimeArgs::new())
             .with_stored_versioned_payment_contract_by_name(
                 ACCESS_KEY,
@@ -397,7 +393,7 @@ fn should_not_panic_when_calling_payment_versioned_contract_by_uref() {
                 ENTRY_POINT_NAME,
                 RuntimeArgs::new(),
             )
-            .with_authorization_keys(&[*DEFAULT_ACCOUNT_ADDR])
+            .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
             .with_deploy_hash([42; 32])
             .build();
 
@@ -449,12 +445,12 @@ fn should_not_panic_when_calling_module_without_memory() {
 
     let exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_ADDR)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_session_bytes(do_nothing_without_memory(), RuntimeArgs::new())
             .with_empty_payment_bytes(runtime_args! {
                 ARG_AMOUNT => *DEFAULT_PAYMENT,
             })
-            .with_authorization_keys(&[*DEFAULT_ACCOUNT_ADDR])
+            .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
             .with_deploy_hash([42; 32])
             .build();
 

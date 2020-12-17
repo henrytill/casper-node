@@ -1,10 +1,9 @@
 use casper_types::{
     account,
-    account::AccountHash,
     auction::{Auction, EraInfo, MintProvider, RuntimeProvider, StorageProvider, SystemProvider},
     bytesrepr::{FromBytes, ToBytes},
     system_contract_errors::auction::Error,
-    CLTyped, CLValue, Key, TransferredTo, URef, BLAKE2B_DIGEST_LENGTH, U512,
+    CLTyped, CLValue, Key, PublicKey, TransferredTo, URef, BLAKE2B_DIGEST_LENGTH, U512,
 };
 
 use super::Runtime;
@@ -95,7 +94,7 @@ where
     R: StateReader<Key, StoredValue>,
     R::Error: Into<execution::Error>,
 {
-    fn get_caller(&self) -> AccountHash {
+    fn get_caller(&self) -> PublicKey {
         self.context.get_caller()
     }
 
@@ -116,7 +115,7 @@ where
     fn transfer_purse_to_account(
         &mut self,
         source: URef,
-        target: AccountHash,
+        target: PublicKey,
         amount: U512,
     ) -> Result<TransferredTo, Error> {
         match self.transfer_from_purse_to_account(source, target, amount, None) {

@@ -12,11 +12,12 @@ use casper_contract::{
     unwrap_or_revert::UnwrapOrRevert,
 };
 use casper_types::{
-    account::{AccountHash, ActionType, Weight},
+    account::{ActionType, Weight},
     bytesrepr::Bytes,
     contracts::NamedKeys,
     runtime_args, ApiError, BlockTime, CLType, CLValue, ContractHash, ContractVersion, EntryPoint,
-    EntryPointAccess, EntryPointType, EntryPoints, Key, Parameter, Phase, RuntimeArgs, U512,
+    EntryPointAccess, EntryPointType, EntryPoints, Key, Parameter, Phase, PublicKey, RuntimeArgs,
+    U512,
 };
 
 const MIN_FUNCTION_NAME_LENGTH: usize = 1;
@@ -133,7 +134,7 @@ fn small_function() {
 #[no_mangle]
 pub extern "C" fn call() {
     let seed: u64 = runtime::get_named_arg(ARG_SEED);
-    let (random_bytes, source_account, destination_account): (Vec<u8>, AccountHash, AccountHash) =
+    let (random_bytes, source_account, destination_account): (Vec<u8>, PublicKey, PublicKey) =
         runtime::get_named_arg(ARG_OTHERS);
 
     // ========== storage, execution and upgrading of contracts ====================================

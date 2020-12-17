@@ -6,12 +6,12 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use casper_execution_engine::shared::account::Account as ExecutionEngineAccount;
-use casper_types::{account::AccountHash, NamedKey, URef};
+use casper_types::{NamedKey, PublicKey, URef};
 
 #[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize, DataSize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 struct AssociatedKey {
-    account_hash: AccountHash,
+    public_key: PublicKey,
     weight: u8,
 }
 
@@ -27,7 +27,7 @@ struct ActionThresholds {
 #[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize, DataSize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Account {
-    account_hash: AccountHash,
+    public_key: PublicKey,
     #[data_size(skip)]
     named_keys: Vec<NamedKey>,
     #[data_size(skip)]
@@ -39,7 +39,7 @@ pub struct Account {
 impl From<&ExecutionEngineAccount> for Account {
     fn from(ee_account: &ExecutionEngineAccount) -> Self {
         Account {
-            account_hash: ee_account.account_hash(),
+            public_key: ee_account.public_key(),
             named_keys: ee_account
                 .named_keys()
                 .iter()
@@ -51,8 +51,8 @@ impl From<&ExecutionEngineAccount> for Account {
             main_purse: ee_account.main_purse(),
             associated_keys: ee_account
                 .associated_keys()
-                .map(|(account_hash, weight)| AssociatedKey {
-                    account_hash: *account_hash,
+                .map(|(public_key, weight)| AssociatedKey {
+                    public_key: *public_key,
                     weight: weight.value(),
                 })
                 .collect(),

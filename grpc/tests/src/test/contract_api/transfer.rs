@@ -3,10 +3,10 @@ use once_cell::sync::Lazy;
 
 use casper_engine_test_support::{
     internal::{
-        utils, ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_PAYMENT,
-        DEFAULT_RUN_GENESIS_REQUEST,
+        utils, ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_ACCOUNT_PUBLIC_KEY,
+        DEFAULT_PAYMENT, DEFAULT_RUN_GENESIS_REQUEST,
     },
-    DEFAULT_ACCOUNT_ADDR, DEFAULT_ACCOUNT_INITIAL_BALANCE, MINIMUM_ACCOUNT_CREATION_BALANCE,
+    DEFAULT_ACCOUNT_INITIAL_BALANCE, MINIMUM_ACCOUNT_CREATION_BALANCE,
 };
 use casper_execution_engine::{
     core::{
@@ -16,7 +16,7 @@ use casper_execution_engine::{
     shared::motes::Motes,
 };
 use casper_types::{
-    account::AccountHash, runtime_args, system_contract_errors::mint, ApiError, RuntimeArgs, U512,
+    runtime_args, system_contract_errors::mint, ApiError, PublicKey, RuntimeArgs, SecretKey, U512,
 };
 
 const CONTRACT_TRANSFER_PURSE_TO_ACCOUNT: &str = "transfer_purse_to_account.wasm";
@@ -27,10 +27,13 @@ static TRANSFER_1_AMOUNT: Lazy<U512> =
 static TRANSFER_2_AMOUNT: Lazy<U512> = Lazy::new(|| U512::from(750));
 static TRANSFER_2_AMOUNT_WITH_ADV: Lazy<U512> = Lazy::new(|| *DEFAULT_PAYMENT + *TRANSFER_2_AMOUNT);
 static TRANSFER_TOO_MUCH: Lazy<U512> = Lazy::new(|| U512::from(u64::max_value()));
-static ACCOUNT_1_INITIAL_BALANCE: Lazy<U512> = Lazy::new(|| *DEFAULT_PAYMENT);
 
-const ACCOUNT_1_ADDR: AccountHash = AccountHash::new([1u8; 32]);
-const ACCOUNT_2_ADDR: AccountHash = AccountHash::new([2u8; 32]);
+static ACCOUNT_1_PUBLIC_KEY: Lazy<PublicKey> =
+    Lazy::new(|| SecretKey::ed25519([1u8; SecretKey::ED25519_LENGTH]).into());
+static ACCOUNT_1_INITIAL_BALANCE: Lazy<U512> = Lazy::new(|| *DEFAULT_PAYMENT);
+static ACCOUNT_2_PUBLIC_KEY: Lazy<PublicKey> =
+    Lazy::new(|| SecretKey::ed25519([2u8; SecretKey::ED25519_LENGTH]).into());
+
 const ARG_TARGET: &str = "target";
 const ARG_AMOUNT: &str = "amount";
 
@@ -46,7 +49,7 @@ fn should_transfer_to_account() {
     let builder = builder.run_genesis(&DEFAULT_RUN_GENESIS_REQUEST);
 
     let default_account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should get account");
 
     let default_account_purse = default_account.main_purse();
@@ -59,16 +62,16 @@ fn should_transfer_to_account() {
     // Exec transfer contract
 
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
-        runtime_args! { ARG_TARGET => ACCOUNT_1_ADDR, ARG_AMOUNT => *TRANSFER_1_AMOUNT },
+        runtime_args! { ARG_TARGET => *ACCOUNT_1_PUBLIC_KEY, ARG_AMOUNT => *TRANSFER_1_AMOUNT },
     )
     .build();
 
     builder.exec(exec_request_1).expect_success().commit();
 
     let account = builder
-        .get_account(ACCOUNT_1_ADDR)
+        .get_account(*ACCOUNT_1_PUBLIC_KEY)
         .expect("should get account");
     let account_purse = account.main_purse();
 
@@ -104,7 +107,7 @@ fn should_transfer_from_account_to_account() {
     let builder = builder.run_genesis(&DEFAULT_RUN_GENESIS_REQUEST);
 
     let default_account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should get account");
 
     let default_account_purse = default_account.main_purse();
@@ -117,9 +120,9 @@ fn should_transfer_from_account_to_account() {
     // Exec transfer 1 contract
 
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
-        runtime_args! { ARG_TARGET => ACCOUNT_1_ADDR, ARG_AMOUNT => *TRANSFER_1_AMOUNT },
+        runtime_args! { ARG_TARGET => *ACCOUNT_1_PUBLIC_KEY, ARG_AMOUNT => *TRANSFER_1_AMOUNT },
     )
     .build();
 
@@ -140,7 +143,7 @@ fn should_transfer_from_account_to_account() {
 
     // Check account 1 balance
     let account_1 = builder
-        .get_account(ACCOUNT_1_ADDR)
+        .get_account(*ACCOUNT_1_PUBLIC_KEY)
         .expect("should have account 1");
     let account_1_purse = account_1.main_purse();
     let account_1_balance = builder.get_purse_balance(account_1_purse);
@@ -150,9 +153,9 @@ fn should_transfer_from_account_to_account() {
     // Exec transfer 2 contract
 
     let exec_request_2 = ExecuteRequestBuilder::standard(
-        ACCOUNT_1_ADDR,
+        *ACCOUNT_1_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
-        runtime_args! { ARG_TARGET => ACCOUNT_2_ADDR, ARG_AMOUNT => *TRANSFER_2_AMOUNT },
+        runtime_args! { ARG_TARGET => *ACCOUNT_2_PUBLIC_KEY, ARG_AMOUNT => *TRANSFER_2_AMOUNT },
     )
     .build();
 
@@ -163,7 +166,7 @@ fn should_transfer_from_account_to_account() {
         .expect("should have exec response");
 
     let account_2 = builder
-        .get_account(ACCOUNT_2_ADDR)
+        .get_account(*ACCOUNT_2_PUBLIC_KEY)
         .expect("should have account 2");
 
     let account_2_purse = account_2.main_purse();
@@ -198,7 +201,7 @@ fn should_transfer_to_existing_account() {
     let builder = builder.run_genesis(&DEFAULT_RUN_GENESIS_REQUEST);
 
     let default_account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should get account");
 
     let default_account_purse = default_account.main_purse();
@@ -211,9 +214,9 @@ fn should_transfer_to_existing_account() {
     // Exec transfer 1 contract
 
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
-        runtime_args! { ARG_TARGET => ACCOUNT_1_ADDR, ARG_AMOUNT => *TRANSFER_1_AMOUNT },
+        runtime_args! { ARG_TARGET => *ACCOUNT_1_PUBLIC_KEY, ARG_AMOUNT => *TRANSFER_1_AMOUNT },
     )
     .build();
 
@@ -222,7 +225,7 @@ fn should_transfer_to_existing_account() {
     // Exec transfer contract
 
     let account_1 = builder
-        .get_account(ACCOUNT_1_ADDR)
+        .get_account(*ACCOUNT_1_PUBLIC_KEY)
         .expect("should get account");
 
     let account_1_purse = account_1.main_purse();
@@ -248,15 +251,15 @@ fn should_transfer_to_existing_account() {
     // Exec transfer contract
 
     let exec_request_2 = ExecuteRequestBuilder::standard(
-        ACCOUNT_1_ADDR,
+        *ACCOUNT_1_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
-        runtime_args! { ARG_TARGET => ACCOUNT_2_ADDR, ARG_AMOUNT => *TRANSFER_2_AMOUNT },
+        runtime_args! { ARG_TARGET => *ACCOUNT_2_PUBLIC_KEY, ARG_AMOUNT => *TRANSFER_2_AMOUNT },
     )
     .build();
     builder.exec(exec_request_2).expect_success().commit();
 
     let account_2 = builder
-        .get_account(ACCOUNT_2_ADDR)
+        .get_account(*ACCOUNT_2_PUBLIC_KEY)
         .expect("should get account");
 
     let account_2_purse = account_2.main_purse();
@@ -286,22 +289,22 @@ fn should_fail_when_insufficient_funds() {
     // Run genesis
 
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
-        runtime_args! { ARG_TARGET => ACCOUNT_1_ADDR, ARG_AMOUNT => *TRANSFER_1_AMOUNT },
+        runtime_args! { ARG_TARGET => *ACCOUNT_1_PUBLIC_KEY, ARG_AMOUNT => *TRANSFER_1_AMOUNT },
     )
     .build();
     let exec_request_2 = ExecuteRequestBuilder::standard(
-        ACCOUNT_1_ADDR,
+        *ACCOUNT_1_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
-        runtime_args! { ARG_TARGET => ACCOUNT_2_ADDR, ARG_AMOUNT => *TRANSFER_2_AMOUNT_WITH_ADV },
+        runtime_args! { ARG_TARGET => *ACCOUNT_2_PUBLIC_KEY, ARG_AMOUNT => *TRANSFER_2_AMOUNT_WITH_ADV },
     )
     .build();
 
     let exec_request_3 = ExecuteRequestBuilder::standard(
-        ACCOUNT_1_ADDR,
+        *ACCOUNT_1_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
-        runtime_args! { ARG_TARGET => ACCOUNT_2_ADDR, ARG_AMOUNT => *TRANSFER_TOO_MUCH },
+        runtime_args! { ARG_TARGET => *ACCOUNT_2_PUBLIC_KEY, ARG_AMOUNT => *TRANSFER_TOO_MUCH },
     )
     .build();
 
@@ -336,16 +339,16 @@ fn should_transfer_total_amount() {
     let mut builder = InMemoryWasmTestBuilder::default();
 
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_PURSE_TO_ACCOUNT,
-        runtime_args! { "target" => ACCOUNT_1_ADDR, "amount" => *ACCOUNT_1_INITIAL_BALANCE },
+        runtime_args! { "target" => *ACCOUNT_1_PUBLIC_KEY, "amount" => *ACCOUNT_1_INITIAL_BALANCE },
     )
     .build();
 
     let exec_request_2 = ExecuteRequestBuilder::standard(
-        ACCOUNT_1_ADDR,
+        *ACCOUNT_1_PUBLIC_KEY,
         CONTRACT_TRANSFER_PURSE_TO_ACCOUNT,
-        runtime_args! { "target" => ACCOUNT_2_ADDR, "amount" => *ACCOUNT_1_INITIAL_BALANCE },
+        runtime_args! { "target" => *ACCOUNT_2_PUBLIC_KEY, "amount" => *ACCOUNT_1_INITIAL_BALANCE },
     )
     .build();
     builder
