@@ -17,7 +17,7 @@ use casper_types::{
     bytesrepr::Bytes,
     contracts::NamedKeys,
     runtime_args, ApiError, BlockTime, CLType, CLTyped, CLValue, EntryPoint, EntryPointAccess,
-    EntryPointType, EntryPoints, Key, Parameter, Phase, RuntimeArgs, U512,
+    EntryPointType, EntryPoints, Key, Parameter, Phase, PublicKey, RuntimeArgs, SecretKey, U512,
 };
 
 const DO_NOTHING_NAME: &str = "do_nothing";
@@ -43,7 +43,9 @@ const ARG_SIZE_FUNCTION_CALL_1_NAME: &str = "arg_size_function_call_1";
 const ARG_SIZE_FUNCTION_CALL_100_NAME: &str = "arg_size_function_call_100";
 
 // A destination account hash that does not necessarily must exists
-const DESTINATION_ACCOUNT_HASH: AccountHash = AccountHash::new([0x0A; 32]);
+fn destination_account() -> PublicKey {
+    SecretKey::ed25519([0u8; SecretKey::ED25519_LENGTH]).into()
+}
 
 #[repr(u16)]
 enum Error {
@@ -179,13 +181,15 @@ pub extern "C" fn storage_function() {
 pub extern "C" fn account_function() {
     let source_account: AccountHash = runtime::get_named_arg(ARG_SOURCE_ACCOUNT);
 
+    let destination_account = destination_account();
+
     // ========== functions from `account` module ==================================================
 
     let main_purse = account::get_main_purse();
     account::set_action_threshold(ActionType::Deployment, Weight::new(1)).unwrap_or_revert();
-    account::add_associated_key(DESTINATION_ACCOUNT_HASH, Weight::new(1)).unwrap_or_revert();
-    account::update_associated_key(DESTINATION_ACCOUNT_HASH, Weight::new(1)).unwrap_or_revert();
-    account::remove_associated_key(DESTINATION_ACCOUNT_HASH).unwrap_or_revert();
+    account::add_associated_key(destination_account, Weight::new(1)).unwrap_or_revert();
+    account::update_associated_key(destination_account, Weight::new(1)).unwrap_or_revert();
+    account::remove_associated_key(destination_account).unwrap_or_revert();
 
     // ========== functions from `system` module ===================================================
 
@@ -202,15 +206,10 @@ pub extern "C" fn account_function() {
         runtime::revert(Error::Transfer);
     }
 
-    system::transfer_from_purse_to_account(
-        new_purse,
-        DESTINATION_ACCOUNT_HASH,
-        transfer_amount,
-        None,
-    )
-    .unwrap_or_revert();
+    system::transfer_from_purse_to_account(new_purse, destination_account, transfer_amount, None)
+        .unwrap_or_revert();
 
-    system::transfer_to_account(DESTINATION_ACCOUNT_HASH, transfer_amount, None).unwrap_or_revert();
+    system::transfer_to_account(destination_account, transfer_amount, None).unwrap_or_revert();
 
     // ========== remaining functions from `runtime` module ========================================
 

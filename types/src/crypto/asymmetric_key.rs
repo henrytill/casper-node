@@ -357,6 +357,16 @@ impl PublicKey {
         AccountHash::from(self)
     }
 
+    /// TODO
+    pub fn to_formatted_string(&self) -> &str {
+        unimplemented!()
+    }
+
+    /// TODO
+    pub fn from_formatted_str(_str: &str) -> Result<Self, Error> {
+        unimplemented!()
+    }
+
     fn variant_name(&self) -> &str {
         match self {
             PublicKey::System => SYSTEM,

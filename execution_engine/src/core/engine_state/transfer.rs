@@ -206,7 +206,7 @@ impl TransferRuntimeArgsBuilder {
                     self.to = Some(hash.to_owned());
                     Key::Account(hash)
                 };
-                match account_key.into_account() {
+                match account_key.public_key() {
                     Some(public_key) => {
                         match tracking_copy
                             .borrow_mut()
@@ -228,7 +228,7 @@ impl TransferRuntimeArgsBuilder {
                         return Err(Error::Exec(ExecError::Revert(error.into())));
                     }
                 };
-                match account_key.into_account() {
+                match account_key.public_key() {
                     Some(account_hash) => {
                         self.to = Some(account_hash.to_owned());
                         match tracking_copy

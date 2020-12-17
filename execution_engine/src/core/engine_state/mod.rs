@@ -962,6 +962,9 @@ where
                 // NOTE: `to_contract_hash_key` ensures it returns valid value only for
                 // ByHash/ByName variants
                 let stored_contract_key = deploy_item.to_contract_hash_key(&account)?.unwrap();
+                let contract_hash = stored_contract_key
+                    .into_hash()
+                    .ok_or(Error::DoesNotConvertToHashAddr)?;
 
                 let contract_hash = stored_contract_key
                     .into_hash()
@@ -1183,7 +1186,7 @@ where
 
         let base_key = Key::Account(deploy_item.address);
 
-        let account_public_key = match base_key.into_account() {
+        let account_public_key = match base_key.public_key() {
             Some(account_addr) => account_addr,
             None => {
                 return Ok(ExecutionResult::precondition_failure(
@@ -1745,7 +1748,7 @@ where
 
         // Get addr bytes from `address` (which is actually a Key)
         // validation_spec_3: account validity
-        let account_hash = match base_key.into_account() {
+        let account_hash = match base_key.public_key() {
             Some(account_addr) => account_addr,
             None => {
                 return Ok(ExecutionResult::precondition_failure(

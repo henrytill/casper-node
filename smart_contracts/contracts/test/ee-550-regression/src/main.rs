@@ -10,8 +10,8 @@ use casper_contract::{
     unwrap_or_revert::UnwrapOrRevert,
 };
 use casper_types::{
-    account::{AccountHash, ActionType, Weight},
-    ApiError,
+    account::{ActionType, Weight},
+    ApiError, SecretKey,
 };
 
 #[repr(u16)]
@@ -38,11 +38,15 @@ const ARG_PASS: &str = "pass";
 #[no_mangle]
 pub extern "C" fn call() {
     let pass: String = runtime::get_named_arg(ARG_PASS);
+
+    let account_1 = SecretKey::ed25519(KEY_1_ADDR).into();
+    let account_2 = SecretKey::ed25519(KEY_2_ADDR).into();
+
     match pass.as_str() {
         "init_remove" => {
-            account::add_associated_key(AccountHash::new(KEY_1_ADDR), Weight::new(2))
+            account::add_associated_key(account_1, Weight::new(2))
                 .unwrap_or_revert_with(Error::AddKey1);
-            account::add_associated_key(AccountHash::new(KEY_2_ADDR), Weight::new(255))
+            account::add_associated_key(account_2, Weight::new(255))
                 .unwrap_or_revert_with(Error::AddKey2);
             account::set_action_threshold(ActionType::KeyManagement, Weight::new(254))
                 .unwrap_or_revert_with(Error::SetActionThreshold);
@@ -50,14 +54,13 @@ pub extern "C" fn call() {
         "test_remove" => {
             // Deployed with two keys of weights 2 and 255 (total saturates at 255) to satisfy new
             // threshold
-            account::remove_associated_key(AccountHash::new(KEY_1_ADDR))
-                .unwrap_or_revert_with(Error::RemoveKey);
+            account::remove_associated_key(account_1).unwrap_or_revert_with(Error::RemoveKey);
         }
 
         "init_update" => {
-            account::add_associated_key(AccountHash::new(KEY_1_ADDR), Weight::new(3))
+            account::add_associated_key(account_1, Weight::new(3))
                 .unwrap_or_revert_with(Error::AddKey1);
-            account::add_associated_key(AccountHash::new(KEY_2_ADDR), Weight::new(255))
+            account::add_associated_key(account_2, Weight::new(255))
                 .unwrap_or_revert_with(Error::AddKey2);
             account::set_action_threshold(ActionType::KeyManagement, Weight::new(254))
                 .unwrap_or_revert_with(Error::SetActionThreshold);
@@ -65,7 +68,7 @@ pub extern "C" fn call() {
         "test_update" => {
             // Deployed with two keys of weights 3 and 255 (total saturates at 255) to satisfy new
             // threshold
-            account::update_associated_key(AccountHash::new(KEY_1_ADDR), Weight::new(1))
+            account::update_associated_key(account_1, Weight::new(1))
                 .unwrap_or_revert_with(Error::UpdateKey);
         }
         _ => {

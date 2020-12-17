@@ -11,7 +11,7 @@ use crate::{
     },
     bytesrepr::{FromBytes, ToBytes},
     system_contract_errors::auction::{Error, Result},
-    CLTyped, PublicKey, URef, U512,
+    CLTyped, PublicKey, URef, SYSTEM_ACCOUNT, U512,
 };
 
 fn read_from<P, T>(provider: &mut P, name: &str) -> Result<T>

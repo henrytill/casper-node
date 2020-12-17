@@ -52,7 +52,7 @@ pub extern "C" fn call() {
         .unwrap_or_revert();
 
     let (contract_hash, contract_version) = storage::add_contract_version(
-        do_nothing_package_hash.into_hash().unwrap(),
+        do_nothing_package_hash.into_hash().unwrap_or_revert(),
         entry_points,
         NamedKeys::new(),
     );

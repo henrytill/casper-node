@@ -68,7 +68,7 @@ impl SystemProvider for AuctionContract {
 }
 
 impl RuntimeProvider for AuctionContract {
-    fn get_caller(&self) -> AccountHash {
+    fn get_caller(&self) -> PublicKey {
         runtime::get_caller()
     }
 
@@ -85,7 +85,7 @@ impl MintProvider for AuctionContract {
     fn transfer_purse_to_account(
         &mut self,
         source: URef,
-        target: AccountHash,
+        target: PublicKey,
         amount: U512,
     ) -> Result<TransferredTo, Error> {
         system::transfer_from_purse_to_account(source, target, amount, None)

@@ -14,7 +14,7 @@ use casper_types::{
     account::AccountHash,
     contracts::{NamedKeys, Parameters},
     ApiError, CLType, ContractHash, EntryPoint, EntryPointAccess, EntryPointType, EntryPoints, Key,
-    RuntimeArgs, URef, U512,
+    PublicKey, RuntimeArgs, URef, U512,
 };
 
 const DONATION_AMOUNT: u64 = 1;
@@ -45,11 +45,11 @@ impl Into<ApiError> for ContractError {
     }
 }
 
-fn get_maintainer_account_hash() -> Result<AccountHash, ApiError> {
+fn get_maintainer_public_key() -> Result<PublicKey, ApiError> {
     // Obtain maintainer address from the contract's named keys
     let maintainer_key = runtime::get_key(MAINTAINER).ok_or(ApiError::GetKey)?;
     maintainer_key
-        .into_account()
+        .into_public_key()
         .ok_or(ApiError::UnexpectedKeyVariant)
 }
 
@@ -83,10 +83,10 @@ pub extern "C" fn get_main_purse_ext() {}
 pub extern "C" fn transfer_from_purse_to_account_ext() {
     let main_purse = account::get_main_purse();
     // This is the address of account which installed the contract
-    let maintainer_account_hash = get_maintainer_account_hash().unwrap_or_revert();
+    let maintainer_public_key = get_maintainer_public_key().unwrap_or_revert();
     system::transfer_from_purse_to_account(
         main_purse,
-        maintainer_account_hash,
+        maintainer_public_key,
         U512::from(DONATION_AMOUNT),
         None,
     )
@@ -96,8 +96,8 @@ pub extern "C" fn transfer_from_purse_to_account_ext() {
 #[no_mangle]
 pub extern "C" fn transfer_to_account_ext() {
     // This is the address of account which installed the contract
-    let maintainer_account_hash = get_maintainer_account_hash().unwrap_or_revert();
-    system::transfer_to_account(maintainer_account_hash, U512::from(DONATION_AMOUNT), None)
+    let maintainer_public_key = get_maintainer_public_key().unwrap_or_revert();
+    system::transfer_to_account(maintainer_public_key, U512::from(DONATION_AMOUNT), None)
         .unwrap_or_revert();
     let _main_purse = account::get_main_purse();
 }

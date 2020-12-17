@@ -20,13 +20,13 @@ use casper_types::{
     },
     system_contract_errors::mint::Error,
     CLType, CLTyped, CLValue, EntryPoint, EntryPointAccess, EntryPointType, EntryPoints, Key,
-    Parameter, URef, U512,
+    Parameter, PublicKey, URef, U512,
 };
 
 pub struct MintContract;
 
 impl RuntimeProvider for MintContract {
-    fn get_caller(&self) -> AccountHash {
+    fn get_caller(&self) -> PublicKey {
         runtime::get_caller()
     }
 

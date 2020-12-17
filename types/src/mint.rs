@@ -7,14 +7,14 @@ mod system_provider;
 use core::convert::TryFrom;
 use num_rational::Ratio;
 
-use crate::{account::AccountHash, system_contract_errors::mint::Error, Key, URef, U512};
+use crate::{
+    account::AccountHash, system_contract_errors::mint::Error, Key, URef, SYSTEM_ACCOUNT, U512,
+};
 
 pub use crate::mint::{
     constants::*, runtime_provider::RuntimeProvider, storage_provider::StorageProvider,
     system_provider::SystemProvider,
 };
-
-const SYSTEM_ACCOUNT: AccountHash = AccountHash::new([0; 32]);
 
 /// Mint trait.
 pub trait Mint: RuntimeProvider + StorageProvider + SystemProvider {

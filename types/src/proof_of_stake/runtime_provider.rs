@@ -1,4 +1,4 @@
-use crate::{account::AccountHash, system_contract_errors::pos::Error, BlockTime, Key, Phase};
+use crate::{system_contract_errors::pos::Error, BlockTime, Key, Phase, PublicKey};
 
 /// Provider of runtime host functionality.
 pub trait RuntimeProvider {
@@ -18,5 +18,5 @@ pub trait RuntimeProvider {
     fn get_block_time(&self) -> BlockTime;
 
     /// Get caller.
-    fn get_caller(&self) -> AccountHash;
+    fn get_caller(&self) -> PublicKey;
 }

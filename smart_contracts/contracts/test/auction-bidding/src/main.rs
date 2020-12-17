@@ -12,13 +12,11 @@ use casper_contract::{
 };
 
 use casper_types::{
-    account::AccountHash, auction, runtime_args, ApiError, ContractHash, PublicKey, RuntimeArgs,
-    URef, U512,
+    auction, runtime_args, ApiError, ContractHash, PublicKey, RuntimeArgs, URef, U512,
 };
 
 const ARG_AMOUNT: &str = "amount";
 const ARG_ENTRY_POINT: &str = "entry_point";
-const ARG_ACCOUNT_HASH: &str = "account_hash";
 const ARG_PUBLIC_KEY: &str = "public_key";
 const TEST_BOND_FROM_MAIN_PURSE: &str = "bond-from-main-purse";
 const TEST_SEED_NEW_ACCOUNT: &str = "seed_new_account";
@@ -65,7 +63,7 @@ fn call_bond(auction: ContractHash, public_key: PublicKey, bond_amount: U512, bo
 
 fn seed_new_account() {
     let source = account::get_main_purse();
-    let target: AccountHash = runtime::get_named_arg(ARG_ACCOUNT_HASH);
+    let target: PublicKey = runtime::get_named_arg(ARG_PUBLIC_KEY);
     let amount: U512 = runtime::get_named_arg(ARG_AMOUNT);
     system::transfer_from_purse_to_account(source, target, amount, None)
         .unwrap_or_revert_with(ApiError::User(Error::UnableToSeedAccount as u16));
