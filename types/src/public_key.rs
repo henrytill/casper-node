@@ -1,6 +1,12 @@
 // TODO - remove once schemars stops causing warning.
 #![allow(clippy::field_reassign_with_default)]
 
+pub use crate::crypto::PublicKey;
+
+/// TODO
+pub const ED25519_PUBLIC_KEY_LENGTH: usize = 32;
+
+/*
 use alloc::{string::String, vec::Vec};
 use core::{
     cmp,
@@ -418,3 +424,4 @@ mod tests {
         assert_eq!(public_key, decoded);
     }
 }
+ */
