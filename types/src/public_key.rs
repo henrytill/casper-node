@@ -342,7 +342,11 @@ pub(crate) mod gens {
 #[cfg(test)]
 mod tests {
     use super::PublicKey;
-    use crate::{bytesrepr, CLValue};
+    use crate::{
+        account::AccountHash,
+        bytesrepr::{self, ToBytes},
+        CLValue,
+    };
 
     #[test]
     fn bytesrepr_roundtrip_ed25519() {
@@ -416,5 +420,45 @@ mod tests {
         let hex_string = public_key.to_hex();
         let decoded = PublicKey::from_hex(&hex_string).unwrap();
         assert_eq!(public_key, decoded);
+    }
+
+    #[test]
+    fn ed25519_public_key_should_have_expected_identity() {
+        const PUBLIC_KEY_BYTES_EXPECTED: [u8; 33] = [
+            1, 59, 106, 39, 188, 206, 182, 164, 45, 98, 163, 168, 208, 42, 111, 13, 115, 101, 50,
+            21, 119, 29, 226, 67, 166, 58, 192, 72, 161, 139, 89, 218, 41,
+        ];
+
+        const ACCOUNT_HASH_BYTES_EXPECTED: [u8; 32] = [
+            233, 77, 170, 255, 121, 194, 171, 141, 156, 49, 217, 195, 5, 141, 125, 10, 13, 211, 18,
+            4, 165, 99, 141, 193, 69, 31, 166, 123, 46, 63, 184, 140,
+        ];
+
+        let public_key: PublicKey =
+            bytesrepr::deserialize(PUBLIC_KEY_BYTES_EXPECTED.to_vec()).unwrap();
+
+        let account_hash: AccountHash = public_key.into();
+        let account_hash_bytes = account_hash.to_bytes().unwrap();
+        assert_eq!(account_hash_bytes, ACCOUNT_HASH_BYTES_EXPECTED);
+    }
+
+    #[test]
+    fn secp256k1_public_key_should_have_expected_identity() {
+        const PUBLIC_KEY_BYTES_EXPECTED: [u8; 34] = [
+            2, 3, 27, 132, 197, 86, 123, 18, 100, 64, 153, 93, 62, 213, 170, 186, 5, 101, 215, 30,
+            24, 52, 96, 72, 25, 255, 156, 23, 245, 233, 213, 221, 7, 143,
+        ];
+
+        const ACCOUNT_HASH_BYTES_EXPECTED: [u8; 32] = [
+            40, 187, 247, 239, 217, 190, 151, 51, 149, 150, 239, 68, 31, 242, 125, 30, 50, 25, 94,
+            144, 221, 177, 114, 83, 193, 57, 81, 210, 62, 81, 55, 165,
+        ];
+
+        let public_key: PublicKey =
+            bytesrepr::deserialize(PUBLIC_KEY_BYTES_EXPECTED.to_vec()).unwrap();
+
+        let account_hash: AccountHash = public_key.into();
+        let account_hash_bytes = account_hash.to_bytes().unwrap();
+        assert_eq!(account_hash_bytes, ACCOUNT_HASH_BYTES_EXPECTED);
     }
 }
