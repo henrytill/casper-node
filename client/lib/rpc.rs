@@ -94,7 +94,7 @@ impl RpcCall {
             if let Ok(key) = Key::from_formatted_str(key) {
                 key
             } else if let Ok(public_key) = PublicKey::from_hex(key) {
-                Key::Account(public_key.to_account_hash())
+                Key::Account(public_key)
             } else {
                 return Err(Error::FailedToParseKey);
             }

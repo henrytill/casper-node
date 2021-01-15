@@ -800,7 +800,7 @@ mod tests {
         let bytes = (1..33).collect::<Vec<_>>();
         let array = <[u8; 32]>::try_from(bytes.as_ref()).unwrap();
 
-        let key_account = Key::Account(AccountHash::new(array));
+        let key_account = Key::Account(SecretKey::ed25519(array).into());
         let key_hash = Key::Hash(array);
         let key_uref = Key::URef(URef::new(array, AccessRights::NONE));
 

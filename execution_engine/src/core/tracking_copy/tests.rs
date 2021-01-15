@@ -4,10 +4,8 @@ use assert_matches::assert_matches;
 use proptest::prelude::*;
 
 use casper_types::{
-    account::{AccountHash, Weight},
-    contracts::NamedKeys,
-    gens::*,
-    AccessRights, CLValue, Contract, EntryPoints, Key, ProtocolVersion, SecretKey, URef, U512,
+    account::Weight, contracts::NamedKeys, crypto::gens::public_key_arb, gens::*, AccessRights,
+    CLValue, Contract, EntryPoints, Key, ProtocolVersion, SecretKey, URef, U512,
 };
 
 use super::{
@@ -365,8 +363,7 @@ proptest! {
         v in stored_value_arb(), // value in account state
         name in "\\PC*", // human-readable name for state
         missing_name in "\\PC*",
-        pk in account_hash_arb(), // account hash
-        address in account_hash_arb(), // address for account hash
+        pk in public_key_arb(),
     ) {
         let correlation_id = CorrelationId::new();
         let named_keys = iter::once((name.clone(), k)).collect();
@@ -379,7 +376,7 @@ proptest! {
             associated_keys,
             Default::default(),
         );
-        let account_key = Key::Account(address);
+        let account_key = Key::Account(pk);
 
         let (gs, root_hash) = InMemoryGlobalState::from_pairs(
             correlation_id,
@@ -406,8 +403,7 @@ proptest! {
         v in stored_value_arb(), // value in contract state
         state_name in "\\PC*", // human-readable name for state
         contract_name in "\\PC*", // human-readable name for contract
-        pk in account_hash_arb(), // account hash
-        address in account_hash_arb(), // address for account hash
+        pk in public_key_arb(),
         hash in u8_slice_32(), // hash for contract key
     ) {
         let correlation_id = CorrelationId::new();
@@ -436,7 +432,7 @@ proptest! {
             associated_keys,
             Default::default(),
         );
-        let account_key = Key::Account(address);
+        let account_key = Key::Account(pk);
 
         let (gs, root_hash) = InMemoryGlobalState::from_pairs(correlation_id, &[
             (k, v.to_owned()),
@@ -587,7 +583,6 @@ fn validate_query_proof_should_work() {
     let contract_key = Key::Hash([5; 32]);
 
     // create account that refers to that contract
-    let account_hash = AccountHash::new([7; 32]);
     let fake_purse = URef::new([6; 32], AccessRights::READ_ADD_WRITE);
     let contract_name = "contract".to_string();
     let named_keys = {

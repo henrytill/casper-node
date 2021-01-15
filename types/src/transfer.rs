@@ -148,6 +148,12 @@ impl Transfer {
     }
 }
 
+impl Default for Transfer {
+    fn default() -> Self {
+        unimplemented!()
+    }
+}
+
 impl FromBytes for Transfer {
     fn from_bytes(bytes: &[u8]) -> Result<(Self, &[u8]), bytesrepr::Error> {
         let (deploy_hash, rem) = FromBytes::from_bytes(bytes)?;

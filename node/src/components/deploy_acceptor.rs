@@ -199,7 +199,7 @@ impl DeployAcceptor {
             return effects;
         }
 
-        let account_key = deploy.header().account().to_account_hash().into();
+        let account_key = deploy.header().account().to_owned().into();
 
         // skip account verification if deploy not received from client or node is configured to
         // not verify accounts

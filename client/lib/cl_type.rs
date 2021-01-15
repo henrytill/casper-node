@@ -93,7 +93,9 @@ pub(crate) fn supported_cl_types() -> Vec<(&'static str, CLType)> {
 pub mod help {
     use std::convert::TryFrom;
 
-    use casper_types::{account::AccountHash, AccessRights, AsymmetricType, Key, PublicKey, URef};
+    use casper_types::{
+        account::AccountHash, AccessRights, AsymmetricType, Key, PublicKey, SecretKey, URef,
+    };
 
     /// Returns a list of `CLType`s able to be passed as a string for use as payment code or session
     /// code args.
@@ -147,7 +149,7 @@ Prefix the type with "opt_" and use the term "null" without quotes to specify a 
 "name_09:opt_string='null'"     # Some("null".to_string())
 "name_10:opt_string=null"       # None
 "#,
-            Key::Account(AccountHash::new(array)).to_formatted_string(),
+            Key::Account(SecretKey::ed25519(array).into()).to_formatted_string(),
             Key::Hash(array).to_formatted_string(),
             Key::URef(URef::new(array, AccessRights::NONE)).to_formatted_string(),
             AccountHash::new(array).to_formatted_string(),

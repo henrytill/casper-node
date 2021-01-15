@@ -25,7 +25,7 @@ where
         .into_iter()
         .map(|(pk, stake)| {
             let motes = Motes::new(stake.into());
-            GenesisAccount::new(pk, pk.to_account_hash(), motes, motes)
+            GenesisAccount::new(pk, motes, motes)
         })
         .collect();
     chainspec.genesis.timestamp = Timestamp::now();
