@@ -45,7 +45,7 @@ use casper_types::{
     system_contract_errors::{self, mint::Error as MintError},
     AccessRights, ApiError, BlockTime, CLValue, Contract, ContractHash, ContractPackage,
     ContractPackageHash, ContractVersionKey, DeployHash, DeployInfo, EntryPoint, EntryPointType,
-    Key, Phase, ProtocolVersion, PublicKey, RuntimeArgs, URef, U512,
+    Key, Phase, ProtocolVersion, PublicKey, RuntimeArgs, URef, SYSTEM_ACCOUNT, U512,
 };
 
 pub use self::{
@@ -189,7 +189,7 @@ where
         let mut virtual_system_account = {
             let named_keys = NamedKeys::new();
             let purse = URef::new(Default::default(), AccessRights::READ_ADD_WRITE);
-            Account::create(SYSTEM_ACCOUNT_ADDR, named_keys, purse)
+            Account::create(SYSTEM_ACCOUNT, named_keys, purse)
         };
 
         // Spec #4: Create a runtime.
@@ -203,7 +203,7 @@ where
 
         // Persist the "virtual system account".  It will get overwritten with the actual system
         // account below.
-        let key = Key::Account(SYSTEM_ACCOUNT_ADDR);
+        let key = Key::Account(SYSTEM_ACCOUNT);
         let value = {
             let virtual_system_account = virtual_system_account.clone();
             StoredValue::Account(virtual_system_account)
@@ -230,11 +230,11 @@ where
 
         // Spec #6: Compute initially bonded validators as the contents of accounts_path
         // filtered to non-zero staked amounts.
-        let bonded_validators: BTreeMap<AccountHash, U512> = ee_config
+        let bonded_validators: BTreeMap<PublicKey, U512> = ee_config
             .get_bonded_validators()
             .map(|genesis_account| {
                 (
-                    genesis_account.account_hash(),
+                    genesis_account.public_key(),
                     genesis_account.bonded_amount().value(),
                 )
             })
@@ -257,7 +257,7 @@ where
             let args = runtime_args! {
                 ARG_ROUND_SEIGNIORAGE_RATE => arg_round_seigniorage_rate,
             };
-            let authorization_keys: BTreeSet<AccountHash> = BTreeSet::new();
+            let authorization_keys: BTreeSet<PublicKey> = BTreeSet::new();
             let install_deploy_hash = DeployHash::new(genesis_config_hash.value());
             let hash_address_generator = Rc::clone(&hash_address_generator);
             let uref_address_generator = Rc::clone(&uref_address_generator);
@@ -311,7 +311,7 @@ where
                 "mint_contract_package_hash" => mint_package_hash,
                 "genesis_validators" => bonded_validators,
             };
-            let authorization_keys: BTreeSet<AccountHash> = BTreeSet::new();
+            let authorization_keys: BTreeSet<PublicKey> = BTreeSet::new();
 
             executor.exec_wasm_direct(
                 proof_of_stake_installer_module,
@@ -397,9 +397,7 @@ where
                         // NOTE: Safe as genesis validators are expected to have public key
                         // specified.
                         Some((
-                            genesis_account
-                                .public_key()
-                                .expect("should have public key"),
+                            genesis_account.public_key(),
                             genesis_account.bonded_amount().value(),
                         ))
                     } else {
@@ -526,14 +524,15 @@ where
                 let tracking_copy_write = Rc::clone(&tracking_copy);
                 let mut named_keys_exec = NamedKeys::new();
                 let base_key = mint_hash;
-                let authorization_keys: BTreeSet<AccountHash> = BTreeSet::new();
-                let account_hash = account.account_hash();
-                let purse_creation_deploy_hash = DeployHash::new(account_hash.value());
+                let authorization_keys: BTreeSet<PublicKey> = BTreeSet::new();
+                let public_key = account.public_key();
+                let purse_creation_deploy_hash =
+                    DeployHash::new(Blake2bHash::new(public_key.as_ref()).value());
                 let hash_address_generator = Rc::clone(&hash_address_generator);
                 let uref_address_generator = {
                     let generator = AddressGeneratorBuilder::new()
                         .seed_with(genesis_config_hash.as_ref())
-                        .seed_with(&account_hash.to_bytes()?)
+                        .seed_with(&public_key.to_bytes()?)
                         .seed_with(&[phase as u8])
                         .build();
                     Rc::new(RefCell::new(generator))
@@ -578,10 +577,10 @@ where
                 };
 
                 // ...and write that account to global state...
-                let key = Key::Account(account_hash);
+                let key = Key::Account(public_key);
                 let value = {
                     let main_purse = mint_result?;
-                    StoredValue::Account(Account::create(account_hash, named_keys, main_purse))
+                    StoredValue::Account(Account::create(public_key, named_keys, main_purse))
                 };
 
                 tracking_copy_write.borrow_mut().write(key, value);
@@ -698,7 +697,7 @@ where
 
                 // execute as system account
                 let mut system_account = {
-                    let key = Key::Account(SYSTEM_ACCOUNT_ADDR);
+                    let key = Key::Account(SYSTEM_ACCOUNT);
                     match tracking_copy.borrow_mut().read(correlation_id, &key) {
                         Ok(Some(StoredValue::Account(account))) => account,
                         Ok(_) => panic!("system account must exist"),
@@ -708,7 +707,7 @@ where
 
                 let authorization_keys = {
                     let mut ret = BTreeSet::new();
-                    ret.insert(SYSTEM_ACCOUNT_ADDR);
+                    ret.insert(SYSTEM_ACCOUNT);
                     ret
                 };
 
@@ -964,10 +963,6 @@ where
                 let stored_contract_key = deploy_item.to_contract_hash_key(&account)?.unwrap();
                 let contract_hash = stored_contract_key
                     .into_hash()
-                    .ok_or(Error::DoesNotConvertToHashAddr)?;
-
-                let contract_hash = stored_contract_key
-                    .into_hash()
                     .ok_or(Error::InvalidKeyVariant)?;
                 let contract = tracking_copy
                     .borrow_mut()
@@ -1098,13 +1093,13 @@ where
     fn get_authorized_account(
         &self,
         correlation_id: CorrelationId,
-        account_hash: AccountHash,
-        authorization_keys: &BTreeSet<AccountHash>,
+        public_key: PublicKey,
+        authorization_keys: &BTreeSet<PublicKey>,
         tracking_copy: Rc<RefCell<TrackingCopy<<S as StateProvider>::Reader>>>,
     ) -> Result<Account, Error> {
         let account: Account = match tracking_copy
             .borrow_mut()
-            .get_account(correlation_id, account_hash)
+            .get_account(correlation_id, public_key)
         {
             Ok(account) => account,
             Err(_) => {
@@ -1184,16 +1179,7 @@ where
             Ok(Some(tracking_copy)) => Rc::new(RefCell::new(tracking_copy)),
         };
 
-        let base_key = Key::Account(deploy_item.address);
-
-        let account_public_key = match base_key.public_key() {
-            Some(account_addr) => account_addr,
-            None => {
-                return Ok(ExecutionResult::precondition_failure(
-                    error::Error::Authorization,
-                ));
-            }
-        };
+        let account_public_key = deploy_item.public_key;
 
         let authorization_keys = deploy_item.authorization_keys;
 
@@ -1602,7 +1588,7 @@ where
             let proposer_purse = {
                 let proposer_account: Account = match tracking_copy
                     .borrow_mut()
-                    .get_account(correlation_id, AccountHash::from(&proposer))
+                    .get_account(correlation_id, proposer)
                 {
                     Ok(account) => account,
                     Err(error) => {
@@ -1617,7 +1603,7 @@ where
                 let finalize_cost_motes: Motes =
                     Motes::from_gas(payment_result.cost(), CONV_RATE).expect("motes overflow");
 
-                let account = deploy_item.address;
+                let account = deploy_item.public_key;
                 let maybe_runtime_args = RuntimeArgs::try_new(|args| {
                     args.insert(proof_of_stake::ARG_AMOUNT, finalize_cost_motes.value())?;
                     args.insert(proof_of_stake::ARG_ACCOUNT, account)?;
@@ -1635,7 +1621,7 @@ where
             };
 
             let system_account = Account::new(
-                SYSTEM_ACCOUNT_ADDR,
+                SYSTEM_ACCOUNT,
                 Default::default(),
                 URef::new(Default::default(), AccessRights::READ_ADD_WRITE),
                 Default::default(),
@@ -1676,7 +1662,7 @@ where
             let deploy_info = DeployInfo::new(
                 deploy_item.deploy_hash,
                 &transfers,
-                account.account_hash(),
+                account.public_key(),
                 account.main_purse(),
                 cost,
             );
@@ -1744,12 +1730,12 @@ where
             Ok(Some(tracking_copy)) => Rc::new(RefCell::new(tracking_copy)),
         };
 
-        let base_key = Key::Account(deploy_item.address);
+        let base_key = Key::Account(deploy_item.public_key);
 
         // Get addr bytes from `address` (which is actually a Key)
         // validation_spec_3: account validity
-        let account_hash = match base_key.public_key() {
-            Some(account_addr) => account_addr,
+        let public_key = match base_key.into_public_key() {
+            Some(public_key) => public_key,
             None => {
                 return Ok(ExecutionResult::precondition_failure(
                     error::Error::Authorization,
@@ -1763,7 +1749,7 @@ where
         // validation_spec_3: account validity
         let account = match self.get_authorized_account(
             correlation_id,
-            account_hash,
+            public_key,
             &authorization_keys,
             Rc::clone(&tracking_copy),
         ) {
@@ -1896,7 +1882,7 @@ where
         // Finalization is executed by system account (currently genesis account)
         // payment_code_spec_5: system executes finalization
         let system_account = Account::new(
-            SYSTEM_ACCOUNT_ADDR,
+            SYSTEM_ACCOUNT,
             Default::default(),
             URef::new(Default::default(), AccessRights::READ_ADD_WRITE),
             Default::default(),
@@ -2129,7 +2115,7 @@ where
         let proposer_purse = {
             let proposer_account: Account = match tracking_copy
                 .borrow_mut()
-                .get_account(correlation_id, AccountHash::from(&proposer))
+                .get_account(correlation_id, proposer)
             {
                 Ok(account) => account,
                 Err(error) => {
@@ -2265,7 +2251,7 @@ where
             let deploy_info = DeployInfo::new(
                 deploy_hash,
                 &transfers,
-                account.account_hash(),
+                account.public_key(),
                 account.main_purse(),
                 cost,
             );
@@ -2301,7 +2287,7 @@ where
 
                 let maybe_runtime_args = RuntimeArgs::try_new(|args| {
                     args.insert(proof_of_stake::ARG_AMOUNT, finalize_cost_motes.value())?;
-                    args.insert(proof_of_stake::ARG_ACCOUNT, account_hash)?;
+                    args.insert(proof_of_stake::ARG_ACCOUNT, public_key)?;
                     args.insert(proof_of_stake::ARG_TARGET, proposer_purse)?;
                     Ok(())
                 });
@@ -2471,9 +2457,9 @@ where
         let virtual_system_account = {
             let named_keys = NamedKeys::new();
             let purse = URef::new(Default::default(), AccessRights::READ_ADD_WRITE);
-            Account::create(SYSTEM_ACCOUNT_ADDR, named_keys, purse)
+            Account::create(SYSTEM_ACCOUNT, named_keys, purse)
         };
-        let authorization_keys = BTreeSet::from_iter(vec![SYSTEM_ACCOUNT_ADDR]);
+        let authorization_keys = BTreeSet::from_iter(vec![SYSTEM_ACCOUNT]);
         let blocktime = BlockTime::default();
         let deploy_hash = {
             // seeds address generator w/ protocol version
@@ -2577,11 +2563,11 @@ where
         let virtual_system_account = {
             let named_keys = NamedKeys::new();
             let purse = URef::new(Default::default(), AccessRights::READ_ADD_WRITE);
-            Account::create(SYSTEM_ACCOUNT_ADDR, named_keys, purse)
+            Account::create(SYSTEM_ACCOUNT, named_keys, purse)
         };
         let authorization_keys = {
             let mut ret = BTreeSet::new();
-            ret.insert(SYSTEM_ACCOUNT_ADDR);
+            ret.insert(SYSTEM_ACCOUNT);
             ret
         };
         let mut named_keys = auction_contract.named_keys().to_owned();

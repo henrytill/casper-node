@@ -14,9 +14,8 @@ use schemars::{gen::SchemaGenerator, schema::Schema, JsonSchema};
 use serde::{de::Error as SerdeError, Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{
-    account::AccountHash,
     bytesrepr::{self, FromBytes, ToBytes},
-    CLType, CLTyped, URef, U512,
+    CLType, CLTyped, PublicKey, URef, U512,
 };
 
 /// The length of a deploy hash.
@@ -101,16 +100,16 @@ impl<'de> Deserialize<'de> for DeployHash {
 }
 
 /// Represents a transfer from one purse to another
-#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "std", derive(JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct Transfer {
     /// Deploy that created the transfer
     pub deploy_hash: DeployHash,
     /// Account from which transfer was executed
-    pub from: AccountHash,
+    pub from: PublicKey,
     /// Account to which funds are transferred
-    pub to: Option<AccountHash>,
+    pub to: Option<PublicKey>,
     /// Source purse
     pub source: URef,
     /// Target purse
@@ -128,8 +127,8 @@ impl Transfer {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         deploy_hash: DeployHash,
-        from: AccountHash,
-        to: Option<AccountHash>,
+        from: PublicKey,
+        to: Option<PublicKey>,
         source: URef,
         target: URef,
         amount: U512,
@@ -152,8 +151,8 @@ impl Transfer {
 impl FromBytes for Transfer {
     fn from_bytes(bytes: &[u8]) -> Result<(Self, &[u8]), bytesrepr::Error> {
         let (deploy_hash, rem) = FromBytes::from_bytes(bytes)?;
-        let (from, rem) = AccountHash::from_bytes(rem)?;
-        let (to, rem) = <Option<AccountHash>>::from_bytes(rem)?;
+        let (from, rem) = PublicKey::from_bytes(rem)?;
+        let (to, rem) = <Option<PublicKey>>::from_bytes(rem)?;
         let (source, rem) = URef::from_bytes(rem)?;
         let (target, rem) = URef::from_bytes(rem)?;
         let (amount, rem) = U512::from_bytes(rem)?;
@@ -380,7 +379,8 @@ mod gens {
     use proptest::prelude::{prop::option, Arbitrary, Strategy};
 
     use crate::{
-        deploy_info::gens::{account_hash_arb, deploy_hash_arb},
+        crypto::gens::public_key_arb,
+        deploy_info::gens::deploy_hash_arb,
         gens::{u512_arb, uref_arb},
         Transfer,
     };
@@ -388,8 +388,8 @@ mod gens {
     pub fn transfer_arb() -> impl Strategy<Value = Transfer> {
         (
             deploy_hash_arb(),
-            account_hash_arb(),
-            option::of(account_hash_arb()),
+            public_key_arb(),
+            option::of(public_key_arb()),
             uref_arb(),
             uref_arb(),
             u512_arb(),

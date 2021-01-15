@@ -12,7 +12,7 @@ use casper_types::{AccessRights, Key, PublicKey, URef, U512};
 
 use crate::{
     internal::{InMemoryWasmTestBuilder, DEFAULT_GENESIS_CONFIG, DEFAULT_GENESIS_CONFIG_HASH},
-    Account, AccountHash, Error, Result, Session, URefAddr, Value,
+    Account, Error, Result, Session, URefAddr, Value,
 };
 
 /// Context in which to run a test of a Wasm smart contract.
@@ -109,7 +109,7 @@ impl TestContext {
     /// Queries for a [`Value`] stored under the given `key` and `path`.
     ///
     /// Returns an [`Error`] if not found.
-    pub fn query<T: AsRef<str>>(&self, key: AccountHash, path: &[T]) -> Result<Value> {
+    pub fn query<T: AsRef<str>>(&self, key: PublicKey, path: &[T]) -> Result<Value> {
         let path = path.iter().map(AsRef::as_ref).collect::<Vec<_>>();
         self.inner
             .query(None, Key::Account(key), &path)
@@ -126,8 +126,8 @@ impl TestContext {
     }
 
     /// Gets the main purse [`URef`] from an [`Account`] stored under a [`PublicKey`], or `None`.
-    pub fn main_purse_address(&self, account_key: AccountHash) -> Option<URef> {
-        match self.inner.get_account(account_key) {
+    pub fn main_purse_address(&self, public_key: PublicKey) -> Option<URef> {
+        match self.inner.get_account(public_key) {
             Some(account) => Some(account.main_purse()),
             None => None,
         }
@@ -135,8 +135,8 @@ impl TestContext {
 
     // TODO: Remove this once test can use query
     /// Gets an [`Account`] stored under a [`PublicKey`], or `None`.
-    pub fn get_account(&self, account_key: AccountHash) -> Option<Account> {
-        match self.inner.get_account(account_key) {
+    pub fn get_account(&self, public_key: PublicKey) -> Option<Account> {
+        match self.inner.get_account(public_key) {
             Some(account) => Some(account.into()),
             None => None,
         }
@@ -163,18 +163,9 @@ impl TestContextBuilder {
     /// the Genesis block.
     ///
     /// Note: `initial_balance` represents the number of motes.
-    pub fn with_public_key(
-        mut self,
-        public_key: PublicKey,
-        account_hash: AccountHash,
-        initial_balance: U512,
-    ) -> Self {
-        let new_account = GenesisAccount::new(
-            public_key,
-            account_hash,
-            Motes::new(initial_balance),
-            Motes::zero(),
-        );
+    pub fn with_public_key(mut self, public_key: PublicKey, initial_balance: U512) -> Self {
+        let new_account =
+            GenesisAccount::new(public_key, Motes::new(initial_balance), Motes::zero());
         self.genesis_config
             .ee_config_mut()
             .push_account(new_account);

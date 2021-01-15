@@ -5,19 +5,19 @@ use casper_execution_engine::{
     shared::newtypes::Blake2bHash,
 };
 use casper_types::{
-    account::AccountHash, bytesrepr::ToBytes, contracts::ContractVersion, ContractHash, DeployHash,
-    HashAddr, RuntimeArgs,
+    bytesrepr::ToBytes, contracts::ContractVersion, ContractHash, DeployHash, HashAddr, PublicKey,
+    RuntimeArgs, SecretKey,
 };
 
 use crate::internal::utils;
 
 #[derive(Default)]
 struct DeployItemData {
-    pub address: Option<AccountHash>,
+    pub address: Option<PublicKey>,
     pub payment_code: Option<ExecutableDeployItem>,
     pub session_code: Option<ExecutableDeployItem>,
     pub gas_price: u64,
-    pub authorization_keys: BTreeSet<AccountHash>,
+    pub authorization_keys: BTreeSet<PublicKey>,
     pub deploy_hash: DeployHash,
 }
 
@@ -30,7 +30,7 @@ impl DeployItemBuilder {
         Default::default()
     }
 
-    pub fn with_address(mut self, address: AccountHash) -> Self {
+    pub fn with_address(mut self, address: PublicKey) -> Self {
         self.deploy_item.address = Some(address);
         self
     }
@@ -209,15 +209,12 @@ impl DeployItemBuilder {
         self
     }
 
-    pub fn with_authorization_keys<T: Clone + Into<AccountHash>>(
+    pub fn with_authorization_keys<T: Clone + Into<PublicKey>>(
         mut self,
         authorization_keys: &[T],
     ) -> Self {
-        self.deploy_item.authorization_keys = authorization_keys
-            .iter()
-            .cloned()
-            .map(|v| v.into())
-            .collect();
+        self.deploy_item.authorization_keys =
+            authorization_keys.iter().cloned().map(Into::into).collect();
         self
     }
 
@@ -234,10 +231,10 @@ impl DeployItemBuilder {
 
     pub fn build(self) -> DeployItem {
         DeployItem {
-            address: self
+            public_key: self
                 .deploy_item
                 .address
-                .unwrap_or_else(|| AccountHash::new([0u8; 32])),
+                .unwrap_or_else(|| SecretKey::ed25519([0u8; SecretKey::ED25519_LENGTH]).into()),
             session: self
                 .deploy_item
                 .session_code

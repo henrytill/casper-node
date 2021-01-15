@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 
 use crate::engine_server::{mappings, mappings::ParsingError, state};
 
-use casper_types::{account::AccountHash, DeployHash, DeployInfo, TransferAddr, URef, U512};
+use casper_types::{DeployHash, DeployInfo, PublicKey, TransferAddr, URef, U512};
 
 impl From<DeployInfo> for state::DeployInfo {
     fn from(deploy_info: DeployInfo) -> Self {
@@ -25,11 +25,7 @@ impl From<DeployInfo> for state::DeployInfo {
                 .into();
             ret.set_transfers(pb_vec_transfer_addr)
         }
-        {
-            let mut pb_account_hash = state::AccountHash::new();
-            pb_account_hash.account_hash = deploy_info.from.value().to_vec();
-            ret.set_from(pb_account_hash)
-        }
+        ret.set_from(deploy_info.from.into());
         ret.set_source(deploy_info.source.into());
         ret.set_gas(deploy_info.gas.into());
         ret
@@ -55,14 +51,7 @@ impl TryFrom<state::DeployInfo> for DeployInfo {
             )?);
             transfers.push(transfer_addr)
         }
-        let from = {
-            let account_hash = pb_deploy_info.get_from();
-            mappings::vec_to_array(
-                account_hash.account_hash.to_owned(),
-                "Protobuf DeployInfo.from",
-            )
-            .map(AccountHash::new)?
-        };
+        let from = PublicKey::try_from(pb_deploy_info.get_from().to_owned())?;
         let source = URef::try_from(pb_deploy_info.get_source().to_owned())?;
         let gas = U512::try_from(pb_deploy_info.get_gas().to_owned())?;
 

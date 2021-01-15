@@ -4,7 +4,6 @@ use alloc::vec::Vec;
 use core::mem::MaybeUninit;
 
 use casper_types::{
-    account::AccountHash,
     api_error,
     auction::{EraId, EraInfo},
     bytesrepr,
@@ -210,7 +209,7 @@ pub fn transfer_from_purse_to_purse(
 /// Needed to support system contract-based execution.
 #[doc(hidden)]
 pub fn record_transfer(
-    maybe_to: Option<AccountHash>,
+    maybe_to: Option<PublicKey>,
     source: URef,
     target: URef,
     amount: U512,

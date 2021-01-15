@@ -39,7 +39,7 @@ pub struct Account {
 impl From<&ExecutionEngineAccount> for Account {
     fn from(ee_account: &ExecutionEngineAccount) -> Self {
         Account {
-            account_hash: ee_account.account_hash(),
+            account_hash: ee_account.public_key(),
             named_keys: ee_account
                 .named_keys()
                 .iter()

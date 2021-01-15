@@ -18,7 +18,7 @@ use parity_wasm::elements::Module;
 use wasmi::{ImportsBuilder, MemoryRef, ModuleInstance, ModuleRef, Trap, TrapKind};
 
 use casper_types::{
-    account::{AccountHash, ActionType, Weight},
+    account::{ActionType, Weight},
     auction::{self, Auction, EraId, EraInfo},
     bytesrepr::{self, FromBytes, ToBytes},
     contracts::{
@@ -1366,10 +1366,10 @@ where
                     mint_runtime.balance(uref).map_err(Self::reverter)?;
                 CLValue::from_t(maybe_balance).map_err(Self::reverter)?
             }
-            // Type: `fn transfer(maybe_to: Option<AccountHash>, source: URef, target: URef, amount:
+            // Type: `fn transfer(maybe_to: Option<PublicKey>, source: URef, target: URef, amount:
             // U512, id: Option<u64>) -> Result<(), Error>`
             mint::METHOD_TRANSFER => {
-                let maybe_to: Option<AccountHash> =
+                let maybe_to: Option<PublicKey> =
                     Self::get_named_argument(&runtime_args, mint::ARG_TO)?;
                 let source: URef = Self::get_named_argument(&runtime_args, mint::ARG_SOURCE)?;
                 let target: URef = Self::get_named_argument(&runtime_args, mint::ARG_TARGET)?;
@@ -1478,7 +1478,7 @@ where
             proof_of_stake::METHOD_FINALIZE_PAYMENT => {
                 let amount_spent: U512 =
                     Self::get_named_argument(&runtime_args, proof_of_stake::ARG_AMOUNT)?;
-                let account: AccountHash =
+                let account: PublicKey =
                     Self::get_named_argument(&runtime_args, proof_of_stake::ARG_ACCOUNT)?;
                 let target: URef =
                     Self::get_named_argument(&runtime_args, proof_of_stake::ARG_TARGET)?;
@@ -2436,7 +2436,7 @@ where
     /// Records a transfer.
     fn record_transfer(
         &mut self,
-        maybe_to: Option<AccountHash>,
+        maybe_to: Option<PublicKey>,
         source: URef,
         target: URef,
         amount: U512,
@@ -2453,7 +2453,7 @@ where
         let transfer_addr = self.context.new_transfer_addr()?;
         let transfer = {
             let deploy_hash: DeployHash = self.context.get_deploy_hash();
-            let from: AccountHash = self.context.account().account_hash();
+            let from: PublicKey = self.context.account().public_key();
             let fee: U512 = U512::zero(); // TODO
             Transfer::new(deploy_hash, from, maybe_to, source, target, amount, fee, id)
         };
@@ -2575,17 +2575,13 @@ where
         account_hash_size: usize,
         weight_value: u8,
     ) -> Result<i32, Trap> {
-        let account_hash = {
-            // Account hash as serialized bytes
+        let public_key: PublicKey = {
             let source_serialized = self.bytes_from_mem(account_hash_ptr, account_hash_size)?;
-            // Account hash deserialized
-            let source: AccountHash =
-                bytesrepr::deserialize(source_serialized).map_err(Error::BytesRepr)?;
-            source
+            bytesrepr::deserialize(source_serialized).map_err(Error::BytesRepr)?
         };
         let weight = Weight::new(weight_value);
 
-        match self.context.add_associated_key(account_hash, weight) {
+        match self.context.add_associated_key(public_key, weight) {
             Ok(_) => Ok(0),
             // This relies on the fact that `AddKeyFailure` is represented as
             // i32 and first variant start with number `1`, so all other variants
@@ -2602,15 +2598,11 @@ where
         account_hash_ptr: u32,
         account_hash_size: usize,
     ) -> Result<i32, Trap> {
-        let account_hash = {
-            // Account hash as serialized bytes
+        let public_key: PublicKey = {
             let source_serialized = self.bytes_from_mem(account_hash_ptr, account_hash_size)?;
-            // Account hash deserialized
-            let source: AccountHash =
-                bytesrepr::deserialize(source_serialized).map_err(Error::BytesRepr)?;
-            source
+            bytesrepr::deserialize(source_serialized).map_err(Error::BytesRepr)?
         };
-        match self.context.remove_associated_key(account_hash) {
+        match self.context.remove_associated_key(public_key) {
             Ok(_) => Ok(0),
             Err(Error::RemoveKeyFailure(e)) => Ok(e as i32),
             Err(e) => Err(e.into()),
@@ -2623,17 +2615,13 @@ where
         account_hash_size: usize,
         weight_value: u8,
     ) -> Result<i32, Trap> {
-        let account_hash = {
-            // Account hash as serialized bytes
+        let public_key: PublicKey = {
             let source_serialized = self.bytes_from_mem(account_hash_ptr, account_hash_size)?;
-            // Account hash deserialized
-            let source: AccountHash =
-                bytesrepr::deserialize(source_serialized).map_err(Error::BytesRepr)?;
-            source
+            bytesrepr::deserialize(source_serialized).map_err(Error::BytesRepr)?
         };
         let weight = Weight::new(weight_value);
 
-        match self.context.update_associated_key(account_hash, weight) {
+        match self.context.update_associated_key(public_key, weight) {
             Ok(_) => Ok(0),
             // This relies on the fact that `UpdateKeyFailure` is represented as
             // i32 and first variant start with number `1`, so all other variants
@@ -2758,7 +2746,7 @@ where
     fn mint_transfer(
         &mut self,
         mint_contract_hash: ContractHash,
-        to: Option<AccountHash>,
+        to: Option<PublicKey>,
         source: URef,
         target: URef,
         amount: U512,
@@ -2785,7 +2773,7 @@ where
     fn transfer_to_new_account(
         &mut self,
         source: URef,
-        target: AccountHash,
+        target: PublicKey,
         amount: U512,
         id: Option<u64>,
     ) -> Result<TransferResult, Error> {
@@ -2831,7 +2819,7 @@ where
     /// been created by the mint contract (or are the genesis account's).
     fn transfer_to_existing_account(
         &mut self,
-        to: Option<AccountHash>,
+        to: Option<PublicKey>,
         source: URef,
         target: URef,
         amount: U512,
@@ -2852,7 +2840,7 @@ where
     /// `target` account. If that account does not exist, creates one.
     fn transfer_to_account(
         &mut self,
-        target: AccountHash,
+        target: PublicKey,
         amount: U512,
         id: Option<u64>,
     ) -> Result<TransferResult, Error> {
@@ -2865,7 +2853,7 @@ where
     fn transfer_from_purse_to_account(
         &mut self,
         source: URef,
-        target: AccountHash,
+        target: PublicKey,
         amount: U512,
         id: Option<u64>,
     ) -> Result<TransferResult, Error> {

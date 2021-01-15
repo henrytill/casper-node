@@ -9,9 +9,9 @@ use tracing::warn;
 use wasmi::ModuleRef;
 
 use casper_types::{
-    account::AccountHash, auction, bytesrepr::FromBytes, contracts::NamedKeys, proof_of_stake,
-    AccessRights, BlockTime, CLTyped, CLValue, ContractPackage, DeployHash, EntryPoint,
-    EntryPointType, Key, Phase, ProtocolVersion, RuntimeArgs,
+    auction, bytesrepr::FromBytes, contracts::NamedKeys, proof_of_stake, AccessRights, BlockTime,
+    CLTyped, CLValue, ContractPackage, DeployHash, EntryPoint, EntryPointType, Key, Phase,
+    ProtocolVersion, PublicKey, RuntimeArgs,
 };
 
 use crate::{
@@ -98,7 +98,7 @@ impl Executor {
         base_key: Key,
         account: &Account,
         named_keys: &mut NamedKeys,
-        authorization_keys: BTreeSet<AccountHash>,
+        authorization_keys: BTreeSet<PublicKey>,
         blocktime: BlockTime,
         deploy_hash: DeployHash,
         gas_limit: Gas,
@@ -283,7 +283,7 @@ impl Executor {
         extra_keys: &[Key],
         base_key: Key,
         account: &Account,
-        authorization_keys: BTreeSet<AccountHash>,
+        authorization_keys: BTreeSet<PublicKey>,
         blocktime: BlockTime,
         deploy_hash: DeployHash,
         gas_limit: Gas,
@@ -487,7 +487,7 @@ impl Executor {
         entry_point_name: &str,
         args: RuntimeArgs,
         account: &mut Account,
-        authorization_keys: BTreeSet<AccountHash>,
+        authorization_keys: BTreeSet<PublicKey>,
         blocktime: BlockTime,
         deploy_hash: DeployHash,
         gas_limit: Gas,
@@ -507,7 +507,7 @@ impl Executor {
         T: FromBytes + CLTyped,
     {
         let mut named_keys: NamedKeys = account.named_keys().clone();
-        let base_key = account.account_hash().into();
+        let base_key = account.public_key().into();
 
         let (instance, mut runtime) = self.create_runtime(
             module,
@@ -574,7 +574,7 @@ impl Executor {
         extra_keys: &[Key],
         base_key: Key,
         account: &'a Account,
-        authorization_keys: BTreeSet<AccountHash>,
+        authorization_keys: BTreeSet<PublicKey>,
         blocktime: BlockTime,
         deploy_hash: DeployHash,
         gas_limit: Gas,

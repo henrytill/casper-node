@@ -13,7 +13,7 @@ use casper_contract::{
     unwrap_or_revert::UnwrapOrRevert,
 };
 use casper_types::{
-    account::{AccountHash, ActionType, Weight},
+    account::{ActionType, Weight},
     bytesrepr::Bytes,
     contracts::NamedKeys,
     runtime_args, ApiError, BlockTime, CLType, CLTyped, CLValue, EntryPoint, EntryPointAccess,
@@ -179,7 +179,7 @@ pub extern "C" fn storage_function() {
 
 #[no_mangle]
 pub extern "C" fn account_function() {
-    let source_account: AccountHash = runtime::get_named_arg(ARG_SOURCE_ACCOUNT);
+    let source_account: PublicKey = runtime::get_named_arg(ARG_SOURCE_ACCOUNT);
 
     let destination_account = destination_account();
 

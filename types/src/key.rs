@@ -485,7 +485,7 @@ mod tests {
     use super::*;
     use crate::{
         bytesrepr::{Error, FromBytes},
-        AccessRights, PublicKey, SecretKey, URef,
+        AccessRights, SecretKey, URef,
     };
 
     fn test_readable(right: AccessRights, is_true: bool) {
@@ -578,10 +578,9 @@ mod tests {
 
     #[test]
     fn check_key_account_getters() {
-        let account = [42; 32];
-        let public_key = PublicKey::Ed25519(account);
+        let public_key = SecretKey::ed25519([42; SecretKey::ED25519_LENGTH]).into();
         let key1 = Key::Account(public_key);
-        assert_eq!(key1.public_key(), Some(public_key));
+        assert_eq!(key1.into_public_key(), Some(public_key));
         assert!(key1.into_hash().is_none());
         assert!(key1.as_uref().is_none());
     }
@@ -590,7 +589,7 @@ mod tests {
     fn check_key_hash_getters() {
         let hash = [42; KEY_HASH_LENGTH];
         let key1 = Key::Hash(hash);
-        assert!(key1.public_key().is_none());
+        assert!(key1.into_public_key().is_none());
         assert_eq!(key1.into_hash(), Some(hash));
         assert!(key1.as_uref().is_none());
     }
@@ -599,7 +598,7 @@ mod tests {
     fn check_key_uref_getters() {
         let uref = URef::new([42; 32], AccessRights::READ_ADD_WRITE);
         let key1 = Key::URef(uref);
-        assert!(key1.public_key().is_none());
+        assert!(key1.into_public_key().is_none());
         assert!(key1.into_hash().is_none());
         assert_eq!(key1.as_uref(), Some(&uref));
     }
@@ -659,10 +658,10 @@ mod tests {
 
     #[test]
     fn key_to_json() {
-        let array = [42; BLAKE2B_DIGEST_LENGTH];
+        let array = [42; 32];
         let hex_bytes = "2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a";
 
-        let key_account = Key::Account(PublicKey::Ed25519(array));
+        let key_account = Key::Account(SecretKey::ed25519(array).into());
         assert_eq!(
             serde_json::to_string(&key_account).unwrap(),
             format!(r#"{{"Account":"account-hash-{}"}}"#, hex_bytes)

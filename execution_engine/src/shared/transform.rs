@@ -311,7 +311,7 @@ impl From<&Transform> for casper_types::Transform {
                 casper_types::Transform::WriteCLValue(cl_value.clone())
             }
             Transform::Write(StoredValue::Account(account)) => {
-                casper_types::Transform::WriteAccount(account.account_hash())
+                casper_types::Transform::WriteAccount(account.public_key())
             }
             Transform::Write(StoredValue::ContractWasm(_)) => {
                 casper_types::Transform::WriteContractWasm

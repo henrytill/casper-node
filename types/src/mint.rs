@@ -7,9 +7,7 @@ mod system_provider;
 use core::convert::TryFrom;
 use num_rational::Ratio;
 
-use crate::{
-    account::AccountHash, system_contract_errors::mint::Error, Key, URef, SYSTEM_ACCOUNT, U512,
-};
+use crate::{system_contract_errors::mint::Error, Key, PublicKey, URef, SYSTEM_ACCOUNT, U512};
 
 pub use crate::mint::{
     constants::*, runtime_provider::RuntimeProvider, storage_provider::StorageProvider,
@@ -103,7 +101,7 @@ pub trait Mint: RuntimeProvider + StorageProvider + SystemProvider {
     /// Transfers `amount` of tokens from `source` purse to a `target` purse.
     fn transfer(
         &mut self,
-        maybe_to: Option<AccountHash>,
+        maybe_to: Option<PublicKey>,
         source: URef,
         target: URef,
         amount: U512,

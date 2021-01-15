@@ -90,8 +90,8 @@ fn main() {
         profiling::parse_hash(input.trim_end())
     });
 
-    let account_1_account_hash = profiling::account_1_account_hash();
-    let account_2_account_hash = profiling::account_2_account_hash();
+    let account_1_account_hash = profiling::account_1_public_key();
+    let account_2_account_hash = profiling::account_2_public_key();
 
     let exec_request = {
         let deploy = DeployItemBuilder::new()

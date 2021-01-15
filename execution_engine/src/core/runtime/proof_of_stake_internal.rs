@@ -1,8 +1,7 @@
 use casper_types::{
-    account::AccountHash,
     proof_of_stake::{MintProvider, ProofOfStake, RuntimeProvider},
     system_contract_errors::pos::Error,
-    BlockTime, Key, Phase, TransferredTo, URef, U512,
+    BlockTime, Key, Phase, PublicKey, TransferredTo, URef, U512,
 };
 
 use crate::{
@@ -33,7 +32,7 @@ where
     fn transfer_purse_to_account(
         &mut self,
         source: URef,
-        target: AccountHash,
+        target: PublicKey,
         amount: U512,
     ) -> Result<TransferredTo, Error> {
         match self.transfer_from_purse_to_account(source, target, amount, None) {
@@ -93,7 +92,7 @@ where
         self.context.get_blocktime()
     }
 
-    fn get_caller(&self) -> AccountHash {
+    fn get_caller(&self) -> PublicKey {
         self.context.get_caller()
     }
 }

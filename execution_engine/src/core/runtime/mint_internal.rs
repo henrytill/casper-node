@@ -1,9 +1,8 @@
 use casper_types::{
-    account::AccountHash,
     bytesrepr::{FromBytes, ToBytes},
     mint::{Mint, RuntimeProvider, StorageProvider, SystemProvider},
     system_contract_errors::mint::Error,
-    CLTyped, CLValue, Key, URef, U512,
+    CLTyped, CLValue, Key, PublicKey, URef, U512,
 };
 
 use super::Runtime;
@@ -28,7 +27,7 @@ where
     R: StateReader<Key, StoredValue>,
     R::Error: Into<execution::Error>,
 {
-    fn get_caller(&self) -> AccountHash {
+    fn get_caller(&self) -> PublicKey {
         self.context.get_caller()
     }
 
@@ -123,7 +122,7 @@ where
 {
     fn record_transfer(
         &mut self,
-        maybe_to: Option<AccountHash>,
+        maybe_to: Option<PublicKey>,
         source: URef,
         target: URef,
         amount: U512,

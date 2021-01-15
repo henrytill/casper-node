@@ -7,12 +7,11 @@ use serde::{Deserialize, Serialize};
 
 use casper_types::{
     account::{
-        AccountHash, ActionType, AddKeyFailure, RemoveKeyFailure, SetThresholdFailure,
-        UpdateKeyFailure, Weight,
+        ActionType, AddKeyFailure, RemoveKeyFailure, SetThresholdFailure, UpdateKeyFailure, Weight,
     },
     bytesrepr::{self, Error, FromBytes, ToBytes},
     contracts::NamedKeys,
-    AccessRights, URef,
+    AccessRights, PublicKey, URef,
 };
 
 pub use action_thresholds::ActionThresholds;
@@ -20,7 +19,7 @@ pub use associated_keys::AssociatedKeys;
 
 #[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
 pub struct Account {
-    account_hash: AccountHash,
+    public_key: PublicKey,
     named_keys: NamedKeys,
     main_purse: URef,
     associated_keys: AssociatedKeys,
@@ -29,14 +28,14 @@ pub struct Account {
 
 impl Account {
     pub fn new(
-        account_hash: AccountHash,
+        public_key: PublicKey,
         named_keys: NamedKeys,
         main_purse: URef,
         associated_keys: AssociatedKeys,
         action_thresholds: ActionThresholds,
     ) -> Self {
         Account {
-            account_hash,
+            public_key,
             named_keys,
             main_purse,
             associated_keys,
@@ -44,11 +43,11 @@ impl Account {
         }
     }
 
-    pub fn create(account: AccountHash, named_keys: NamedKeys, main_purse: URef) -> Self {
-        let associated_keys = AssociatedKeys::new(account, Weight::new(1));
+    pub fn create(public_key: PublicKey, named_keys: NamedKeys, main_purse: URef) -> Self {
+        let associated_keys = AssociatedKeys::new(public_key, Weight::new(1));
         let action_thresholds: ActionThresholds = Default::default();
         Account::new(
-            account,
+            public_key,
             named_keys,
             main_purse,
             associated_keys,
@@ -68,8 +67,8 @@ impl Account {
         &mut self.named_keys
     }
 
-    pub fn account_hash(&self) -> AccountHash {
-        self.account_hash
+    pub fn public_key(&self) -> PublicKey {
+        self.public_key
     }
 
     pub fn main_purse(&self) -> URef {
@@ -81,7 +80,7 @@ impl Account {
         URef::new(self.main_purse.addr(), AccessRights::ADD)
     }
 
-    pub fn associated_keys(&self) -> impl Iterator<Item = (&AccountHash, &Weight)> {
+    pub fn associated_keys(&self) -> impl Iterator<Item = (&PublicKey, &Weight)> {
         self.associated_keys.iter()
     }
 
@@ -91,17 +90,15 @@ impl Account {
 
     pub fn add_associated_key(
         &mut self,
-        account_hash: AccountHash,
+        public_key: PublicKey,
         weight: Weight,
     ) -> Result<(), AddKeyFailure> {
-        self.associated_keys.add_key(account_hash, weight)
+        self.associated_keys.add_key(public_key, weight)
     }
 
     /// Checks if removing given key would properly satisfy thresholds.
-    fn can_remove_key(&self, account_hash: AccountHash) -> bool {
-        let total_weight_without = self
-            .associated_keys
-            .total_keys_weight_excluding(account_hash);
+    fn can_remove_key(&self, public_key: PublicKey) -> bool {
+        let total_weight_without = self.associated_keys.total_keys_weight_excluding(public_key);
 
         // Returns true if the total weight calculated without given public key would be greater or
         // equal to all of the thresholds.
@@ -111,11 +108,9 @@ impl Account {
 
     /// Checks if adding a weight to a sum of all weights excluding the given key would make the
     /// resulting value to fall below any of the thresholds on account.
-    fn can_update_key(&self, account_hash: AccountHash, weight: Weight) -> bool {
+    fn can_update_key(&self, public_key: PublicKey, weight: Weight) -> bool {
         // Calculates total weight of all keys excluding the given key
-        let total_weight = self
-            .associated_keys
-            .total_keys_weight_excluding(account_hash);
+        let total_weight = self.associated_keys.total_keys_weight_excluding(public_key);
 
         // Safely calculate new weight by adding the updated weight
         let new_weight = total_weight.value().saturating_add(weight.value());
@@ -126,37 +121,34 @@ impl Account {
             && new_weight >= self.action_thresholds().key_management().value()
     }
 
-    pub fn remove_associated_key(
-        &mut self,
-        account_hash: AccountHash,
-    ) -> Result<(), RemoveKeyFailure> {
-        if self.associated_keys.contains_key(&account_hash) {
+    pub fn remove_associated_key(&mut self, public_key: PublicKey) -> Result<(), RemoveKeyFailure> {
+        if self.associated_keys.contains_key(&public_key) {
             // Check if removing this weight would fall below thresholds
-            if !self.can_remove_key(account_hash) {
+            if !self.can_remove_key(public_key) {
                 return Err(RemoveKeyFailure::ThresholdViolation);
             }
         }
-        self.associated_keys.remove_key(&account_hash)
+        self.associated_keys.remove_key(&public_key)
     }
 
     pub fn update_associated_key(
         &mut self,
-        account_hash: AccountHash,
+        public_key: PublicKey,
         weight: Weight,
     ) -> Result<(), UpdateKeyFailure> {
-        if let Some(current_weight) = self.associated_keys.get(&account_hash) {
+        if let Some(current_weight) = self.associated_keys.get(&public_key) {
             if weight < *current_weight {
                 // New weight is smaller than current weight
-                if !self.can_update_key(account_hash, weight) {
+                if !self.can_update_key(public_key, weight) {
                     return Err(UpdateKeyFailure::ThresholdViolation);
                 }
             }
         }
-        self.associated_keys.update_key(account_hash, weight)
+        self.associated_keys.update_key(public_key, weight)
     }
 
-    pub fn get_associated_key_weight(&self, account_hash: AccountHash) -> Option<&Weight> {
-        self.associated_keys.get(&account_hash)
+    pub fn get_associated_key_weight(&self, public_key: PublicKey) -> Option<&Weight> {
+        self.associated_keys.get(&public_key)
     }
 
     pub fn set_action_threshold(
@@ -181,7 +173,7 @@ impl Account {
     }
 
     /// Checks whether all authorization keys are associated with this account
-    pub fn can_authorize(&self, authorization_keys: &BTreeSet<AccountHash>) -> bool {
+    pub fn can_authorize(&self, authorization_keys: &BTreeSet<PublicKey>) -> bool {
         !authorization_keys.is_empty()
             && authorization_keys
                 .iter()
@@ -190,7 +182,7 @@ impl Account {
 
     /// Checks whether the sum of the weights of all authorization keys is
     /// greater or equal to deploy threshold.
-    pub fn can_deploy_with(&self, authorization_keys: &BTreeSet<AccountHash>) -> bool {
+    pub fn can_deploy_with(&self, authorization_keys: &BTreeSet<PublicKey>) -> bool {
         let total_weight = self
             .associated_keys
             .calculate_keys_weight(authorization_keys);
@@ -200,7 +192,7 @@ impl Account {
 
     /// Checks whether the sum of the weights of all authorization keys is
     /// greater or equal to key management threshold.
-    pub fn can_manage_keys_with(&self, authorization_keys: &BTreeSet<AccountHash>) -> bool {
+    pub fn can_manage_keys_with(&self, authorization_keys: &BTreeSet<PublicKey>) -> bool {
         let total_weight = self
             .associated_keys
             .calculate_keys_weight(authorization_keys);
@@ -212,7 +204,7 @@ impl Account {
 impl ToBytes for Account {
     fn to_bytes(&self) -> Result<Vec<u8>, Error> {
         let mut result = bytesrepr::allocate_buffer(self)?;
-        result.append(&mut self.account_hash.to_bytes()?);
+        result.append(&mut self.public_key.to_bytes()?);
         result.append(&mut self.named_keys.to_bytes()?);
         result.append(&mut self.main_purse.to_bytes()?);
         result.append(&mut self.associated_keys.to_bytes()?);
@@ -221,7 +213,7 @@ impl ToBytes for Account {
     }
 
     fn serialized_length(&self) -> usize {
-        self.account_hash.serialized_length()
+        self.public_key.serialized_length()
             + self.named_keys.serialized_length()
             + self.main_purse.serialized_length()
             + self.associated_keys.serialized_length()
@@ -231,14 +223,14 @@ impl ToBytes for Account {
 
 impl FromBytes for Account {
     fn from_bytes(bytes: &[u8]) -> Result<(Self, &[u8]), Error> {
-        let (account_hash, rem) = AccountHash::from_bytes(bytes)?;
+        let (public_key, rem) = PublicKey::from_bytes(bytes)?;
         let (named_keys, rem) = NamedKeys::from_bytes(rem)?;
         let (main_purse, rem) = URef::from_bytes(rem)?;
         let (associated_keys, rem) = AssociatedKeys::from_bytes(rem)?;
         let (action_thresholds, rem) = ActionThresholds::from_bytes(rem)?;
         Ok((
             Account {
-                account_hash,
+                public_key,
                 named_keys,
                 main_purse,
                 associated_keys,
@@ -253,7 +245,10 @@ impl FromBytes for Account {
 pub mod gens {
     use proptest::prelude::*;
 
-    use casper_types::gens::{account_hash_arb, named_keys_arb, uref_arb};
+    use casper_types::{
+        crypto::gens::public_key_arb,
+        gens::{named_keys_arb, uref_arb},
+    };
 
     use super::*;
     use crate::shared::account::{
@@ -262,15 +257,15 @@ pub mod gens {
 
     prop_compose! {
         pub fn account_arb()(
-            account_hash in account_hash_arb(),
+            public_key in public_key_arb(),
             urefs in named_keys_arb(3),
             purse in uref_arb(),
             thresholds in action_thresholds_arb(),
             mut associated_keys in associated_keys_arb(),
         ) -> Account {
-                associated_keys.add_key(account_hash, Weight::new(1)).unwrap();
+                associated_keys.add_key(public_key, Weight::new(1)).unwrap();
                 Account::new(
-                    account_hash,
+                    public_key,
                     urefs,
                     purse,
                     associated_keys,

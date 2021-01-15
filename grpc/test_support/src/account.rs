@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 
 use casper_execution_engine::{shared, shared::stored_value::StoredValue};
-use casper_types::{account::AccountHash, contracts::NamedKeys, URef};
+use casper_types::{contracts::NamedKeys, PublicKey, URef};
 
 use crate::{Error, Result};
 
@@ -18,8 +18,8 @@ impl Account {
     }
 
     /// Returns the public_key.
-    pub fn account_hash(&self) -> AccountHash {
-        self.inner.account_hash()
+    pub fn public_key(&self) -> PublicKey {
+        self.inner.public_key()
     }
 
     /// Returns the named_keys.

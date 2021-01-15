@@ -3,18 +3,17 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde::{Deserialize, Serialize};
 
 use casper_types::{
-    account::{
-        AccountHash, AddKeyFailure, RemoveKeyFailure, UpdateKeyFailure, Weight, MAX_ASSOCIATED_KEYS,
-    },
+    account::{AddKeyFailure, RemoveKeyFailure, UpdateKeyFailure, Weight, MAX_ASSOCIATED_KEYS},
     bytesrepr::{Error, FromBytes, ToBytes},
+    PublicKey,
 };
 
 #[derive(Default, PartialOrd, Ord, PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
-pub struct AssociatedKeys(BTreeMap<AccountHash, Weight>);
+pub struct AssociatedKeys(BTreeMap<PublicKey, Weight>);
 
 impl AssociatedKeys {
-    pub fn new(key: AccountHash, weight: Weight) -> AssociatedKeys {
-        let mut bt: BTreeMap<AccountHash, Weight> = BTreeMap::new();
+    pub fn new(key: PublicKey, weight: Weight) -> AssociatedKeys {
+        let mut bt: BTreeMap<PublicKey, Weight> = BTreeMap::new();
         bt.insert(key, weight);
         AssociatedKeys(bt)
     }
@@ -22,7 +21,7 @@ impl AssociatedKeys {
     /// Adds new AssociatedKey to the set.
     /// Returns true if added successfully, false otherwise.
     #[allow(clippy::map_entry)]
-    pub fn add_key(&mut self, key: AccountHash, weight: Weight) -> Result<(), AddKeyFailure> {
+    pub fn add_key(&mut self, key: PublicKey, weight: Weight) -> Result<(), AddKeyFailure> {
         if self.0.len() == MAX_ASSOCIATED_KEYS {
             Err(AddKeyFailure::MaxKeysLimit)
         } else if self.0.contains_key(&key) {
@@ -36,7 +35,7 @@ impl AssociatedKeys {
     /// Removes key from the associated keys set.
     /// Returns true if value was found in the set prior to the removal, false
     /// otherwise.
-    pub fn remove_key(&mut self, key: &AccountHash) -> Result<(), RemoveKeyFailure> {
+    pub fn remove_key(&mut self, key: &PublicKey) -> Result<(), RemoveKeyFailure> {
         self.0
             .remove(key)
             .map(|_| ())
@@ -46,7 +45,7 @@ impl AssociatedKeys {
     /// Adds new AssociatedKey to the set.
     /// Returns true if added successfully, false otherwise.
     #[allow(clippy::map_entry)]
-    pub fn update_key(&mut self, key: AccountHash, weight: Weight) -> Result<(), UpdateKeyFailure> {
+    pub fn update_key(&mut self, key: PublicKey, weight: Weight) -> Result<(), UpdateKeyFailure> {
         if !self.0.contains_key(&key) {
             return Err(UpdateKeyFailure::MissingKey);
         }
@@ -55,15 +54,15 @@ impl AssociatedKeys {
         Ok(())
     }
 
-    pub fn get(&self, key: &AccountHash) -> Option<&Weight> {
+    pub fn get(&self, key: &PublicKey) -> Option<&Weight> {
         self.0.get(key)
     }
 
-    pub fn contains_key(&self, key: &AccountHash) -> bool {
+    pub fn contains_key(&self, key: &PublicKey) -> bool {
         self.0.contains_key(key)
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (&AccountHash, &Weight)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&PublicKey, &Weight)> {
         self.0.iter()
     }
 
@@ -82,7 +81,7 @@ impl AssociatedKeys {
     /// Uniqueness is determined based on the input collection properties,
     /// which is either BTreeSet (in [`AssociatedKeys::calculate_keys_weight`])
     /// or BTreeMap (in [`AssociatedKeys::total_keys_weight`]).
-    fn calculate_any_keys_weight<'a>(&self, keys: impl Iterator<Item = &'a AccountHash>) -> Weight {
+    fn calculate_any_keys_weight<'a>(&self, keys: impl Iterator<Item = &'a PublicKey>) -> Weight {
         let total = keys
             .filter_map(|key| self.0.get(key))
             .fold(0u8, |acc, w| acc.saturating_add(w.value()));
@@ -91,7 +90,7 @@ impl AssociatedKeys {
     }
 
     /// Calculates total weight of authorization keys provided by an argument
-    pub fn calculate_keys_weight(&self, authorization_keys: &BTreeSet<AccountHash>) -> Weight {
+    pub fn calculate_keys_weight(&self, authorization_keys: &BTreeSet<PublicKey>) -> Weight {
         self.calculate_any_keys_weight(authorization_keys.iter())
     }
 
@@ -101,13 +100,13 @@ impl AssociatedKeys {
     }
 
     /// Calculates total weight of all authorization keys excluding a given key
-    pub fn total_keys_weight_excluding(&self, account_hash: AccountHash) -> Weight {
-        self.calculate_any_keys_weight(self.0.keys().filter(|&&element| element != account_hash))
+    pub fn total_keys_weight_excluding(&self, public_key: PublicKey) -> Weight {
+        self.calculate_any_keys_weight(self.0.keys().filter(|&&element| element != public_key))
     }
 }
 
-impl From<BTreeMap<AccountHash, Weight>> for AssociatedKeys {
-    fn from(associated_keys: BTreeMap<AccountHash, Weight>) -> Self {
+impl From<BTreeMap<PublicKey, Weight>> for AssociatedKeys {
+    fn from(associated_keys: BTreeMap<PublicKey, Weight>) -> Self {
         Self(associated_keys)
     }
 }
@@ -145,14 +144,13 @@ pub mod gens {
     use proptest::prelude::*;
 
     use casper_types::{
-        account::MAX_ASSOCIATED_KEYS,
-        gens::{account_hash_arb, weight_arb},
+        account::MAX_ASSOCIATED_KEYS, crypto::gens::public_key_arb, gens::weight_arb,
     };
 
     use super::AssociatedKeys;
 
     pub fn associated_keys_arb() -> impl Strategy<Value = AssociatedKeys> {
-        proptest::collection::btree_map(account_hash_arb(), weight_arb(), MAX_ASSOCIATED_KEYS - 1)
+        proptest::collection::btree_map(public_key_arb(), weight_arb(), MAX_ASSOCIATED_KEYS - 1)
             .prop_map(|keys| {
                 let mut associated_keys = AssociatedKeys::default();
                 keys.into_iter().for_each(|(k, v)| {

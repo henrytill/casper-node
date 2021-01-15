@@ -400,8 +400,8 @@ extern "C" {
     /// # Arguments
     ///
     /// * `maybe_to_ptr` - pointer in wasm memory to bytes representing the recipient
-    ///   `Option<AccountHash>`
-    /// * `maybe_to_size` - size of the source `Option<AccountHash>` (in bytes)
+    ///   `Option<PublicKey>`
+    /// * `maybe_to_size` - size of the source `Option<PublicKey>` (in bytes)
     /// * `source_ptr` - pointer in wasm memory to bytes representing the source `URef` to transfer
     ///   from
     /// * `source_size` - size of the source `URef` (in bytes)

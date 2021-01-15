@@ -1,10 +1,7 @@
 use std::convert::{TryFrom, TryInto};
 
 use casper_execution_engine::{core::engine_state::genesis::GenesisAccount, shared::motes::Motes};
-use casper_types::{
-    account::AccountHash,
-    bytesrepr::{self, ToBytes},
-};
+use casper_types::bytesrepr::{self, ToBytes};
 
 use crate::engine_server::{
     ipc::ChainSpec_GenesisConfig_ExecConfig_GenesisAccount, mappings::MappingError,
@@ -14,11 +11,7 @@ impl From<GenesisAccount> for ChainSpec_GenesisConfig_ExecConfig_GenesisAccount 
     fn from(genesis_account: GenesisAccount) -> Self {
         let mut pb_genesis_account = ChainSpec_GenesisConfig_ExecConfig_GenesisAccount::new();
 
-        if let Some(public_key) = genesis_account.public_key() {
-            pb_genesis_account.set_public_key_bytes(public_key.to_bytes().unwrap());
-        }
-
-        pb_genesis_account.set_account_hash_bytes(genesis_account.account_hash().value().to_vec());
+        pb_genesis_account.set_public_key_bytes(genesis_account.public_key().to_bytes().unwrap());
         pb_genesis_account.set_balance(genesis_account.balance().value().into());
         pb_genesis_account.set_bonded_amount(genesis_account.bonded_amount().value().into());
 
@@ -49,21 +42,7 @@ impl TryFrom<ChainSpec_GenesisConfig_ExecConfig_GenesisAccount> for GenesisAccou
 
         let public_key = bytesrepr::deserialize(pb_genesis_account.take_public_key_bytes())?;
 
-        let account_hash = AccountHash::try_from(
-            &pb_genesis_account.get_account_hash_bytes() as &[u8]
-        )
-        .map_err(|_| {
-            MappingError::invalid_account_hash_length(
-                pb_genesis_account.get_account_hash_bytes().len(),
-            )
-        })?;
-
-        Ok(GenesisAccount::new(
-            public_key,
-            account_hash,
-            balance,
-            bonded_amount,
-        ))
+        Ok(GenesisAccount::new(public_key, balance, bonded_amount))
     }
 }
 

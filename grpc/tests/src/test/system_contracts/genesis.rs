@@ -42,7 +42,6 @@ static GENESIS_CUSTOM_ACCOUNTS: Lazy<Vec<GenesisAccount>> = Lazy::new(|| {
         let account_1_bonded_amount = Motes::new(ACCOUNT_1_BONDED_AMOUNT.into());
         GenesisAccount::new(
             *ACCOUNT_1_PUBLIC_KEY,
-            *ACCOUNT_1_ADDR,
             account_1_balance,
             account_1_bonded_amount,
         )
@@ -52,7 +51,6 @@ static GENESIS_CUSTOM_ACCOUNTS: Lazy<Vec<GenesisAccount>> = Lazy::new(|| {
         let account_2_bonded_amount = Motes::new(ACCOUNT_2_BONDED_AMOUNT.into());
         GenesisAccount::new(
             *ACCOUNT_2_PUBLIC_KEY,
-            *ACCOUNT_2_ADDR,
             account_2_balance,
             account_2_bonded_amount,
         )

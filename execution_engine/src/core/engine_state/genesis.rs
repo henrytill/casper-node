@@ -10,13 +10,11 @@ use rand::{
 use serde::{Deserialize, Serialize};
 
 use casper_types::{
-    account::AccountHash,
     auction::EraId,
     bytesrepr::{self, FromBytes, ToBytes},
-    Key, ProtocolVersion, PublicKey, SecretKey, U512,
+    Key, ProtocolVersion, PublicKey, SecretKey, SYSTEM_ACCOUNT, U512,
 };
 
-use super::SYSTEM_ACCOUNT_ADDR;
 use crate::{
     core::engine_state::execution_effect::ExecutionEffect,
     shared::{motes::Motes, newtypes::Blake2bHash, wasm_config::WasmConfig, TypeMismatch},
@@ -74,8 +72,7 @@ impl GenesisResult {
 #[derive(DataSize, Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct GenesisAccount {
     /// Assumed to be a system account if `public_key` is not specified.
-    public_key: Option<PublicKey>,
-    account_hash: AccountHash,
+    public_key: PublicKey,
     balance: Motes,
     bonded_amount: Motes,
 }
@@ -83,33 +80,22 @@ pub struct GenesisAccount {
 impl GenesisAccount {
     pub fn system(balance: Motes, bonded_amount: Motes) -> Self {
         Self {
-            public_key: None,
-            account_hash: SYSTEM_ACCOUNT_ADDR,
+            public_key: SYSTEM_ACCOUNT,
             balance,
             bonded_amount,
         }
     }
 
-    pub fn new(
-        public_key: PublicKey,
-        account_hash: AccountHash,
-        balance: Motes,
-        bonded_amount: Motes,
-    ) -> Self {
+    pub fn new(public_key: PublicKey, balance: Motes, bonded_amount: Motes) -> Self {
         GenesisAccount {
-            public_key: Some(public_key),
-            account_hash,
+            public_key,
             balance,
             bonded_amount,
         }
     }
 
-    pub fn public_key(&self) -> Option<PublicKey> {
+    pub fn public_key(&self) -> PublicKey {
         self.public_key
-    }
-
-    pub fn account_hash(&self) -> AccountHash {
-        self.account_hash
     }
 
     pub fn balance(&self) -> Motes {
@@ -122,7 +108,7 @@ impl GenesisAccount {
 
     /// Checks if a given genesis account belongs to a virtual system account,
     pub fn is_system_account(&self) -> bool {
-        self.public_key.is_none()
+        self.public_key == SYSTEM_ACCOUNT
     }
 
     /// Checks if a given genesis account is a valid genesis validator.
@@ -135,8 +121,6 @@ impl GenesisAccount {
 
 impl Distribution<GenesisAccount> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> GenesisAccount {
-        let account_hash = AccountHash::new(rng.gen());
-
         let public_key = SecretKey::ed25519(rng.gen()).into();
 
         let mut u512_array = [0u8; 64];
@@ -146,7 +130,7 @@ impl Distribution<GenesisAccount> for Standard {
         rng.fill_bytes(u512_array.as_mut());
         let bonded_amount = Motes::new(U512::from(u512_array));
 
-        GenesisAccount::new(public_key, account_hash, balance, bonded_amount)
+        GenesisAccount::new(public_key, balance, bonded_amount)
     }
 }
 
@@ -154,7 +138,6 @@ impl ToBytes for GenesisAccount {
     fn to_bytes(&self) -> Result<Vec<u8>, bytesrepr::Error> {
         let mut buffer = bytesrepr::allocate_buffer(self)?;
         buffer.extend(self.public_key.to_bytes()?);
-        buffer.extend(self.account_hash.to_bytes()?);
         buffer.extend(self.balance.value().to_bytes()?);
         buffer.extend(self.bonded_amount.value().to_bytes()?);
         Ok(buffer)
@@ -162,7 +145,6 @@ impl ToBytes for GenesisAccount {
 
     fn serialized_length(&self) -> usize {
         self.public_key.serialized_length()
-            + self.account_hash.serialized_length()
             + self.balance.value().serialized_length()
             + self.bonded_amount.value().serialized_length()
     }
@@ -170,13 +152,11 @@ impl ToBytes for GenesisAccount {
 
 impl FromBytes for GenesisAccount {
     fn from_bytes(bytes: &[u8]) -> Result<(Self, &[u8]), bytesrepr::Error> {
-        let (public_key, remainder) = Option::<PublicKey>::from_bytes(bytes)?;
-        let (account_hash, remainder) = AccountHash::from_bytes(remainder)?;
+        let (public_key, remainder) = PublicKey::from_bytes(bytes)?;
         let (balance_value, remainder) = U512::from_bytes(remainder)?;
         let (bonded_amount_value, remainder) = U512::from_bytes(remainder)?;
         let genesis_account = GenesisAccount {
             public_key,
-            account_hash,
             balance: Motes::new(balance_value),
             bonded_amount: Motes::new(bonded_amount_value),
         };

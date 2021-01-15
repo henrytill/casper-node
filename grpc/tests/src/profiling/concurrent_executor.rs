@@ -346,8 +346,8 @@ impl Drop for ClientPool {
 }
 
 fn new_execute_request(args: &Args) -> ExecuteRequest {
-    let account_1_addr = profiling::account_1_account_hash();
-    let transfer_args = runtime_args! { ARG_TARGET => profiling::account_2_account_hash(), ARG_AMOUNT => U512::one() };
+    let account_1_addr = profiling::account_1_public_key();
+    let transfer_args = runtime_args! { ARG_TARGET => profiling::account_2_public_key(), ARG_AMOUNT => U512::one() };
     let deploy_item = match args.transfer_mode {
         TransferMode::WASM => DeployItemBuilder::new()
             .with_address(account_1_addr)
