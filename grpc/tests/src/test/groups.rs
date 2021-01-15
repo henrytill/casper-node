@@ -6,11 +6,11 @@ use casper_engine_test_support::{
         DeployItemBuilder, ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_PAYMENT,
         DEFAULT_RUN_GENESIS_REQUEST,
     },
-    DEFAULT_ACCOUNT_ADDR, MINIMUM_ACCOUNT_CREATION_BALANCE,
+    DEFAULT_ACCOUNT_PUBLIC_KEY, MINIMUM_ACCOUNT_CREATION_BALANCE,
 };
 use casper_execution_engine::core::{engine_state::Error, execution};
 use casper_types::{
-    account::AccountHash, contracts::CONTRACT_INITIAL_VERSION, runtime_args, Key, RuntimeArgs, U512,
+    contracts::CONTRACT_INITIAL_VERSION, runtime_args, Key, PublicKey, RuntimeArgs, SecretKey, U512,
 };
 
 const CONTRACT_GROUPS: &str = "groups.wasm";
@@ -21,7 +21,6 @@ const RESTRICTED_CONTRACT: &str = "restricted_contract";
 const RESTRICTED_SESSION_CALLER: &str = "restricted_session_caller";
 const UNRESTRICTED_CONTRACT_CALLER: &str = "unrestricted_contract_caller";
 const PACKAGE_HASH_ARG: &str = "package_hash";
-const ACCOUNT_1_ADDR: AccountHash = AccountHash::new([1u8; 32]);
 const CONTRACT_TRANSFER_TO_ACCOUNT: &str = "transfer_to_account_u512.wasm";
 const RESTRICTED_CONTRACT_CALLER_AS_SESSION: &str = "restricted_contract_caller_as_session";
 const UNCALLABLE_SESSION: &str = "uncallable_session";
@@ -30,6 +29,8 @@ const CALL_RESTRICTED_ENTRY_POINTS: &str = "call_restricted_entry_points";
 const ARG_AMOUNT: &str = "amount";
 const ARG_TARGET: &str = "target";
 
+static ACCOUNT_1_PUBLIC_KEY: Lazy<PublicKey> =
+    Lazy::new(|| SecretKey::ed25519([99u8; SecretKey::ED25519_LENGTH]).into());
 static TRANSFER_1_AMOUNT: Lazy<U512> =
     Lazy::new(|| U512::from(MINIMUM_ACCOUNT_CREATION_BALANCE) + 1000);
 
@@ -39,7 +40,7 @@ fn should_call_group_restricted_session() {
     // This test runs a contract that's after every call extends the same key with
     // more data
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_GROUPS,
         RuntimeArgs::default(),
     )
@@ -52,7 +53,7 @@ fn should_call_group_restricted_session() {
     builder.exec(exec_request_1).expect_success().commit();
 
     let account = builder
-        .query(None, Key::Account(*DEFAULT_ACCOUNT_ADDR), &[])
+        .query(None, Key::Account(*DEFAULT_ACCOUNT_PUBLIC_KEY), &[])
         .expect("should query account")
         .as_account()
         .cloned()
@@ -73,7 +74,7 @@ fn should_call_group_restricted_session() {
         // code.
         let args = runtime_args! {};
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_ADDR)
+            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 PACKAGE_HASH_KEY,
                 Some(CONTRACT_INITIAL_VERSION),
@@ -81,7 +82,7 @@ fn should_call_group_restricted_session() {
                 args,
             )
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
-            .with_authorization_keys(&[*DEFAULT_ACCOUNT_ADDR])
+            .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
             .with_deploy_hash([3; 32])
             .build();
 
@@ -91,7 +92,7 @@ fn should_call_group_restricted_session() {
     builder.exec(exec_request_2).expect_success().commit();
 
     let _account = builder
-        .query(None, Key::Account(*DEFAULT_ACCOUNT_ADDR), &[])
+        .query(None, Key::Account(*DEFAULT_ACCOUNT_PUBLIC_KEY), &[])
         .expect("should query account")
         .as_account()
         .cloned()
@@ -104,7 +105,7 @@ fn should_call_group_restricted_session_caller() {
     // This test runs a contract that's after every call extends the same key with
     // more data
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_GROUPS,
         RuntimeArgs::default(),
     )
@@ -117,7 +118,7 @@ fn should_call_group_restricted_session_caller() {
     builder.exec(exec_request_1).expect_success().commit();
 
     let account = builder
-        .query(None, Key::Account(*DEFAULT_ACCOUNT_ADDR), &[])
+        .query(None, Key::Account(*DEFAULT_ACCOUNT_PUBLIC_KEY), &[])
         .expect("should query account")
         .as_account()
         .cloned()
@@ -137,7 +138,7 @@ fn should_call_group_restricted_session_caller() {
             PACKAGE_HASH_ARG => package_hash.into_hash(),
         };
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_ADDR)
+            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 PACKAGE_HASH_KEY,
                 Some(CONTRACT_INITIAL_VERSION),
@@ -145,7 +146,7 @@ fn should_call_group_restricted_session_caller() {
                 args,
             )
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
-            .with_authorization_keys(&[*DEFAULT_ACCOUNT_ADDR])
+            .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
             .with_deploy_hash([3; 32])
             .build();
 
@@ -154,7 +155,7 @@ fn should_call_group_restricted_session_caller() {
     builder.exec(exec_request_2).expect_success().commit();
 
     let _account = builder
-        .query(None, Key::Account(*DEFAULT_ACCOUNT_ADDR), &[])
+        .query(None, Key::Account(*DEFAULT_ACCOUNT_PUBLIC_KEY), &[])
         .expect("should query account")
         .as_account()
         .cloned()
@@ -167,16 +168,16 @@ fn should_not_call_restricted_session_from_wrong_account() {
     // This test runs a contract that's after every call extends the same key with
     // more data
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_GROUPS,
         RuntimeArgs::default(),
     )
     .build();
 
     let exec_request_2 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
-        runtime_args! { ARG_TARGET => ACCOUNT_1_ADDR, ARG_AMOUNT => *TRANSFER_1_AMOUNT },
+        runtime_args! { ARG_TARGET => *ACCOUNT_1_PUBLIC_KEY, ARG_AMOUNT => *TRANSFER_1_AMOUNT },
     )
     .build();
 
@@ -189,7 +190,7 @@ fn should_not_call_restricted_session_from_wrong_account() {
     builder.exec(exec_request_2).expect_success().commit();
 
     let account = builder
-        .query(None, Key::Account(*DEFAULT_ACCOUNT_ADDR), &[])
+        .query(None, Key::Account(*DEFAULT_ACCOUNT_PUBLIC_KEY), &[])
         .expect("should query account")
         .as_account()
         .cloned()
@@ -207,7 +208,7 @@ fn should_not_call_restricted_session_from_wrong_account() {
     let exec_request_3 = {
         let args = runtime_args! {};
         let deploy = DeployItemBuilder::new()
-            .with_address(ACCOUNT_1_ADDR)
+            .with_address(*ACCOUNT_1_PUBLIC_KEY)
             .with_stored_versioned_contract_by_hash(
                 package_hash.into_hash().expect("should be hash"),
                 Some(CONTRACT_INITIAL_VERSION),
@@ -215,7 +216,7 @@ fn should_not_call_restricted_session_from_wrong_account() {
                 args,
             )
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
-            .with_authorization_keys(&[ACCOUNT_1_ADDR])
+            .with_authorization_keys(&[*ACCOUNT_1_PUBLIC_KEY])
             .with_deploy_hash([3; 32])
             .build();
 
@@ -225,7 +226,7 @@ fn should_not_call_restricted_session_from_wrong_account() {
     builder.exec(exec_request_3).commit();
 
     let _account = builder
-        .query(None, Key::Account(*DEFAULT_ACCOUNT_ADDR), &[])
+        .query(None, Key::Account(*DEFAULT_ACCOUNT_PUBLIC_KEY), &[])
         .expect("should query account")
         .as_account()
         .cloned()
@@ -247,16 +248,16 @@ fn should_not_call_restricted_session_caller_from_wrong_account() {
     // This test runs a contract that's after every call extends the same key with
     // more data
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_GROUPS,
         RuntimeArgs::default(),
     )
     .build();
 
     let exec_request_2 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
-        runtime_args! { ARG_TARGET => ACCOUNT_1_ADDR, ARG_AMOUNT => *TRANSFER_1_AMOUNT },
+        runtime_args! { ARG_TARGET => *ACCOUNT_1_PUBLIC_KEY, ARG_AMOUNT => *TRANSFER_1_AMOUNT },
     )
     .build();
 
@@ -269,7 +270,7 @@ fn should_not_call_restricted_session_caller_from_wrong_account() {
     builder.exec(exec_request_2).expect_success().commit();
 
     let account = builder
-        .query(None, Key::Account(*DEFAULT_ACCOUNT_ADDR), &[])
+        .query(None, Key::Account(*DEFAULT_ACCOUNT_PUBLIC_KEY), &[])
         .expect("should query account")
         .as_account()
         .cloned()
@@ -289,7 +290,7 @@ fn should_not_call_restricted_session_caller_from_wrong_account() {
             "package_hash" => *package_hash,
         };
         let deploy = DeployItemBuilder::new()
-            .with_address(ACCOUNT_1_ADDR)
+            .with_address(*ACCOUNT_1_PUBLIC_KEY)
             .with_stored_versioned_contract_by_hash(
                 package_hash.into_hash().expect("should be hash"),
                 Some(CONTRACT_INITIAL_VERSION),
@@ -297,7 +298,7 @@ fn should_not_call_restricted_session_caller_from_wrong_account() {
                 args,
             )
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
-            .with_authorization_keys(&[ACCOUNT_1_ADDR])
+            .with_authorization_keys(&[*ACCOUNT_1_PUBLIC_KEY])
             .with_deploy_hash([3; 32])
             .build();
 
@@ -307,7 +308,7 @@ fn should_not_call_restricted_session_caller_from_wrong_account() {
     builder.exec(exec_request_3).commit();
 
     let _account = builder
-        .query(None, Key::Account(*DEFAULT_ACCOUNT_ADDR), &[])
+        .query(None, Key::Account(*DEFAULT_ACCOUNT_PUBLIC_KEY), &[])
         .expect("should query account")
         .as_account()
         .cloned()
@@ -329,7 +330,7 @@ fn should_call_group_restricted_contract() {
     // This test runs a contract that's after every call extends the same key with
     // more data
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_GROUPS,
         RuntimeArgs::default(),
     )
@@ -342,7 +343,7 @@ fn should_call_group_restricted_contract() {
     builder.exec(exec_request_1).expect_success().commit();
 
     let account = builder
-        .query(None, Key::Account(*DEFAULT_ACCOUNT_ADDR), &[])
+        .query(None, Key::Account(*DEFAULT_ACCOUNT_PUBLIC_KEY), &[])
         .expect("should query account")
         .as_account()
         .cloned()
@@ -365,7 +366,7 @@ fn should_call_group_restricted_contract() {
             PACKAGE_HASH_ARG => package_hash.into_hash(),
         };
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_ADDR)
+            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 PACKAGE_HASH_KEY,
                 Some(CONTRACT_INITIAL_VERSION),
@@ -373,7 +374,7 @@ fn should_call_group_restricted_contract() {
                 args,
             )
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
-            .with_authorization_keys(&[*DEFAULT_ACCOUNT_ADDR])
+            .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
             .with_deploy_hash([3; 32])
             .build();
 
@@ -383,7 +384,7 @@ fn should_call_group_restricted_contract() {
     builder.exec(exec_request_2).expect_success().commit();
 
     let _account = builder
-        .query(None, Key::Account(*DEFAULT_ACCOUNT_ADDR), &[])
+        .query(None, Key::Account(*DEFAULT_ACCOUNT_PUBLIC_KEY), &[])
         .expect("should query account")
         .as_account()
         .cloned()
@@ -396,15 +397,15 @@ fn should_not_call_group_restricted_contract_from_wrong_account() {
     // This test runs a contract that's after every call extends the same key with
     // more data
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_GROUPS,
         RuntimeArgs::default(),
     )
     .build();
     let exec_request_2 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
-        runtime_args! { ARG_TARGET => ACCOUNT_1_ADDR, ARG_AMOUNT => *TRANSFER_1_AMOUNT },
+        runtime_args! { ARG_TARGET => *ACCOUNT_1_PUBLIC_KEY, ARG_AMOUNT => *TRANSFER_1_AMOUNT },
     )
     .build();
 
@@ -416,7 +417,7 @@ fn should_not_call_group_restricted_contract_from_wrong_account() {
     builder.exec(exec_request_2).expect_success().commit();
 
     let account = builder
-        .query(None, Key::Account(*DEFAULT_ACCOUNT_ADDR), &[])
+        .query(None, Key::Account(*DEFAULT_ACCOUNT_PUBLIC_KEY), &[])
         .expect("should query account")
         .as_account()
         .cloned()
@@ -439,7 +440,7 @@ fn should_not_call_group_restricted_contract_from_wrong_account() {
             PACKAGE_HASH_ARG => package_hash.into_hash(),
         };
         let deploy = DeployItemBuilder::new()
-            .with_address(ACCOUNT_1_ADDR)
+            .with_address(*ACCOUNT_1_PUBLIC_KEY)
             .with_stored_versioned_contract_by_hash(
                 package_hash.into_hash().expect("should be hash"),
                 Some(CONTRACT_INITIAL_VERSION),
@@ -447,7 +448,7 @@ fn should_not_call_group_restricted_contract_from_wrong_account() {
                 args,
             )
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
-            .with_authorization_keys(&[ACCOUNT_1_ADDR])
+            .with_authorization_keys(&[*ACCOUNT_1_PUBLIC_KEY])
             .with_deploy_hash([3; 32])
             .build();
 
@@ -472,7 +473,7 @@ fn should_call_group_unrestricted_contract_caller() {
     // This test runs a contract that's after every call extends the same key with
     // more data
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_GROUPS,
         RuntimeArgs::default(),
     )
@@ -485,7 +486,7 @@ fn should_call_group_unrestricted_contract_caller() {
     builder.exec(exec_request_1).expect_success().commit();
 
     let account = builder
-        .query(None, Key::Account(*DEFAULT_ACCOUNT_ADDR), &[])
+        .query(None, Key::Account(*DEFAULT_ACCOUNT_PUBLIC_KEY), &[])
         .expect("should query account")
         .as_account()
         .cloned()
@@ -505,7 +506,7 @@ fn should_call_group_unrestricted_contract_caller() {
             PACKAGE_HASH_ARG => package_hash.into_hash(),
         };
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_ADDR)
+            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 PACKAGE_HASH_KEY,
                 Some(CONTRACT_INITIAL_VERSION),
@@ -513,7 +514,7 @@ fn should_call_group_unrestricted_contract_caller() {
                 args,
             )
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
-            .with_authorization_keys(&[*DEFAULT_ACCOUNT_ADDR])
+            .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
             .with_deploy_hash([3; 32])
             .build();
 
@@ -522,7 +523,7 @@ fn should_call_group_unrestricted_contract_caller() {
     builder.exec(exec_request_2).expect_success().commit();
 
     let _account = builder
-        .query(None, Key::Account(*DEFAULT_ACCOUNT_ADDR), &[])
+        .query(None, Key::Account(*DEFAULT_ACCOUNT_PUBLIC_KEY), &[])
         .expect("should query account")
         .as_account()
         .cloned()
@@ -533,15 +534,15 @@ fn should_call_group_unrestricted_contract_caller() {
 #[test]
 fn should_call_unrestricted_contract_caller_from_different_account() {
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_GROUPS,
         RuntimeArgs::default(),
     )
     .build();
     let exec_request_2 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
-        runtime_args! { ARG_TARGET => ACCOUNT_1_ADDR, ARG_AMOUNT => *TRANSFER_1_AMOUNT },
+        runtime_args! { ARG_TARGET => *ACCOUNT_1_PUBLIC_KEY, ARG_AMOUNT => *TRANSFER_1_AMOUNT },
     )
     .build();
 
@@ -553,7 +554,7 @@ fn should_call_unrestricted_contract_caller_from_different_account() {
     builder.exec(exec_request_2).expect_success().commit();
 
     let account = builder
-        .query(None, Key::Account(*DEFAULT_ACCOUNT_ADDR), &[])
+        .query(None, Key::Account(*DEFAULT_ACCOUNT_PUBLIC_KEY), &[])
         .expect("should query account")
         .as_account()
         .cloned()
@@ -576,7 +577,7 @@ fn should_call_unrestricted_contract_caller_from_different_account() {
             PACKAGE_HASH_ARG => package_hash.into_hash(),
         };
         let deploy = DeployItemBuilder::new()
-            .with_address(ACCOUNT_1_ADDR)
+            .with_address(*ACCOUNT_1_PUBLIC_KEY)
             .with_stored_versioned_contract_by_hash(
                 package_hash.into_hash().expect("should be hash"),
                 Some(CONTRACT_INITIAL_VERSION),
@@ -584,7 +585,7 @@ fn should_call_unrestricted_contract_caller_from_different_account() {
                 args,
             )
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
-            .with_authorization_keys(&[ACCOUNT_1_ADDR])
+            .with_authorization_keys(&[*ACCOUNT_1_PUBLIC_KEY])
             .with_deploy_hash([3; 32])
             .build();
 
@@ -600,15 +601,15 @@ fn should_call_group_restricted_contract_as_session() {
     // This test runs a contract that's after every call extends the same key with
     // more data
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_GROUPS,
         RuntimeArgs::default(),
     )
     .build();
     let exec_request_2 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
-        runtime_args! { ARG_TARGET => ACCOUNT_1_ADDR, ARG_AMOUNT => *TRANSFER_1_AMOUNT },
+        runtime_args! { ARG_TARGET => *ACCOUNT_1_PUBLIC_KEY, ARG_AMOUNT => *TRANSFER_1_AMOUNT },
     )
     .build();
 
@@ -620,7 +621,7 @@ fn should_call_group_restricted_contract_as_session() {
     builder.exec(exec_request_2).expect_success().commit();
 
     let account = builder
-        .query(None, Key::Account(*DEFAULT_ACCOUNT_ADDR), &[])
+        .query(None, Key::Account(*DEFAULT_ACCOUNT_PUBLIC_KEY), &[])
         .expect("should query account")
         .as_account()
         .cloned()
@@ -643,7 +644,7 @@ fn should_call_group_restricted_contract_as_session() {
             PACKAGE_HASH_ARG => package_hash.into_hash(),
         };
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_ADDR)
+            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_hash(
                 package_hash.into_hash().expect("should be hash"),
                 Some(CONTRACT_INITIAL_VERSION),
@@ -651,7 +652,7 @@ fn should_call_group_restricted_contract_as_session() {
                 args,
             )
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
-            .with_authorization_keys(&[*DEFAULT_ACCOUNT_ADDR])
+            .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
             .with_deploy_hash([4; 32])
             .build();
 
@@ -667,15 +668,15 @@ fn should_call_group_restricted_contract_as_session_from_wrong_account() {
     // This test runs a contract that's after every call extends the same key with
     // more data
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_GROUPS,
         RuntimeArgs::default(),
     )
     .build();
     let exec_request_2 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
-        runtime_args! { ARG_TARGET => ACCOUNT_1_ADDR, ARG_AMOUNT => *TRANSFER_1_AMOUNT },
+        runtime_args! { ARG_TARGET => *ACCOUNT_1_PUBLIC_KEY, ARG_AMOUNT => *TRANSFER_1_AMOUNT },
     )
     .build();
 
@@ -687,7 +688,7 @@ fn should_call_group_restricted_contract_as_session_from_wrong_account() {
     builder.exec(exec_request_2).expect_success().commit();
 
     let account = builder
-        .query(None, Key::Account(*DEFAULT_ACCOUNT_ADDR), &[])
+        .query(None, Key::Account(*DEFAULT_ACCOUNT_PUBLIC_KEY), &[])
         .expect("should query account")
         .as_account()
         .cloned()
@@ -710,7 +711,7 @@ fn should_call_group_restricted_contract_as_session_from_wrong_account() {
             PACKAGE_HASH_ARG => package_hash.into_hash(),
         };
         let deploy = DeployItemBuilder::new()
-            .with_address(ACCOUNT_1_ADDR)
+            .with_address(*ACCOUNT_1_PUBLIC_KEY)
             .with_stored_versioned_contract_by_hash(
                 package_hash.into_hash().expect("should be hash"),
                 Some(CONTRACT_INITIAL_VERSION),
@@ -718,7 +719,7 @@ fn should_call_group_restricted_contract_as_session_from_wrong_account() {
                 args,
             )
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
-            .with_authorization_keys(&[ACCOUNT_1_ADDR])
+            .with_authorization_keys(&[*ACCOUNT_1_PUBLIC_KEY])
             .with_deploy_hash([4; 32])
             .build();
 
@@ -743,7 +744,7 @@ fn should_not_call_uncallable_contract_from_deploy() {
     // This test runs a contract that's after every call extends the same key with
     // more data
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_GROUPS,
         RuntimeArgs::default(),
     )
@@ -756,7 +757,7 @@ fn should_not_call_uncallable_contract_from_deploy() {
     builder.exec(exec_request_1).expect_success().commit();
 
     let account = builder
-        .query(None, Key::Account(*DEFAULT_ACCOUNT_ADDR), &[])
+        .query(None, Key::Account(*DEFAULT_ACCOUNT_PUBLIC_KEY), &[])
         .expect("should query account")
         .as_account()
         .cloned()
@@ -779,7 +780,7 @@ fn should_not_call_uncallable_contract_from_deploy() {
             PACKAGE_HASH_ARG => package_hash.into_hash(),
         };
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_ADDR)
+            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 PACKAGE_HASH_KEY,
                 Some(CONTRACT_INITIAL_VERSION),
@@ -787,7 +788,7 @@ fn should_not_call_uncallable_contract_from_deploy() {
                 args,
             )
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
-            .with_authorization_keys(&[*DEFAULT_ACCOUNT_ADDR])
+            .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
             .with_deploy_hash([3; 32])
             .build();
 
@@ -809,7 +810,7 @@ fn should_not_call_uncallable_contract_from_deploy() {
             PACKAGE_HASH_ARG => package_hash.into_hash(),
         };
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_ADDR)
+            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 PACKAGE_HASH_KEY,
                 Some(CONTRACT_INITIAL_VERSION),
@@ -817,7 +818,7 @@ fn should_not_call_uncallable_contract_from_deploy() {
                 args,
             )
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
-            .with_authorization_keys(&[*DEFAULT_ACCOUNT_ADDR])
+            .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
             .with_deploy_hash([6; 32])
             .build();
 
@@ -833,7 +834,7 @@ fn should_not_call_uncallable_session_from_deploy() {
     // This test runs a contract that's after every call extends the same key with
     // more data
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_GROUPS,
         RuntimeArgs::default(),
     )
@@ -846,7 +847,7 @@ fn should_not_call_uncallable_session_from_deploy() {
     builder.exec(exec_request_1).expect_success().commit();
 
     let account = builder
-        .query(None, Key::Account(*DEFAULT_ACCOUNT_ADDR), &[])
+        .query(None, Key::Account(*DEFAULT_ACCOUNT_PUBLIC_KEY), &[])
         .expect("should query account")
         .as_account()
         .cloned()
@@ -869,7 +870,7 @@ fn should_not_call_uncallable_session_from_deploy() {
             PACKAGE_HASH_ARG => package_hash.into_hash(),
         };
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_ADDR)
+            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 PACKAGE_HASH_KEY,
                 Some(CONTRACT_INITIAL_VERSION),
@@ -877,7 +878,7 @@ fn should_not_call_uncallable_session_from_deploy() {
                 args,
             )
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
-            .with_authorization_keys(&[*DEFAULT_ACCOUNT_ADDR])
+            .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
             .with_deploy_hash([3; 32])
             .build();
 
@@ -899,7 +900,7 @@ fn should_not_call_uncallable_session_from_deploy() {
             PACKAGE_HASH_ARG => package_hash.into_hash(),
         };
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_ADDR)
+            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 PACKAGE_HASH_KEY,
                 Some(CONTRACT_INITIAL_VERSION),
@@ -907,7 +908,7 @@ fn should_not_call_uncallable_session_from_deploy() {
                 args,
             )
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
-            .with_authorization_keys(&[*DEFAULT_ACCOUNT_ADDR])
+            .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
             .with_deploy_hash([6; 32])
             .build();
 

@@ -296,31 +296,28 @@ mod tests {
     use std::{collections::BTreeSet, iter::FromIterator};
 
     use casper_types::{
-        account::{
-            AccountHash, ActionType, RemoveKeyFailure, SetThresholdFailure, UpdateKeyFailure,
-            Weight,
-        },
-        AccessRights, URef,
+        account::{ActionType, RemoveKeyFailure, SetThresholdFailure, UpdateKeyFailure, Weight},
+        AccessRights, SecretKey, URef,
     };
 
     use super::*;
 
     #[test]
     fn associated_keys_can_authorize_keys() {
-        let key_1 = AccountHash::new([0; 32]);
-        let key_2 = AccountHash::new([1; 32]);
-        let key_3 = AccountHash::new([2; 32]);
+        let key_1 = SecretKey::ed25519([0u8; SecretKey::ED25519_LENGTH]).into();
+        let key_2 = SecretKey::ed25519([1u8; SecretKey::ED25519_LENGTH]).into();
+        let key_3 = SecretKey::ed25519([2u8; SecretKey::ED25519_LENGTH]).into();
         let mut keys = AssociatedKeys::default();
 
-        keys.add_key(key_2, Weight::new(2))
-            .expect("should add key_1");
         keys.add_key(key_1, Weight::new(1))
+            .expect("should add key_1");
+        keys.add_key(key_2, Weight::new(2))
             .expect("should add key_1");
         keys.add_key(key_3, Weight::new(3))
             .expect("should add key_1");
 
         let account = Account::new(
-            AccountHash::new([0u8; 32]),
+            key_1,
             NamedKeys::new(),
             URef::new([0u8; 32], AccessRights::READ_ADD_WRITE),
             keys,
@@ -329,44 +326,40 @@ mod tests {
                 .expect("should create thresholds"),
         );
 
+        let key_42 = SecretKey::ed25519([42u8; SecretKey::ED25519_LENGTH]).into();
+        let key_43 = SecretKey::ed25519([43u8; SecretKey::ED25519_LENGTH]).into();
+        let key_44 = SecretKey::ed25519([44u8; SecretKey::ED25519_LENGTH]).into();
+
         assert!(account.can_authorize(&BTreeSet::from_iter(vec![key_3, key_2, key_1])));
         assert!(account.can_authorize(&BTreeSet::from_iter(vec![key_1, key_3, key_2])));
 
         assert!(account.can_authorize(&BTreeSet::from_iter(vec![key_1, key_2])));
         assert!(account.can_authorize(&BTreeSet::from_iter(vec![key_1])));
 
-        assert!(!account.can_authorize(&BTreeSet::from_iter(vec![
-            key_1,
-            key_2,
-            AccountHash::new([42; 32])
-        ])));
-        assert!(!account.can_authorize(&BTreeSet::from_iter(vec![
-            AccountHash::new([42; 32]),
-            key_1,
-            key_2
-        ])));
-        assert!(!account.can_authorize(&BTreeSet::from_iter(vec![
-            AccountHash::new([43; 32]),
-            AccountHash::new([44; 32]),
-            AccountHash::new([42; 32])
-        ])));
+        assert!(!account.can_authorize(&BTreeSet::from_iter(vec![key_1, key_2, key_42])));
+        assert!(!account.can_authorize(&BTreeSet::from_iter(vec![key_42, key_43, key_44])));
         assert!(!account.can_authorize(&BTreeSet::new()));
     }
 
     #[test]
     fn account_can_deploy_with() {
+        let key_0 = SecretKey::ed25519([0u8; SecretKey::ED25519_LENGTH]).into();
+        let key_1 = SecretKey::ed25519([1u8; SecretKey::ED25519_LENGTH]).into();
+        let key_2 = SecretKey::ed25519([2u8; SecretKey::ED25519_LENGTH]).into();
+        let key_3 = SecretKey::ed25519([3u8; SecretKey::ED25519_LENGTH]).into();
+
         let associated_keys = {
-            let mut res = AssociatedKeys::new(AccountHash::new([1u8; 32]), Weight::new(1));
-            res.add_key(AccountHash::new([2u8; 32]), Weight::new(11))
+            let mut res = AssociatedKeys::new(key_0, Weight::new(1));
+            res.add_key(key_1, Weight::new(11))
                 .expect("should add key 1");
-            res.add_key(AccountHash::new([3u8; 32]), Weight::new(11))
+            res.add_key(key_2, Weight::new(11))
                 .expect("should add key 2");
-            res.add_key(AccountHash::new([4u8; 32]), Weight::new(11))
+            res.add_key(key_3, Weight::new(11))
                 .expect("should add key 3");
             res
         };
         let account = Account::new(
-            AccountHash::new([0u8; 32]),
+            key_0,
             NamedKeys::new(),
             URef::new([0u8; 32], AccessRights::READ_ADD_WRITE),
             associated_keys,
@@ -376,41 +369,34 @@ mod tests {
         );
 
         // sum: 22, required 33 - can't deploy
-        assert!(!account.can_deploy_with(&BTreeSet::from_iter(vec![
-            AccountHash::new([3u8; 32]),
-            AccountHash::new([2u8; 32]),
-        ])));
+        assert!(!account.can_deploy_with(&BTreeSet::from_iter(vec![key_1, key_1])));
 
         // sum: 33, required 33 - can deploy
-        assert!(account.can_deploy_with(&BTreeSet::from_iter(vec![
-            AccountHash::new([4u8; 32]),
-            AccountHash::new([3u8; 32]),
-            AccountHash::new([2u8; 32]),
-        ])));
+        assert!(account.can_deploy_with(&BTreeSet::from_iter(vec![key_1, key_2, key_3,])));
 
         // sum: 34, required 33 - can deploy
-        assert!(account.can_deploy_with(&BTreeSet::from_iter(vec![
-            AccountHash::new([2u8; 32]),
-            AccountHash::new([1u8; 32]),
-            AccountHash::new([4u8; 32]),
-            AccountHash::new([3u8; 32]),
-        ])));
+        assert!(account.can_deploy_with(&BTreeSet::from_iter(vec![key_0, key_1, key_2, key_3,])));
     }
 
     #[test]
     fn account_can_manage_keys_with() {
+        let key_0 = SecretKey::ed25519([0u8; SecretKey::ED25519_LENGTH]).into();
+        let key_1 = SecretKey::ed25519([1u8; SecretKey::ED25519_LENGTH]).into();
+        let key_2 = SecretKey::ed25519([2u8; SecretKey::ED25519_LENGTH]).into();
+        let key_3 = SecretKey::ed25519([3u8; SecretKey::ED25519_LENGTH]).into();
+
         let associated_keys = {
-            let mut res = AssociatedKeys::new(AccountHash::new([1u8; 32]), Weight::new(1));
-            res.add_key(AccountHash::new([2u8; 32]), Weight::new(11))
+            let mut res = AssociatedKeys::new(key_0, Weight::new(1));
+            res.add_key(key_1, Weight::new(11))
                 .expect("should add key 1");
-            res.add_key(AccountHash::new([3u8; 32]), Weight::new(11))
+            res.add_key(key_2, Weight::new(11))
                 .expect("should add key 2");
-            res.add_key(AccountHash::new([4u8; 32]), Weight::new(11))
+            res.add_key(key_3, Weight::new(11))
                 .expect("should add key 3");
             res
         };
         let account = Account::new(
-            AccountHash::new([0u8; 32]),
+            key_0,
             NamedKeys::new(),
             URef::new([0u8; 32], AccessRights::READ_ADD_WRITE),
             associated_keys,
@@ -420,35 +406,25 @@ mod tests {
         );
 
         // sum: 22, required 33 - can't manage
-        assert!(!account.can_manage_keys_with(&BTreeSet::from_iter(vec![
-            AccountHash::new([3u8; 32]),
-            AccountHash::new([2u8; 32]),
-        ])));
+        assert!(!account.can_manage_keys_with(&BTreeSet::from_iter(vec![key_1, key_2])));
 
         // sum: 33, required 33 - can manage
-        assert!(account.can_manage_keys_with(&BTreeSet::from_iter(vec![
-            AccountHash::new([4u8; 32]),
-            AccountHash::new([3u8; 32]),
-            AccountHash::new([2u8; 32]),
-        ])));
+        assert!(account.can_manage_keys_with(&BTreeSet::from_iter(vec![key_1, key_2, key_3])));
 
         // sum: 34, required 33 - can manage
-        assert!(account.can_manage_keys_with(&BTreeSet::from_iter(vec![
-            AccountHash::new([2u8; 32]),
-            AccountHash::new([1u8; 32]),
-            AccountHash::new([4u8; 32]),
-            AccountHash::new([3u8; 32]),
-        ])));
+        assert!(
+            account.can_manage_keys_with(&BTreeSet::from_iter(vec![key_0, key_1, key_2, key_3]))
+        );
     }
 
     #[test]
     fn set_action_threshold_higher_than_total_weight() {
-        let identity_key = AccountHash::new([1u8; 32]);
-        let key_1 = AccountHash::new([2u8; 32]);
-        let key_2 = AccountHash::new([3u8; 32]);
-        let key_3 = AccountHash::new([4u8; 32]);
+        let key_0 = SecretKey::ed25519([0u8; SecretKey::ED25519_LENGTH]).into();
+        let key_1 = SecretKey::ed25519([1u8; SecretKey::ED25519_LENGTH]).into();
+        let key_2 = SecretKey::ed25519([2u8; SecretKey::ED25519_LENGTH]).into();
+        let key_3 = SecretKey::ed25519([3u8; SecretKey::ED25519_LENGTH]).into();
         let associated_keys = {
-            let mut res = AssociatedKeys::new(identity_key, Weight::new(1));
+            let mut res = AssociatedKeys::new(key_0, Weight::new(1));
             res.add_key(key_1, Weight::new(2))
                 .expect("should add key 1");
             res.add_key(key_2, Weight::new(3))
@@ -458,7 +434,7 @@ mod tests {
             res
         };
         let mut account = Account::new(
-            AccountHash::new([0u8; 32]),
+            key_0,
             NamedKeys::new(),
             URef::new([0u8; 32], AccessRights::READ_ADD_WRITE),
             associated_keys,
@@ -483,12 +459,12 @@ mod tests {
 
     #[test]
     fn remove_key_would_violate_action_thresholds() {
-        let identity_key = AccountHash::new([1u8; 32]);
-        let key_1 = AccountHash::new([2u8; 32]);
-        let key_2 = AccountHash::new([3u8; 32]);
-        let key_3 = AccountHash::new([4u8; 32]);
+        let key_0 = SecretKey::ed25519([0u8; SecretKey::ED25519_LENGTH]).into();
+        let key_1 = SecretKey::ed25519([1u8; SecretKey::ED25519_LENGTH]).into();
+        let key_2 = SecretKey::ed25519([2u8; SecretKey::ED25519_LENGTH]).into();
+        let key_3 = SecretKey::ed25519([3u8; SecretKey::ED25519_LENGTH]).into();
         let associated_keys = {
-            let mut res = AssociatedKeys::new(identity_key, Weight::new(1));
+            let mut res = AssociatedKeys::new(key_0, Weight::new(1));
             res.add_key(key_1, Weight::new(2))
                 .expect("should add key 1");
             res.add_key(key_2, Weight::new(3))
@@ -498,7 +474,7 @@ mod tests {
             res
         };
         let mut account = Account::new(
-            AccountHash::new([0u8; 32]),
+            key_0,
             NamedKeys::new(),
             URef::new([0u8; 32], AccessRights::READ_ADD_WRITE),
             associated_keys,
@@ -515,16 +491,16 @@ mod tests {
 
     #[test]
     fn updating_key_would_violate_action_thresholds() {
-        let identity_key = AccountHash::new([1u8; 32]);
-        let identity_key_weight = Weight::new(1);
-        let key_1 = AccountHash::new([2u8; 32]);
+        let key_0 = SecretKey::ed25519([0u8; SecretKey::ED25519_LENGTH]).into();
+        let key_0_weight = Weight::new(1);
+        let key_1 = SecretKey::ed25519([1u8; SecretKey::ED25519_LENGTH]).into();
         let key_1_weight = Weight::new(2);
-        let key_2 = AccountHash::new([3u8; 32]);
+        let key_2 = SecretKey::ed25519([2u8; SecretKey::ED25519_LENGTH]).into();
         let key_2_weight = Weight::new(3);
-        let key_3 = AccountHash::new([4u8; 32]);
+        let key_3 = SecretKey::ed25519([3u8; SecretKey::ED25519_LENGTH]).into();
         let key_3_weight = Weight::new(4);
         let associated_keys = {
-            let mut res = AssociatedKeys::new(identity_key, identity_key_weight);
+            let mut res = AssociatedKeys::new(key_0, key_0_weight);
             res.add_key(key_1, key_1_weight).expect("should add key 1");
             res.add_key(key_2, key_2_weight).expect("should add key 2");
             res.add_key(key_3, key_3_weight).expect("should add key 3");
@@ -533,14 +509,14 @@ mod tests {
         };
 
         let deployment_threshold = Weight::new(
-            identity_key_weight.value()
+            key_0_weight.value()
                 + key_1_weight.value()
                 + key_2_weight.value()
                 + key_3_weight.value(),
         );
         let key_management_threshold = Weight::new(deployment_threshold.value() + 1);
         let mut account = Account::new(
-            identity_key,
+            key_0,
             NamedKeys::new(),
             URef::new([0u8; 32], AccessRights::READ_ADD_WRITE),
             associated_keys,
@@ -560,7 +536,7 @@ mod tests {
 
         // increase total weight (12)
         account
-            .update_associated_key(identity_key, Weight::new(3))
+            .update_associated_key(key_0, Weight::new(3))
             .unwrap();
 
         // variant a) decrease total weight by 1 (total 11)
@@ -579,13 +555,13 @@ mod tests {
 
     #[test]
     fn overflowing_should_allow_removal() {
-        let identity_key = AccountHash::new([42; 32]);
-        let key_1 = AccountHash::new([2u8; 32]);
-        let key_2 = AccountHash::new([3u8; 32]);
+        let key_0 = SecretKey::ed25519([0u8; SecretKey::ED25519_LENGTH]).into();
+        let key_1 = SecretKey::ed25519([1u8; SecretKey::ED25519_LENGTH]).into();
+        let key_2 = SecretKey::ed25519([2u8; SecretKey::ED25519_LENGTH]).into();
 
         let associated_keys = {
             // Identity
-            let mut res = AssociatedKeys::new(identity_key, Weight::new(1));
+            let mut res = AssociatedKeys::new(key_0, Weight::new(1));
 
             // Spare key
             res.add_key(key_1, Weight::new(2))
@@ -598,7 +574,7 @@ mod tests {
         };
 
         let mut account = Account::new(
-            identity_key,
+            key_0,
             NamedKeys::new(),
             URef::new([0u8; 32], AccessRights::READ_ADD_WRITE),
             associated_keys,
@@ -611,18 +587,18 @@ mod tests {
 
     #[test]
     fn overflowing_should_allow_updating() {
-        let identity_key = AccountHash::new([1; 32]);
-        let identity_key_weight = Weight::new(1);
-        let key_1 = AccountHash::new([2u8; 32]);
+        let key_0 = SecretKey::ed25519([0u8; SecretKey::ED25519_LENGTH]).into();
+        let key_0_weight = Weight::new(1);
+        let key_1 = SecretKey::ed25519([1u8; SecretKey::ED25519_LENGTH]).into();
         let key_1_weight = Weight::new(3);
-        let key_2 = AccountHash::new([3u8; 32]);
+        let key_2 = SecretKey::ed25519([2u8; SecretKey::ED25519_LENGTH]).into();
         let key_2_weight = Weight::new(255);
         let deployment_threshold = Weight::new(1);
         let key_management_threshold = Weight::new(254);
 
         let associated_keys = {
             // Identity
-            let mut res = AssociatedKeys::new(identity_key, identity_key_weight);
+            let mut res = AssociatedKeys::new(key_0, key_0_weight);
 
             // Spare key
             res.add_key(key_1, key_1_weight).expect("should add key 1");
@@ -633,7 +609,7 @@ mod tests {
         };
 
         let mut account = Account::new(
-            identity_key,
+            key_0,
             NamedKeys::new(),
             URef::new([0u8; 32], AccessRights::READ_ADD_WRITE),
             associated_keys,

@@ -1,37 +1,39 @@
 use assert_matches::assert_matches;
+use once_cell::sync::Lazy;
 
 use casper_engine_test_support::{
     internal::{
         utils, DeployItemBuilder, ExecuteRequestBuilder, InMemoryWasmTestBuilder,
         DEFAULT_RUN_GENESIS_REQUEST,
     },
-    DEFAULT_ACCOUNT_ADDR,
+    DEFAULT_ACCOUNT_PUBLIC_KEY,
 };
 use casper_execution_engine::core::engine_state::Error;
-use casper_types::{account::AccountHash, runtime_args, RuntimeArgs, U512};
+use casper_types::{runtime_args, PublicKey, RuntimeArgs, SecretKey, U512};
 
-const ACCOUNT_1_ADDR: AccountHash = AccountHash::new([42u8; 32]);
 const ARG_AMOUNT: &str = "amount";
+
+static ACCOUNT_1_PUBLIC_KEY: Lazy<PublicKey> =
+    Lazy::new(|| SecretKey::ed25519([1u8; SecretKey::ED25519_LENGTH]).into());
 
 #[ignore]
 #[test]
 fn should_raise_precondition_authorization_failure_invalid_account() {
-    let account_1_account_hash = ACCOUNT_1_ADDR;
-    let nonexistent_account_addr = AccountHash::new([99u8; 32]);
+    let nonexistent_account = SecretKey::ed25519([99u8; SecretKey::ED25519_LENGTH]).into();
     let payment_purse_amount = 10_000_000;
     let transferred_amount = 1;
 
     let exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_ADDR)
+            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_deploy_hash([1; 32])
             .with_session_code(
                 "transfer_purse_to_account.wasm",
-                runtime_args! { "target" =>account_1_account_hash, "amount" => U512::from(transferred_amount) },
+                runtime_args! { "target" => *ACCOUNT_1_PUBLIC_KEY, "amount" => U512::from(transferred_amount) },
             )
-            .with_address(nonexistent_account_addr)
+            .with_address(nonexistent_account)
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => U512::from(payment_purse_amount) })
-            .with_authorization_keys(&[nonexistent_account_addr])
+            .with_authorization_keys(&[nonexistent_account])
             .build();
 
         ExecuteRequestBuilder::new().push_deploy(deploy).build()
@@ -54,10 +56,10 @@ fn should_raise_precondition_authorization_failure_invalid_account() {
 #[ignore]
 #[test]
 fn should_raise_precondition_authorization_failure_empty_authorized_keys() {
-    let empty_keys: [AccountHash; 0] = [];
+    let empty_keys: [PublicKey; 0] = [];
     let exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_ADDR)
+            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_session_code("do_nothing.wasm", RuntimeArgs::default())
             .with_empty_payment_bytes(RuntimeArgs::default())
             .with_deploy_hash([1; 32])
@@ -85,22 +87,21 @@ fn should_raise_precondition_authorization_failure_empty_authorized_keys() {
 #[ignore]
 #[test]
 fn should_raise_precondition_authorization_failure_invalid_authorized_keys() {
-    let account_1_account_hash = ACCOUNT_1_ADDR;
-    let nonexistent_account_addr = AccountHash::new([99u8; 32]);
+    let account: PublicKey = SecretKey::ed25519([99u8; SecretKey::ED25519_LENGTH]).into();
     let payment_purse_amount = 10_000_000;
     let transferred_amount = 1;
 
     let exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_ADDR)
+            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_deploy_hash([1; 32])
             .with_session_code(
                 "transfer_purse_to_account.wasm",
-                runtime_args! { "target" =>account_1_account_hash, "amount" => U512::from(transferred_amount) },
+                runtime_args! { "target" =>*ACCOUNT_1_PUBLIC_KEY, "amount" => U512::from(transferred_amount) },
             )
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => U512::from(payment_purse_amount) })
             // invalid authorization key to force error
-            .with_authorization_keys(&[nonexistent_account_addr])
+            .with_authorization_keys(&[account])
             .build();
 
         ExecuteRequestBuilder::new().push_deploy(deploy).build()

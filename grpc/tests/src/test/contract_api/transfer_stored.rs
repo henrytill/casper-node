@@ -1,9 +1,9 @@
 use casper_engine_test_support::{
     internal::{
         utils, DeployItemBuilder, ExecuteRequestBuilder, InMemoryWasmTestBuilder,
-        DEFAULT_ACCOUNT_KEY, DEFAULT_PAYMENT, DEFAULT_RUN_GENESIS_REQUEST,
+        DEFAULT_ACCOUNT_PUBLIC_KEY, DEFAULT_PAYMENT, DEFAULT_RUN_GENESIS_REQUEST,
     },
-    DEFAULT_ACCOUNT_ADDR, DEFAULT_ACCOUNT_INITIAL_BALANCE,
+    DEFAULT_ACCOUNT_INITIAL_BALANCE,
 };
 use casper_execution_engine::{core::engine_state::CONV_RATE, shared::motes::Motes};
 use casper_types::{account::AccountHash, runtime_args, RuntimeArgs, U512};
@@ -21,7 +21,7 @@ fn should_transfer_to_account_stored() {
     {
         // first, store transfer contract
         let exec_request = ExecuteRequestBuilder::standard(
-            *DEFAULT_ACCOUNT_ADDR,
+            *DEFAULT_ACCOUNT_PUBLIC_KEY,
             &format!("{}_stored.wasm", CONTRACT_TRANSFER_TO_ACCOUNT_NAME),
             RuntimeArgs::default(),
         )
@@ -31,7 +31,7 @@ fn should_transfer_to_account_stored() {
     }
 
     let default_account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     let contract_hash = default_account
@@ -57,7 +57,7 @@ fn should_transfer_to_account_stored() {
     // next make another deploy that USES stored payment logic
     let exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_ADDR)
+            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_session_hash(
                 contract_hash,
                 TRANSFER_ENTRYPOINT,
@@ -66,7 +66,7 @@ fn should_transfer_to_account_stored() {
             .with_empty_payment_bytes(runtime_args! {
                 ARG_AMOUNT => payment_purse_amount,
             })
-            .with_authorization_keys(&[*DEFAULT_ACCOUNT_KEY])
+            .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
             .with_deploy_hash([2; 32])
             .build();
 

@@ -89,7 +89,7 @@ pub type URefAddr = [u8; 32];
 pub type Hash = [u8; 32];
 
 /// Default test account address.
-pub use crate::internal::DEFAULT_ACCOUNT_ADDR;
+pub use crate::internal::DEFAULT_ACCOUNT_PUBLIC_KEY;
 
 /// Default initial balance of a test account in motes.
 pub const DEFAULT_ACCOUNT_INITIAL_BALANCE: u64 = 100_000_000_000_000_000u64;

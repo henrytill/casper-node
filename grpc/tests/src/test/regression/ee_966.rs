@@ -7,7 +7,7 @@ use casper_engine_test_support::{
         DeployItemBuilder, ExecuteRequestBuilder, InMemoryWasmTestBuilder, UpgradeRequestBuilder,
         ARG_AMOUNT, DEFAULT_PAYMENT, DEFAULT_PROTOCOL_VERSION, DEFAULT_RUN_GENESIS_REQUEST,
     },
-    DEFAULT_ACCOUNT_ADDR,
+    DEFAULT_ACCOUNT_PUBLIC_KEY,
 };
 use casper_execution_engine::{
     core::{
@@ -71,12 +71,12 @@ fn make_session_code_with_memory_pages(initial_pages: u32, max_pages: Option<u32
 
 fn make_request_with_session_bytes(session_code: Vec<u8>) -> ExecuteRequest {
     let deploy = DeployItemBuilder::new()
-        .with_address(*DEFAULT_ACCOUNT_ADDR)
+        .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .with_session_bytes(session_code, RuntimeArgs::new())
         .with_empty_payment_bytes(runtime_args! {
             ARG_AMOUNT => *DEFAULT_PAYMENT
         })
-        .with_authorization_keys(&[*DEFAULT_ACCOUNT_ADDR])
+        .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
         .with_deploy_hash([42; 32])
         .build();
 
@@ -218,7 +218,7 @@ fn should_run_ee_966_cant_have_larger_initial_than_max_memory() {
 #[test]
 fn should_run_ee_966_regression_fail_when_growing_mem_past_max() {
     let exec_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_EE_966_REGRESSION,
         RuntimeArgs::default(),
     )
@@ -241,7 +241,7 @@ fn should_run_ee_966_regression_fail_when_growing_mem_past_max() {
 #[test]
 fn should_run_ee_966_regression_when_growing_mem_after_upgrade() {
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_EE_966_REGRESSION,
         RuntimeArgs::default(),
     )
@@ -281,7 +281,7 @@ fn should_run_ee_966_regression_when_growing_mem_after_upgrade() {
     //
 
     let exec_request_2 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_EE_966_REGRESSION,
         RuntimeArgs::default(),
     )

@@ -1,24 +1,22 @@
 use once_cell::sync::Lazy;
 
-use casper_engine_test_support::{
-    internal::{
-        utils, InMemoryWasmTestBuilder, AUCTION_INSTALL_CONTRACT, DEFAULT_AUCTION_DELAY,
-        DEFAULT_LOCKED_FUNDS_PERIOD, DEFAULT_ROUND_SEIGNIORAGE_RATE, DEFAULT_UNBONDING_DELAY,
-        DEFAULT_VALIDATOR_SLOTS, DEFAULT_WASM_CONFIG, MINT_INSTALL_CONTRACT, POS_INSTALL_CONTRACT,
-        STANDARD_PAYMENT_INSTALL_CONTRACT,
-    },
-    AccountHash,
+use casper_engine_test_support::internal::{
+    utils, InMemoryWasmTestBuilder, AUCTION_INSTALL_CONTRACT, DEFAULT_AUCTION_DELAY,
+    DEFAULT_LOCKED_FUNDS_PERIOD, DEFAULT_ROUND_SEIGNIORAGE_RATE, DEFAULT_UNBONDING_DELAY,
+    DEFAULT_VALIDATOR_SLOTS, DEFAULT_WASM_CONFIG, MINT_INSTALL_CONTRACT, POS_INSTALL_CONTRACT,
+    STANDARD_PAYMENT_INSTALL_CONTRACT,
 };
 use casper_execution_engine::{
     core::engine_state::{
         genesis::{ExecConfig, GenesisAccount},
         run_genesis_request::RunGenesisRequest,
-        SYSTEM_ACCOUNT_ADDR,
     },
     shared::{motes::Motes, stored_value::StoredValue},
     storage::protocol_data::DEFAULT_WASMLESS_TRANSFER_COST,
 };
-use casper_types::{mint::TOTAL_SUPPLY_KEY, ProtocolVersion, PublicKey, SecretKey, U512};
+use casper_types::{
+    mint::TOTAL_SUPPLY_KEY, ProtocolVersion, PublicKey, SecretKey, SYSTEM_ACCOUNT, U512,
+};
 
 #[cfg(feature = "use-system-contracts")]
 const BAD_INSTALL: &str = "standard_payment.wasm";
@@ -31,10 +29,8 @@ const ACCOUNT_2_BALANCE: u64 = 2_000_000_000;
 
 static ACCOUNT_1_PUBLIC_KEY: Lazy<PublicKey> =
     Lazy::new(|| SecretKey::ed25519([42; SecretKey::ED25519_LENGTH]).into());
-static ACCOUNT_1_ADDR: Lazy<AccountHash> = Lazy::new(|| AccountHash::from(&*ACCOUNT_1_PUBLIC_KEY));
 static ACCOUNT_2_PUBLIC_KEY: Lazy<PublicKey> =
     Lazy::new(|| SecretKey::ed25519([44; SecretKey::ED25519_LENGTH]).into());
-static ACCOUNT_2_ADDR: Lazy<AccountHash> = Lazy::new(|| AccountHash::from(&*ACCOUNT_2_PUBLIC_KEY));
 
 static GENESIS_CUSTOM_ACCOUNTS: Lazy<Vec<GenesisAccount>> = Lazy::new(|| {
     let account_1 = {
@@ -97,15 +93,15 @@ fn should_run_genesis() {
     builder.run_genesis(&run_genesis_request);
 
     let system_account = builder
-        .get_account(SYSTEM_ACCOUNT_ADDR)
+        .get_account(SYSTEM_ACCOUNT)
         .expect("system account should exist");
 
     let account_1 = builder
-        .get_account(*ACCOUNT_1_ADDR)
+        .get_account(*ACCOUNT_1_PUBLIC_KEY)
         .expect("account 1 should exist");
 
     let account_2 = builder
-        .get_account(*ACCOUNT_2_ADDR)
+        .get_account(*ACCOUNT_2_PUBLIC_KEY)
         .expect("account 2 should exist");
 
     let system_account_balance_actual = builder.get_purse_balance(system_account.main_purse());

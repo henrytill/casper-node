@@ -5,22 +5,21 @@ use once_cell::sync::Lazy;
 use casper_engine_test_support::{
     internal::{
         utils, ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_ACCOUNTS,
-        DEFAULT_AUCTION_DELAY, DEFAULT_LOCKED_FUNDS_PERIOD, DEFAULT_RUN_GENESIS_REQUEST,
-        DEFAULT_UNBONDING_DELAY,
+        DEFAULT_ACCOUNT_PUBLIC_KEY, DEFAULT_AUCTION_DELAY, DEFAULT_LOCKED_FUNDS_PERIOD,
+        DEFAULT_RUN_GENESIS_REQUEST, DEFAULT_UNBONDING_DELAY,
     },
-    DEFAULT_ACCOUNT_ADDR, DEFAULT_ACCOUNT_INITIAL_BALANCE, MINIMUM_ACCOUNT_CREATION_BALANCE,
+    DEFAULT_ACCOUNT_INITIAL_BALANCE, MINIMUM_ACCOUNT_CREATION_BALANCE,
 };
 use casper_execution_engine::{core::engine_state::genesis::GenesisAccount, shared::motes::Motes};
 use casper_types::{
     self,
-    account::AccountHash,
     auction::{
         Bids, DelegationRate, EraId, EraValidators, SeigniorageRecipients, UnbondingPurses,
         ValidatorWeights, ARG_AMOUNT, ARG_DELEGATION_RATE, ARG_DELEGATOR, ARG_PUBLIC_KEY,
         ARG_UNBOND_PURSE, ARG_VALIDATOR, BIDS_KEY, ERA_ID_KEY, INITIAL_ERA_ID, METHOD_RUN_AUCTION,
         UNBONDING_PURSES_KEY,
     },
-    runtime_args, PublicKey, RuntimeArgs, SecretKey, URef, U512,
+    runtime_args, PublicKey, RuntimeArgs, SecretKey, URef, SYSTEM_ACCOUNT, U512,
 };
 
 const ARG_ENTRY_POINT: &str = "entry_point";
@@ -34,7 +33,6 @@ const CONTRACT_UNDELEGATE: &str = "undelegate.wasm";
 const CONTRACT_CREATE_PURSE_01: &str = "create_purse_01.wasm";
 
 const TRANSFER_AMOUNT: u64 = MINIMUM_ACCOUNT_CREATION_BALANCE + 1000;
-const SYSTEM_ADDR: AccountHash = AccountHash::new([0u8; 32]);
 
 const ADD_BID_AMOUNT_1: u64 = 95_000;
 const ADD_BID_AMOUNT_2: u64 = 47_500;
@@ -50,39 +48,31 @@ const DELEGATE_AMOUNT_1: u64 = 125_000;
 const DELEGATE_AMOUNT_2: u64 = 15_000;
 const UNDELEGATE_AMOUNT_1: u64 = 35_000;
 
-static NON_FOUNDER_VALIDATOR_1_PK: Lazy<PublicKey> =
+static NON_FOUNDER_VALIDATOR_1_PUBLIC_KEY: Lazy<PublicKey> =
     Lazy::new(|| SecretKey::ed25519([3; SecretKey::ED25519_LENGTH]).into());
-static NON_FOUNDER_VALIDATOR_1_ADDR: Lazy<AccountHash> =
-    Lazy::new(|| AccountHash::from(&*NON_FOUNDER_VALIDATOR_1_PK));
 
-static NON_FOUNDER_VALIDATOR_2_PK: Lazy<PublicKey> =
+static NON_FOUNDER_VALIDATOR_2_PUBLIC_KEY: Lazy<PublicKey> =
     Lazy::new(|| SecretKey::ed25519([4; SecretKey::ED25519_LENGTH]).into());
-static NON_FOUNDER_VALIDATOR_2_ADDR: Lazy<AccountHash> =
-    Lazy::new(|| AccountHash::from(&*NON_FOUNDER_VALIDATOR_2_PK));
 
-static ACCOUNT_1_PK: Lazy<PublicKey> =
+static ACCOUNT_1_PUBLIC_KEY: Lazy<PublicKey> =
     Lazy::new(|| SecretKey::ed25519([200; SecretKey::ED25519_LENGTH]).into());
-static ACCOUNT_1_ADDR: Lazy<AccountHash> = Lazy::new(|| AccountHash::from(&*ACCOUNT_1_PK));
 const ACCOUNT_1_BALANCE: u64 = MINIMUM_ACCOUNT_CREATION_BALANCE;
 const ACCOUNT_1_BOND: u64 = 100_000;
 const ACCOUNT_1_WITHDRAW_1: u64 = 55_000;
 const ACCOUNT_1_WITHDRAW_2: u64 = 45_000;
 
-static ACCOUNT_2_PK: Lazy<PublicKey> =
+static ACCOUNT_2_PUBLIC_KEY: Lazy<PublicKey> =
     Lazy::new(|| SecretKey::ed25519([202; SecretKey::ED25519_LENGTH]).into());
-static ACCOUNT_2_ADDR: Lazy<AccountHash> = Lazy::new(|| AccountHash::from(&*ACCOUNT_2_PK));
 const ACCOUNT_2_BALANCE: u64 = MINIMUM_ACCOUNT_CREATION_BALANCE;
 const ACCOUNT_2_BOND: u64 = 200_000;
 
-static BID_ACCOUNT_1_PK: Lazy<PublicKey> =
+static BID_ACCOUNT_1_PUBLIC_KEY: Lazy<PublicKey> =
     Lazy::new(|| SecretKey::ed25519([204; SecretKey::ED25519_LENGTH]).into());
-static BID_ACCOUNT_1_ADDR: Lazy<AccountHash> = Lazy::new(|| AccountHash::from(&*BID_ACCOUNT_1_PK));
 const BID_ACCOUNT_1_BALANCE: u64 = MINIMUM_ACCOUNT_CREATION_BALANCE;
 const BID_ACCOUNT_1_BOND: u64 = 0;
 
-static BID_ACCOUNT_2_PK: Lazy<PublicKey> =
+static BID_ACCOUNT_2_PUBLIC_KEY: Lazy<PublicKey> =
     Lazy::new(|| SecretKey::ed25519([206; SecretKey::ED25519_LENGTH]).into());
-static BID_ACCOUNT_2_ADDR: Lazy<AccountHash> = Lazy::new(|| AccountHash::from(&*BID_ACCOUNT_2_PK));
 const BID_ACCOUNT_2_BALANCE: u64 = MINIMUM_ACCOUNT_CREATION_BALANCE;
 const BID_ACCOUNT_2_BOND: u64 = 0;
 
@@ -96,8 +86,7 @@ fn should_run_add_bid() {
     let accounts = {
         let mut tmp: Vec<GenesisAccount> = DEFAULT_ACCOUNTS.clone();
         let account_1 = GenesisAccount::new(
-            *BID_ACCOUNT_1_PK,
-            *BID_ACCOUNT_1_ADDR,
+            *BID_ACCOUNT_1_PUBLIC_KEY,
             Motes::new(BID_ACCOUNT_1_BALANCE.into()),
             Motes::new(BID_ACCOUNT_1_BOND.into()),
         );
@@ -112,10 +101,10 @@ fn should_run_add_bid() {
     builder.run_genesis(&run_genesis_request);
 
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *BID_ACCOUNT_1_ADDR,
+        *BID_ACCOUNT_1_PUBLIC_KEY,
         CONTRACT_ADD_BID,
         runtime_args! {
-            ARG_PUBLIC_KEY => *BID_ACCOUNT_1_PK,
+            ARG_PUBLIC_KEY => *BID_ACCOUNT_1_PUBLIC_KEY,
             ARG_AMOUNT => U512::from(ADD_BID_AMOUNT_1),
             ARG_DELEGATION_RATE => ADD_BID_DELEGATION_RATE_1,
         },
@@ -129,7 +118,7 @@ fn should_run_add_bid() {
 
     assert_eq!(bids.len(), 1);
 
-    let active_bid = bids.get(&BID_ACCOUNT_1_PK.clone()).unwrap();
+    let active_bid = bids.get(&BID_ACCOUNT_1_PUBLIC_KEY.clone()).unwrap();
     assert_eq!(
         builder.get_purse_balance(*active_bid.bonding_purse()),
         U512::from(ADD_BID_AMOUNT_1)
@@ -139,10 +128,10 @@ fn should_run_add_bid() {
 
     // 2nd bid top-up
     let exec_request_2 = ExecuteRequestBuilder::standard(
-        *BID_ACCOUNT_1_ADDR,
+        *BID_ACCOUNT_1_PUBLIC_KEY,
         CONTRACT_ADD_BID,
         runtime_args! {
-            ARG_PUBLIC_KEY => *BID_ACCOUNT_1_PK,
+            ARG_PUBLIC_KEY => *BID_ACCOUNT_1_PUBLIC_KEY,
             ARG_AMOUNT => U512::from(BID_AMOUNT_2),
             ARG_DELEGATION_RATE => ADD_BID_DELEGATION_RATE_2,
         },
@@ -155,7 +144,7 @@ fn should_run_add_bid() {
 
     assert_eq!(bids.len(), 1);
 
-    let active_bid = bids.get(&BID_ACCOUNT_1_PK.clone()).unwrap();
+    let active_bid = bids.get(&BID_ACCOUNT_1_PUBLIC_KEY.clone()).unwrap();
     assert_eq!(
         builder.get_purse_balance(*active_bid.bonding_purse()),
         U512::from(ADD_BID_AMOUNT_1 + BID_AMOUNT_2)
@@ -164,7 +153,7 @@ fn should_run_add_bid() {
 
     // 3a. create purse for unbonding purposes
     let exec_request_2 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_CREATE_PURSE_01,
         runtime_args! {
             ARG_PURSE_NAME => UNBONDING_PURSE_NAME_1,
@@ -174,7 +163,7 @@ fn should_run_add_bid() {
 
     builder.exec(exec_request_2).expect_success().commit();
     let unbonding_purse = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have default account")
         .named_keys()
         .get(UNBONDING_PURSE_NAME_1)
@@ -184,10 +173,10 @@ fn should_run_add_bid() {
 
     // 3. withdraw some amount
     let exec_request_3 = ExecuteRequestBuilder::standard(
-        *BID_ACCOUNT_1_ADDR,
+        *BID_ACCOUNT_1_PUBLIC_KEY,
         CONTRACT_WITHDRAW_BID,
         runtime_args! {
-            ARG_PUBLIC_KEY => *BID_ACCOUNT_1_PK,
+            ARG_PUBLIC_KEY => *BID_ACCOUNT_1_PUBLIC_KEY,
             ARG_AMOUNT => U512::from(WITHDRAW_BID_AMOUNT_2),
             ARG_UNBOND_PURSE => Some(unbonding_purse),
         },
@@ -199,7 +188,7 @@ fn should_run_add_bid() {
 
     assert_eq!(bids.len(), 1);
 
-    let active_bid = bids.get(&BID_ACCOUNT_1_PK.clone()).unwrap();
+    let active_bid = bids.get(&BID_ACCOUNT_1_PUBLIC_KEY.clone()).unwrap();
     assert_eq!(
         builder.get_purse_balance(*active_bid.bonding_purse()),
         // Since we don't pay out immediately `WITHDRAW_BID_AMOUNT_2` is locked in unbonding queue
@@ -207,10 +196,13 @@ fn should_run_add_bid() {
     );
     let unbonding_purses: UnbondingPurses = builder.get_value(auction_hash, "unbonding_purses");
     let unbond_list = unbonding_purses
-        .get(&BID_ACCOUNT_1_PK)
+        .get(&BID_ACCOUNT_1_PUBLIC_KEY)
         .expect("should have unbond");
     assert_eq!(unbond_list.len(), 1);
-    assert_eq!(unbond_list[0].validator_public_key(), &*BID_ACCOUNT_1_PK);
+    assert_eq!(
+        unbond_list[0].validator_public_key(),
+        &*BID_ACCOUNT_1_PUBLIC_KEY
+    );
     // `WITHDRAW_BID_AMOUNT_2` is in unbonding list
 
     assert_eq!(
@@ -229,8 +221,7 @@ fn should_run_delegate_and_undelegate() {
     let accounts = {
         let mut tmp: Vec<GenesisAccount> = DEFAULT_ACCOUNTS.clone();
         let account_1 = GenesisAccount::new(
-            *BID_ACCOUNT_1_PK,
-            *BID_ACCOUNT_1_ADDR,
+            *BID_ACCOUNT_1_PUBLIC_KEY,
             Motes::new(BID_ACCOUNT_1_BALANCE.into()),
             Motes::new(BID_ACCOUNT_1_BOND.into()),
         );
@@ -245,20 +236,20 @@ fn should_run_delegate_and_undelegate() {
     builder.run_genesis(&run_genesis_request);
 
     let transfer_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
         runtime_args! {
-            "target" => SYSTEM_ADDR,
+            "target" => SYSTEM_ACCOUNT,
             ARG_AMOUNT => U512::from(TRANSFER_AMOUNT)
         },
     )
     .build();
 
     let transfer_request_2 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
         runtime_args! {
-            "target" => *NON_FOUNDER_VALIDATOR_1_ADDR,
+            "target" => *NON_FOUNDER_VALIDATOR_1_PUBLIC_KEY,
             ARG_AMOUNT => U512::from(TRANSFER_AMOUNT)
         },
     )
@@ -266,10 +257,10 @@ fn should_run_delegate_and_undelegate() {
 
     // non-founding validator request
     let add_bid_request_1 = ExecuteRequestBuilder::standard(
-        *NON_FOUNDER_VALIDATOR_1_ADDR,
+        *NON_FOUNDER_VALIDATOR_1_PUBLIC_KEY,
         CONTRACT_ADD_BID,
         runtime_args! {
-            ARG_PUBLIC_KEY => *NON_FOUNDER_VALIDATOR_1_PK,
+            ARG_PUBLIC_KEY => *NON_FOUNDER_VALIDATOR_1_PUBLIC_KEY,
             ARG_AMOUNT => U512::from(ADD_BID_AMOUNT_1),
             ARG_DELEGATION_RATE => ADD_BID_DELEGATION_RATE_1,
         },
@@ -284,7 +275,7 @@ fn should_run_delegate_and_undelegate() {
 
     let bids: Bids = builder.get_value(auction_hash, BIDS_KEY);
     assert_eq!(bids.len(), 1);
-    let active_bid = bids.get(&NON_FOUNDER_VALIDATOR_1_PK).unwrap();
+    let active_bid = bids.get(&NON_FOUNDER_VALIDATOR_1_PUBLIC_KEY).unwrap();
     assert_eq!(
         builder.get_purse_balance(*active_bid.bonding_purse()),
         U512::from(ADD_BID_AMOUNT_1)
@@ -300,12 +291,12 @@ fn should_run_delegate_and_undelegate() {
 
     //
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *BID_ACCOUNT_1_ADDR,
+        *BID_ACCOUNT_1_PUBLIC_KEY,
         CONTRACT_DELEGATE,
         runtime_args! {
             ARG_AMOUNT => U512::from(DELEGATE_AMOUNT_1),
-            ARG_VALIDATOR => *NON_FOUNDER_VALIDATOR_1_PK,
-            ARG_DELEGATOR => *BID_ACCOUNT_1_PK,
+            ARG_VALIDATOR => *NON_FOUNDER_VALIDATOR_1_PUBLIC_KEY,
+            ARG_DELEGATOR => *BID_ACCOUNT_1_PUBLIC_KEY,
         },
     )
     .build();
@@ -314,19 +305,19 @@ fn should_run_delegate_and_undelegate() {
 
     let bids: Bids = builder.get_value(auction_hash, BIDS_KEY);
     assert_eq!(bids.len(), 1);
-    let delegators = bids[&NON_FOUNDER_VALIDATOR_1_PK].delegators();
+    let delegators = bids[&NON_FOUNDER_VALIDATOR_1_PUBLIC_KEY].delegators();
     assert_eq!(delegators.len(), 1);
-    let delegated_amount_1 = *delegators[&BID_ACCOUNT_1_PK].staked_amount();
+    let delegated_amount_1 = *delegators[&BID_ACCOUNT_1_PUBLIC_KEY].staked_amount();
     assert_eq!(delegated_amount_1, U512::from(DELEGATE_AMOUNT_1));
 
     // 2nd bid top-up
     let exec_request_2 = ExecuteRequestBuilder::standard(
-        *BID_ACCOUNT_1_ADDR,
+        *BID_ACCOUNT_1_PUBLIC_KEY,
         CONTRACT_DELEGATE,
         runtime_args! {
             ARG_AMOUNT => U512::from(DELEGATE_AMOUNT_2),
-            ARG_VALIDATOR => *NON_FOUNDER_VALIDATOR_1_PK,
-            ARG_DELEGATOR => *BID_ACCOUNT_1_PK,
+            ARG_VALIDATOR => *NON_FOUNDER_VALIDATOR_1_PUBLIC_KEY,
+            ARG_DELEGATOR => *BID_ACCOUNT_1_PUBLIC_KEY,
         },
     )
     .build();
@@ -335,21 +326,21 @@ fn should_run_delegate_and_undelegate() {
 
     let bids: Bids = builder.get_value(auction_hash, BIDS_KEY);
     assert_eq!(bids.len(), 1);
-    let delegators = bids[&NON_FOUNDER_VALIDATOR_1_PK].delegators();
+    let delegators = bids[&NON_FOUNDER_VALIDATOR_1_PUBLIC_KEY].delegators();
     assert_eq!(delegators.len(), 1);
-    let delegated_amount_1 = *delegators[&BID_ACCOUNT_1_PK].staked_amount();
+    let delegated_amount_1 = *delegators[&BID_ACCOUNT_1_PUBLIC_KEY].staked_amount();
     assert_eq!(
         delegated_amount_1,
         U512::from(DELEGATE_AMOUNT_1 + DELEGATE_AMOUNT_2)
     );
 
     let exec_request_3 = ExecuteRequestBuilder::standard(
-        *BID_ACCOUNT_1_ADDR,
+        *BID_ACCOUNT_1_PUBLIC_KEY,
         CONTRACT_UNDELEGATE,
         runtime_args! {
             ARG_AMOUNT => U512::from(UNDELEGATE_AMOUNT_1),
-            ARG_VALIDATOR => *NON_FOUNDER_VALIDATOR_1_PK,
-            ARG_DELEGATOR => *BID_ACCOUNT_1_PK,
+            ARG_VALIDATOR => *NON_FOUNDER_VALIDATOR_1_PUBLIC_KEY,
+            ARG_DELEGATOR => *BID_ACCOUNT_1_PUBLIC_KEY,
             ARG_UNBOND_PURSE => Option::<URef>::None,
         },
     )
@@ -358,9 +349,9 @@ fn should_run_delegate_and_undelegate() {
 
     let bids: Bids = builder.get_value(auction_hash, BIDS_KEY);
     assert_eq!(bids.len(), 1);
-    let delegators = bids[&NON_FOUNDER_VALIDATOR_1_PK].delegators();
+    let delegators = bids[&NON_FOUNDER_VALIDATOR_1_PUBLIC_KEY].delegators();
     assert_eq!(delegators.len(), 1);
-    let delegated_amount_1 = *delegators[&BID_ACCOUNT_1_PK].staked_amount();
+    let delegated_amount_1 = *delegators[&BID_ACCOUNT_1_PUBLIC_KEY].staked_amount();
     assert_eq!(
         delegated_amount_1,
         U512::from(DELEGATE_AMOUNT_1 + DELEGATE_AMOUNT_2 - UNDELEGATE_AMOUNT_1)
@@ -370,14 +361,17 @@ fn should_run_delegate_and_undelegate() {
     assert_eq!(unbonding_purses.len(), 1);
 
     let unbond_list = unbonding_purses
-        .get(&NON_FOUNDER_VALIDATOR_1_PK)
+        .get(&NON_FOUNDER_VALIDATOR_1_PUBLIC_KEY)
         .expect("should have unbonding purse for non founder validator");
     assert_eq!(unbond_list.len(), 1);
     assert_eq!(
         unbond_list[0].validator_public_key(),
-        &*NON_FOUNDER_VALIDATOR_1_PK
+        &*NON_FOUNDER_VALIDATOR_1_PUBLIC_KEY
     );
-    assert_eq!(unbond_list[0].unbonder_public_key(), &*BID_ACCOUNT_1_PK);
+    assert_eq!(
+        unbond_list[0].unbonder_public_key(),
+        &*BID_ACCOUNT_1_PUBLIC_KEY
+    );
     assert_eq!(unbond_list[0].amount(), &U512::from(UNDELEGATE_AMOUNT_1));
     assert!(!unbond_list[0].is_validator());
 
@@ -387,26 +381,23 @@ fn should_run_delegate_and_undelegate() {
 #[ignore]
 #[test]
 fn should_calculate_era_validators() {
-    assert_ne!(*ACCOUNT_1_ADDR, *ACCOUNT_2_ADDR,);
-    assert_ne!(*ACCOUNT_2_ADDR, *BID_ACCOUNT_1_ADDR,);
-    assert_ne!(*ACCOUNT_2_ADDR, *DEFAULT_ACCOUNT_ADDR,);
+    assert_ne!(*ACCOUNT_1_PUBLIC_KEY, *ACCOUNT_2_PUBLIC_KEY,);
+    assert_ne!(*ACCOUNT_2_PUBLIC_KEY, *BID_ACCOUNT_1_PUBLIC_KEY,);
+    assert_ne!(*ACCOUNT_2_PUBLIC_KEY, *DEFAULT_ACCOUNT_PUBLIC_KEY,);
     let accounts = {
         let mut tmp: Vec<GenesisAccount> = DEFAULT_ACCOUNTS.clone();
         let account_1 = GenesisAccount::new(
-            *ACCOUNT_1_PK,
-            *ACCOUNT_1_ADDR,
+            *ACCOUNT_1_PUBLIC_KEY,
             Motes::new(ACCOUNT_1_BALANCE.into()),
             Motes::new(ACCOUNT_1_BOND.into()),
         );
         let account_2 = GenesisAccount::new(
-            *ACCOUNT_2_PK,
-            *ACCOUNT_2_ADDR,
+            *ACCOUNT_2_PUBLIC_KEY,
             Motes::new(ACCOUNT_2_BALANCE.into()),
             Motes::new(ACCOUNT_2_BOND.into()),
         );
         let account_3 = GenesisAccount::new(
-            *BID_ACCOUNT_1_PK,
-            *BID_ACCOUNT_1_ADDR,
+            *BID_ACCOUNT_1_PUBLIC_KEY,
             Motes::new(BID_ACCOUNT_1_BALANCE.into()),
             Motes::new(BID_ACCOUNT_1_BOND.into()),
         );
@@ -423,19 +414,19 @@ fn should_calculate_era_validators() {
     builder.run_genesis(&run_genesis_request);
 
     let transfer_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
         runtime_args! {
-            "target" => SYSTEM_ADDR,
+            "target" => SYSTEM_ACCOUNT,
             ARG_AMOUNT => U512::from(TRANSFER_AMOUNT)
         },
     )
     .build();
     let transfer_request_2 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
         runtime_args! {
-            "target" => *NON_FOUNDER_VALIDATOR_1_ADDR,
+            "target" => *NON_FOUNDER_VALIDATOR_1_PUBLIC_KEY,
             ARG_AMOUNT => U512::from(TRANSFER_AMOUNT)
         },
     )
@@ -454,7 +445,7 @@ fn should_calculate_era_validators() {
             .keys()
             .copied()
             .collect::<BTreeSet<_>>(),
-        BTreeSet::from_iter(vec![*ACCOUNT_1_PK, *ACCOUNT_2_PK])
+        BTreeSet::from_iter(vec![*ACCOUNT_1_PUBLIC_KEY, *ACCOUNT_2_PUBLIC_KEY])
     );
 
     builder.exec(transfer_request_1).commit().expect_success();
@@ -462,10 +453,10 @@ fn should_calculate_era_validators() {
 
     // non-founding validator request
     let add_bid_request_1 = ExecuteRequestBuilder::standard(
-        *BID_ACCOUNT_1_ADDR,
+        *BID_ACCOUNT_1_PUBLIC_KEY,
         CONTRACT_ADD_BID,
         runtime_args! {
-            ARG_PUBLIC_KEY => *BID_ACCOUNT_1_PK,
+            ARG_PUBLIC_KEY => *BID_ACCOUNT_1_PUBLIC_KEY,
             ARG_AMOUNT => U512::from(ADD_BID_AMOUNT_1),
             ARG_DELEGATION_RATE => ADD_BID_DELEGATION_RATE_1,
         },
@@ -479,7 +470,7 @@ fn should_calculate_era_validators() {
 
     // non-founding validator request
     let run_auction_request_1 = ExecuteRequestBuilder::standard(
-        SYSTEM_ADDR,
+        SYSTEM_ACCOUNT,
         CONTRACT_AUCTION_BIDS,
         runtime_args! {
             ARG_ENTRY_POINT => ARG_RUN_AUCTION,
@@ -538,7 +529,7 @@ fn should_calculate_era_validators() {
     ); //2 genesis validators "winners"
     assert_eq!(
         validator_weights
-            .get(&BID_ACCOUNT_1_PK)
+            .get(&BID_ACCOUNT_1_PUBLIC_KEY)
             .expect("should have bid account in this era"),
         &U512::from(ADD_BID_AMOUNT_1)
     );
@@ -559,14 +550,12 @@ fn should_get_first_seigniorage_recipients() {
     let accounts = {
         let mut tmp: Vec<GenesisAccount> = DEFAULT_ACCOUNTS.clone();
         let account_1 = GenesisAccount::new(
-            *ACCOUNT_1_PK,
-            *ACCOUNT_1_ADDR,
+            *ACCOUNT_1_PUBLIC_KEY,
             Motes::new(ACCOUNT_1_BALANCE.into()),
             Motes::new(ACCOUNT_1_BOND.into()),
         );
         let account_2 = GenesisAccount::new(
-            *ACCOUNT_2_PK,
-            *ACCOUNT_2_ADDR,
+            *ACCOUNT_2_PUBLIC_KEY,
             Motes::new(ACCOUNT_2_BALANCE.into()),
             Motes::new(ACCOUNT_2_BOND.into()),
         );
@@ -582,10 +571,10 @@ fn should_get_first_seigniorage_recipients() {
     builder.run_genesis(&run_genesis_request);
 
     let transfer_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
         runtime_args! {
-            "target" => SYSTEM_ADDR,
+            "target" => SYSTEM_ACCOUNT,
             ARG_AMOUNT => U512::from(TRANSFER_AMOUNT)
         },
     )
@@ -595,13 +584,17 @@ fn should_get_first_seigniorage_recipients() {
     let bids: Bids = builder.get_value(auction_hash, BIDS_KEY);
     assert_eq!(bids.len(), 2);
 
-    let founding_validator_1 = bids.get(&ACCOUNT_1_PK).expect("should have account 1 pk");
+    let founding_validator_1 = bids
+        .get(&ACCOUNT_1_PUBLIC_KEY)
+        .expect("should have account 1 pk");
     assert_eq!(
         founding_validator_1.release_era(),
         Some(DEFAULT_LOCKED_FUNDS_PERIOD)
     );
 
-    let founding_validator_2 = bids.get(&ACCOUNT_2_PK).expect("should have account 2 pk");
+    let founding_validator_2 = bids
+        .get(&ACCOUNT_2_PUBLIC_KEY)
+        .expect("should have account 2 pk");
     assert_eq!(
         founding_validator_2.release_era(),
         Some(DEFAULT_LOCKED_FUNDS_PERIOD)
@@ -611,7 +604,7 @@ fn should_get_first_seigniorage_recipients() {
 
     // run_auction should be executed first
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        SYSTEM_ADDR,
+        SYSTEM_ACCOUNT,
         CONTRACT_AUCTION_BIDS,
         runtime_args! {
             ARG_ENTRY_POINT => ARG_RUN_AUCTION,
@@ -623,7 +616,7 @@ fn should_get_first_seigniorage_recipients() {
 
     // read seigniorage recipients
     let exec_request_2 = ExecuteRequestBuilder::standard(
-        SYSTEM_ADDR,
+        SYSTEM_ACCOUNT,
         CONTRACT_AUCTION_BIDS,
         runtime_args! {
             ARG_ENTRY_POINT => ARG_READ_SEIGNIORAGE_RECIPIENTS,
@@ -633,7 +626,7 @@ fn should_get_first_seigniorage_recipients() {
 
     builder.exec(exec_request_2).commit().expect_success();
 
-    let account = builder.get_account(SYSTEM_ADDR).unwrap();
+    let account = builder.get_account(SYSTEM_ACCOUNT).unwrap();
     let key = account
         .named_keys()
         .get("seigniorage_recipients_result")
@@ -666,11 +659,11 @@ fn should_get_first_seigniorage_recipients() {
     // 2 genesis validators "winners" with non-zero bond
     assert_eq!(validator_weights.len(), 2, "{:?}", validator_weights);
     assert_eq!(
-        validator_weights.get(&ACCOUNT_1_PK).unwrap(),
+        validator_weights.get(&ACCOUNT_1_PUBLIC_KEY).unwrap(),
         &U512::from(ACCOUNT_1_BOND)
     );
     assert_eq!(
-        validator_weights.get(&ACCOUNT_2_PK).unwrap(),
+        validator_weights.get(&ACCOUNT_2_PUBLIC_KEY).unwrap(),
         &U512::from(ACCOUNT_2_BOND)
     );
 
@@ -687,8 +680,7 @@ fn should_release_founder_stake() {
     let accounts = {
         let mut tmp: Vec<GenesisAccount> = DEFAULT_ACCOUNTS.clone();
         let account_1 = GenesisAccount::new(
-            *ACCOUNT_1_PK,
-            *ACCOUNT_1_ADDR,
+            *ACCOUNT_1_PUBLIC_KEY,
             Motes::new(ACCOUNT_1_BALANCE.into()),
             Motes::new(ACCOUNT_1_BOND.into()),
         );
@@ -703,7 +695,7 @@ fn should_release_founder_stake() {
     builder.run_genesis(&run_genesis_request);
 
     let create_purse_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_CREATE_PURSE_01,
         runtime_args! {
             ARG_PURSE_NAME => UNBONDING_PURSE_NAME_1,
@@ -711,7 +703,7 @@ fn should_release_founder_stake() {
     )
     .build();
     let create_purse_2 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_CREATE_PURSE_01,
         runtime_args! {
             ARG_PURSE_NAME => UNBONDING_PURSE_NAME_2,
@@ -723,7 +715,7 @@ fn should_release_founder_stake() {
     builder.exec(create_purse_2).expect_success().commit();
 
     let unbonding_purse_1 = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have default account")
         .named_keys()
         .get(UNBONDING_PURSE_NAME_1)
@@ -731,7 +723,7 @@ fn should_release_founder_stake() {
         .into_uref()
         .expect("unbonding purse should be an uref");
     let unbonding_purse_2 = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have default account")
         .named_keys()
         .get(UNBONDING_PURSE_NAME_2)
@@ -742,10 +734,10 @@ fn should_release_founder_stake() {
     let auction = builder.get_auction_contract_hash();
 
     let transfer_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
         runtime_args! {
-            "target" => SYSTEM_ADDR,
+            "target" => SYSTEM_ACCOUNT,
             // This test needs a bit more tokens to run auction multiple times under `use-system-contracts` feature flag
             ARG_AMOUNT => U512::from(DEFAULT_ACCOUNT_INITIAL_BALANCE / 10)
         },
@@ -755,14 +747,14 @@ fn should_release_founder_stake() {
     let auction_hash = builder.get_auction_contract_hash();
     let genesis_bids: Bids = builder.get_value(auction_hash, BIDS_KEY);
     assert_eq!(genesis_bids.len(), 1);
-    let entry = genesis_bids.get(&ACCOUNT_1_PK).unwrap();
+    let entry = genesis_bids.get(&ACCOUNT_1_PUBLIC_KEY).unwrap();
     assert_eq!(entry.release_era(), Some(DEFAULT_LOCKED_FUNDS_PERIOD));
 
     builder.exec(transfer_request_1).commit().expect_success();
 
     for _ in 0..=DEFAULT_LOCKED_FUNDS_PERIOD {
         let run_auction_request = ExecuteRequestBuilder::standard(
-            SYSTEM_ADDR,
+            SYSTEM_ACCOUNT,
             CONTRACT_AUCTION_BIDS,
             runtime_args! {
                 ARG_ENTRY_POINT => ARG_RUN_AUCTION,
@@ -780,24 +772,24 @@ fn should_release_founder_stake() {
         builder.get_purse_balance(*entry.bonding_purse()),
         ACCOUNT_1_BOND.into()
     );
-    assert_eq!(founding_validator, *ACCOUNT_1_PK);
+    assert_eq!(founding_validator, *ACCOUNT_1_PUBLIC_KEY);
 
     // withdraw unlocked funds with partial amounts
     let withdraw_bid_request_1 = ExecuteRequestBuilder::standard(
-        *ACCOUNT_1_ADDR,
+        *ACCOUNT_1_PUBLIC_KEY,
         CONTRACT_WITHDRAW_BID,
         runtime_args! {
-            ARG_PUBLIC_KEY => *ACCOUNT_1_PK,
+            ARG_PUBLIC_KEY => *ACCOUNT_1_PUBLIC_KEY,
             ARG_AMOUNT => U512::from(ACCOUNT_1_WITHDRAW_1),
             ARG_UNBOND_PURSE => Some(unbonding_purse_1),
         },
     )
     .build();
     let withdraw_bid_request_2 = ExecuteRequestBuilder::standard(
-        *ACCOUNT_1_ADDR,
+        *ACCOUNT_1_PUBLIC_KEY,
         CONTRACT_WITHDRAW_BID,
         runtime_args! {
-            ARG_PUBLIC_KEY => *ACCOUNT_1_PK,
+            ARG_PUBLIC_KEY => *ACCOUNT_1_PUBLIC_KEY,
             ARG_AMOUNT => U512::from(ACCOUNT_1_WITHDRAW_2),
             ARG_UNBOND_PURSE => Some(unbonding_purse_2),
         },
@@ -819,13 +811,13 @@ fn should_release_founder_stake() {
     let post_bids_1: Bids = builder.get_value(auction_hash, BIDS_KEY);
     assert_ne!(post_bids_1, genesis_bids);
     assert_eq!(
-        *post_bids_1[&ACCOUNT_1_PK].staked_amount(),
+        *post_bids_1[&ACCOUNT_1_PUBLIC_KEY].staked_amount(),
         U512::from(ACCOUNT_1_BOND - ACCOUNT_1_WITHDRAW_1)
     );
 
     // run auction to increase ERA ID
     let run_auction_request_1 = ExecuteRequestBuilder::standard(
-        SYSTEM_ADDR,
+        SYSTEM_ACCOUNT,
         CONTRACT_AUCTION_BIDS,
         runtime_args! {
             ARG_ENTRY_POINT => ARG_RUN_AUCTION,
@@ -860,12 +852,18 @@ fn should_release_founder_stake() {
     let pre_unbond_purses: UnbondingPurses = builder.get_value(auction, UNBONDING_PURSES_KEY);
     assert_eq!(pre_unbond_purses.len(), 1);
     let pre_unbond_list = pre_unbond_purses
-        .get(&ACCOUNT_1_PK)
+        .get(&ACCOUNT_1_PUBLIC_KEY)
         .expect("should have unbond");
     assert_eq!(pre_unbond_list.len(), 2);
-    assert_eq!(pre_unbond_list[0].validator_public_key(), &*ACCOUNT_1_PK);
+    assert_eq!(
+        pre_unbond_list[0].validator_public_key(),
+        &*ACCOUNT_1_PUBLIC_KEY
+    );
     assert_eq!(pre_unbond_list[0].amount(), &ACCOUNT_1_WITHDRAW_1.into());
-    assert_eq!(pre_unbond_list[1].validator_public_key(), &*ACCOUNT_1_PK);
+    assert_eq!(
+        pre_unbond_list[1].validator_public_key(),
+        &*ACCOUNT_1_PUBLIC_KEY
+    );
     assert_eq!(pre_unbond_list[1].amount(), &ACCOUNT_1_WITHDRAW_2.into());
 
     // Funds are not transferred yet from the original bonding purse
@@ -881,7 +879,7 @@ fn should_release_founder_stake() {
 
     for _ in 0..DEFAULT_UNBONDING_DELAY {
         let run_auction_request_1 = ExecuteRequestBuilder::standard(
-            SYSTEM_ADDR,
+            SYSTEM_ACCOUNT,
             CONTRACT_AUCTION_BIDS,
             runtime_args! {
                 ARG_ENTRY_POINT => ARG_RUN_AUCTION,
@@ -910,7 +908,7 @@ fn should_release_founder_stake() {
     );
 
     let exec_request_4 = ExecuteRequestBuilder::contract_call_by_hash(
-        SYSTEM_ADDR,
+        SYSTEM_ACCOUNT,
         auction,
         METHOD_RUN_AUCTION,
         runtime_args! {},
@@ -945,8 +943,7 @@ fn should_fail_to_get_era_validators() {
     let accounts = {
         let mut tmp: Vec<GenesisAccount> = DEFAULT_ACCOUNTS.clone();
         let account_1 = GenesisAccount::new(
-            *ACCOUNT_1_PK,
-            *ACCOUNT_1_ADDR,
+            *ACCOUNT_1_PUBLIC_KEY,
             Motes::new(ACCOUNT_1_BALANCE.into()),
             Motes::new(ACCOUNT_1_BOND.into()),
         );
@@ -971,8 +968,7 @@ fn should_fail_to_get_era_validators() {
 #[test]
 fn should_use_era_validators_endpoint_for_first_era() {
     let extra_accounts = vec![GenesisAccount::new(
-        *ACCOUNT_1_PK,
-        *ACCOUNT_1_ADDR,
+        *ACCOUNT_1_PUBLIC_KEY,
         Motes::new(ACCOUNT_1_BALANCE.into()),
         Motes::new(ACCOUNT_1_BOND.into()),
     )];
@@ -994,7 +990,10 @@ fn should_use_era_validators_endpoint_for_first_era() {
         .expect("should have validator weights for era 0");
 
     assert_eq!(validator_weights.len(), 1);
-    assert_eq!(validator_weights[&ACCOUNT_1_PK], ACCOUNT_1_BOND.into());
+    assert_eq!(
+        validator_weights[&ACCOUNT_1_PUBLIC_KEY],
+        ACCOUNT_1_BOND.into()
+    );
 
     let era_validators: EraValidators = builder.get_era_validators();
     assert_eq!(era_validators[&0], validator_weights);
@@ -1003,32 +1002,28 @@ fn should_use_era_validators_endpoint_for_first_era() {
 #[ignore]
 #[test]
 fn should_calculate_era_validators_multiple_new_bids() {
-    assert_ne!(*ACCOUNT_1_ADDR, *ACCOUNT_2_ADDR,);
-    assert_ne!(*ACCOUNT_2_ADDR, *BID_ACCOUNT_1_ADDR,);
-    assert_ne!(*ACCOUNT_2_ADDR, *DEFAULT_ACCOUNT_ADDR,);
+    assert_ne!(*ACCOUNT_1_PUBLIC_KEY, *ACCOUNT_2_PUBLIC_KEY,);
+    assert_ne!(*ACCOUNT_2_PUBLIC_KEY, *BID_ACCOUNT_1_PUBLIC_KEY,);
+    assert_ne!(*ACCOUNT_2_PUBLIC_KEY, *DEFAULT_ACCOUNT_PUBLIC_KEY,);
     let accounts = {
         let mut tmp: Vec<GenesisAccount> = DEFAULT_ACCOUNTS.clone();
         let account_1 = GenesisAccount::new(
-            *ACCOUNT_1_PK,
-            *ACCOUNT_1_ADDR,
+            *ACCOUNT_1_PUBLIC_KEY,
             Motes::new(ACCOUNT_1_BALANCE.into()),
             Motes::new(ACCOUNT_1_BOND.into()),
         );
         let account_2 = GenesisAccount::new(
-            *ACCOUNT_2_PK,
-            *ACCOUNT_2_ADDR,
+            *ACCOUNT_2_PUBLIC_KEY,
             Motes::new(ACCOUNT_2_BALANCE.into()),
             Motes::new(ACCOUNT_2_BOND.into()),
         );
         let account_3 = GenesisAccount::new(
-            *BID_ACCOUNT_1_PK,
-            *BID_ACCOUNT_1_ADDR,
+            *BID_ACCOUNT_1_PUBLIC_KEY,
             Motes::new(BID_ACCOUNT_1_BALANCE.into()),
             Motes::new(BID_ACCOUNT_1_BOND.into()),
         );
         let account_4 = GenesisAccount::new(
-            *BID_ACCOUNT_2_PK,
-            *BID_ACCOUNT_2_ADDR,
+            *BID_ACCOUNT_2_PUBLIC_KEY,
             Motes::new(BID_ACCOUNT_2_BALANCE.into()),
             Motes::new(BID_ACCOUNT_2_BOND.into()),
         );
@@ -1062,17 +1057,17 @@ fn should_calculate_era_validators_multiple_new_bids() {
             .keys()
             .copied()
             .collect::<BTreeSet<_>>(),
-        BTreeSet::from_iter(vec![*ACCOUNT_1_PK, *ACCOUNT_2_PK])
+        BTreeSet::from_iter(vec![*ACCOUNT_1_PUBLIC_KEY, *ACCOUNT_2_PUBLIC_KEY])
     );
 
     // Fund additional accounts
     for target in &[
-        SYSTEM_ADDR,
-        *NON_FOUNDER_VALIDATOR_1_ADDR,
-        *NON_FOUNDER_VALIDATOR_2_ADDR,
+        SYSTEM_ACCOUNT,
+        *NON_FOUNDER_VALIDATOR_1_PUBLIC_KEY,
+        *NON_FOUNDER_VALIDATOR_2_PUBLIC_KEY,
     ] {
         let transfer_request_1 = ExecuteRequestBuilder::standard(
-            *DEFAULT_ACCOUNT_ADDR,
+            *DEFAULT_ACCOUNT_PUBLIC_KEY,
             CONTRACT_TRANSFER_TO_ACCOUNT,
             runtime_args! {
                 "target" => *target,
@@ -1085,20 +1080,20 @@ fn should_calculate_era_validators_multiple_new_bids() {
 
     // non-founding validator request
     let add_bid_request_1 = ExecuteRequestBuilder::standard(
-        *BID_ACCOUNT_1_ADDR,
+        *BID_ACCOUNT_1_PUBLIC_KEY,
         CONTRACT_ADD_BID,
         runtime_args! {
-            ARG_PUBLIC_KEY => *BID_ACCOUNT_1_PK,
+            ARG_PUBLIC_KEY => *BID_ACCOUNT_1_PUBLIC_KEY,
             ARG_AMOUNT => U512::from(ADD_BID_AMOUNT_1),
             ARG_DELEGATION_RATE => ADD_BID_DELEGATION_RATE_1,
         },
     )
     .build();
     let add_bid_request_2 = ExecuteRequestBuilder::standard(
-        *BID_ACCOUNT_2_ADDR,
+        *BID_ACCOUNT_2_PUBLIC_KEY,
         CONTRACT_ADD_BID,
         runtime_args! {
-            ARG_PUBLIC_KEY => *BID_ACCOUNT_2_PK,
+            ARG_PUBLIC_KEY => *BID_ACCOUNT_2_PUBLIC_KEY,
             ARG_AMOUNT => U512::from(ADD_BID_AMOUNT_2),
             ARG_DELEGATION_RATE => ADD_BID_DELEGATION_RATE_2,
         },
@@ -1110,7 +1105,7 @@ fn should_calculate_era_validators_multiple_new_bids() {
 
     // run auction and compute validators for new era
     let run_auction_request_1 = ExecuteRequestBuilder::standard(
-        SYSTEM_ADDR,
+        SYSTEM_ACCOUNT,
         CONTRACT_AUCTION_BIDS,
         runtime_args! {
             ARG_ENTRY_POINT => ARG_RUN_AUCTION,
@@ -1135,10 +1130,10 @@ fn should_calculate_era_validators_multiple_new_bids() {
         .collect::<BTreeSet<_>>();
 
     let rhs = BTreeSet::from_iter(vec![
-        *ACCOUNT_1_PK,
-        *ACCOUNT_2_PK,
-        *BID_ACCOUNT_1_PK,
-        *BID_ACCOUNT_2_PK,
+        *ACCOUNT_1_PUBLIC_KEY,
+        *ACCOUNT_2_PUBLIC_KEY,
+        *BID_ACCOUNT_1_PUBLIC_KEY,
+        *BID_ACCOUNT_2_PUBLIC_KEY,
     ]);
 
     assert_eq!(lhs, rhs);
@@ -1150,7 +1145,7 @@ fn should_calculate_era_validators_multiple_new_bids() {
         .collect();
     assert_eq!(
         new_validators,
-        BTreeSet::from_iter(vec![*BID_ACCOUNT_1_PK, *BID_ACCOUNT_2_PK,])
+        BTreeSet::from_iter(vec![*BID_ACCOUNT_1_PUBLIC_KEY, *BID_ACCOUNT_2_PUBLIC_KEY,])
     );
 }
 
@@ -1160,40 +1155,40 @@ fn undelegated_funds_should_be_released() {
     const SYSTEM_TRANSFER_AMOUNT: u64 = MINIMUM_ACCOUNT_CREATION_BALANCE;
 
     let system_fund_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
         runtime_args! {
-            "target" => SYSTEM_ADDR,
+            "target" => SYSTEM_ACCOUNT,
             ARG_AMOUNT => U512::from(SYSTEM_TRANSFER_AMOUNT)
         },
     )
     .build();
 
     let validator_1_fund_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
         runtime_args! {
-            "target" => *NON_FOUNDER_VALIDATOR_1_ADDR,
+            "target" => *NON_FOUNDER_VALIDATOR_1_PUBLIC_KEY,
             ARG_AMOUNT => U512::from(TRANSFER_AMOUNT)
         },
     )
     .build();
 
     let delegator_1_fund_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
         runtime_args! {
-            "target" => *BID_ACCOUNT_1_ADDR,
+            "target" => *BID_ACCOUNT_1_PUBLIC_KEY,
             ARG_AMOUNT => U512::from(TRANSFER_AMOUNT)
         },
     )
     .build();
 
     let validator_1_add_bid_request = ExecuteRequestBuilder::standard(
-        *NON_FOUNDER_VALIDATOR_1_ADDR,
+        *NON_FOUNDER_VALIDATOR_1_PUBLIC_KEY,
         CONTRACT_ADD_BID,
         runtime_args! {
-            ARG_PUBLIC_KEY => *NON_FOUNDER_VALIDATOR_1_PK,
+            ARG_PUBLIC_KEY => *NON_FOUNDER_VALIDATOR_1_PUBLIC_KEY,
             ARG_AMOUNT => U512::from(ADD_BID_AMOUNT_1),
             ARG_DELEGATION_RATE => ADD_BID_DELEGATION_RATE_1,
         },
@@ -1201,12 +1196,12 @@ fn undelegated_funds_should_be_released() {
     .build();
 
     let delegator_1_validator_1_delegate_request = ExecuteRequestBuilder::standard(
-        *BID_ACCOUNT_1_ADDR,
+        *BID_ACCOUNT_1_PUBLIC_KEY,
         CONTRACT_DELEGATE,
         runtime_args! {
             ARG_AMOUNT => U512::from(DELEGATE_AMOUNT_1),
-            ARG_VALIDATOR => *NON_FOUNDER_VALIDATOR_1_PK,
-            ARG_DELEGATOR => *BID_ACCOUNT_1_PK,
+            ARG_VALIDATOR => *NON_FOUNDER_VALIDATOR_1_PUBLIC_KEY,
+            ARG_DELEGATOR => *BID_ACCOUNT_1_PUBLIC_KEY,
         },
     )
     .build();
@@ -1232,7 +1227,7 @@ fn undelegated_funds_should_be_released() {
     }
 
     let create_purse_request_1 = ExecuteRequestBuilder::standard(
-        *BID_ACCOUNT_1_ADDR,
+        *BID_ACCOUNT_1_PUBLIC_KEY,
         CONTRACT_CREATE_PURSE_01,
         runtime_args! {
             ARG_PURSE_NAME => UNBONDING_PURSE_NAME_1,
@@ -1245,7 +1240,7 @@ fn undelegated_funds_should_be_released() {
         .expect_success()
         .commit();
     let delegator_1_undelegate_purse = builder
-        .get_account(*BID_ACCOUNT_1_ADDR)
+        .get_account(*BID_ACCOUNT_1_PUBLIC_KEY)
         .expect("should have default account")
         .named_keys()
         .get(UNBONDING_PURSE_NAME_1)
@@ -1254,12 +1249,12 @@ fn undelegated_funds_should_be_released() {
         .expect("unbonding purse should be an uref");
 
     let delegator_1_undelegate_request = ExecuteRequestBuilder::standard(
-        *BID_ACCOUNT_1_ADDR,
+        *BID_ACCOUNT_1_PUBLIC_KEY,
         CONTRACT_UNDELEGATE,
         runtime_args! {
             ARG_AMOUNT => U512::from(UNDELEGATE_AMOUNT_1),
-            ARG_VALIDATOR => *NON_FOUNDER_VALIDATOR_1_PK,
-            ARG_DELEGATOR => *BID_ACCOUNT_1_PK,
+            ARG_VALIDATOR => *NON_FOUNDER_VALIDATOR_1_PUBLIC_KEY,
+            ARG_DELEGATOR => *BID_ACCOUNT_1_PUBLIC_KEY,
             ARG_UNBOND_PURSE => Some(delegator_1_undelegate_purse),
         },
     )
@@ -1291,40 +1286,40 @@ fn fully_undelegated_funds_should_be_released() {
     const SYSTEM_TRANSFER_AMOUNT: u64 = MINIMUM_ACCOUNT_CREATION_BALANCE;
 
     let system_fund_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
         runtime_args! {
-            "target" => SYSTEM_ADDR,
+            "target" => SYSTEM_ACCOUNT,
             ARG_AMOUNT => U512::from(SYSTEM_TRANSFER_AMOUNT)
         },
     )
     .build();
 
     let validator_1_fund_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
         runtime_args! {
-            "target" => *NON_FOUNDER_VALIDATOR_1_ADDR,
+            "target" => *NON_FOUNDER_VALIDATOR_1_PUBLIC_KEY,
             ARG_AMOUNT => U512::from(TRANSFER_AMOUNT)
         },
     )
     .build();
 
     let delegator_1_fund_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
         runtime_args! {
-            "target" => *BID_ACCOUNT_1_ADDR,
+            "target" => *BID_ACCOUNT_1_PUBLIC_KEY,
             ARG_AMOUNT => U512::from(TRANSFER_AMOUNT)
         },
     )
     .build();
 
     let validator_1_add_bid_request = ExecuteRequestBuilder::standard(
-        *NON_FOUNDER_VALIDATOR_1_ADDR,
+        *NON_FOUNDER_VALIDATOR_1_PUBLIC_KEY,
         CONTRACT_ADD_BID,
         runtime_args! {
-            ARG_PUBLIC_KEY => *NON_FOUNDER_VALIDATOR_1_PK,
+            ARG_PUBLIC_KEY => *NON_FOUNDER_VALIDATOR_1_PUBLIC_KEY,
             ARG_AMOUNT => U512::from(ADD_BID_AMOUNT_1),
             ARG_DELEGATION_RATE => ADD_BID_DELEGATION_RATE_1,
         },
@@ -1332,12 +1327,12 @@ fn fully_undelegated_funds_should_be_released() {
     .build();
 
     let delegator_1_validator_1_delegate_request = ExecuteRequestBuilder::standard(
-        *BID_ACCOUNT_1_ADDR,
+        *BID_ACCOUNT_1_PUBLIC_KEY,
         CONTRACT_DELEGATE,
         runtime_args! {
             ARG_AMOUNT => U512::from(DELEGATE_AMOUNT_1),
-            ARG_VALIDATOR => *NON_FOUNDER_VALIDATOR_1_PK,
-            ARG_DELEGATOR => *BID_ACCOUNT_1_PK,
+            ARG_VALIDATOR => *NON_FOUNDER_VALIDATOR_1_PUBLIC_KEY,
+            ARG_DELEGATOR => *BID_ACCOUNT_1_PUBLIC_KEY,
         },
     )
     .build();
@@ -1363,7 +1358,7 @@ fn fully_undelegated_funds_should_be_released() {
     }
 
     let create_purse_request_1 = ExecuteRequestBuilder::standard(
-        *BID_ACCOUNT_1_ADDR,
+        *BID_ACCOUNT_1_PUBLIC_KEY,
         CONTRACT_CREATE_PURSE_01,
         runtime_args! {
             ARG_PURSE_NAME => UNBONDING_PURSE_NAME_1,
@@ -1376,7 +1371,7 @@ fn fully_undelegated_funds_should_be_released() {
         .expect_success()
         .commit();
     let delegator_1_undelegate_purse = builder
-        .get_account(*BID_ACCOUNT_1_ADDR)
+        .get_account(*BID_ACCOUNT_1_PUBLIC_KEY)
         .expect("should have default account")
         .named_keys()
         .get(UNBONDING_PURSE_NAME_1)
@@ -1385,12 +1380,12 @@ fn fully_undelegated_funds_should_be_released() {
         .expect("unbonding purse should be an uref");
 
     let delegator_1_undelegate_request = ExecuteRequestBuilder::standard(
-        *BID_ACCOUNT_1_ADDR,
+        *BID_ACCOUNT_1_PUBLIC_KEY,
         CONTRACT_UNDELEGATE,
         runtime_args! {
             ARG_AMOUNT => U512::from(DELEGATE_AMOUNT_1),
-            ARG_VALIDATOR => *NON_FOUNDER_VALIDATOR_1_PK,
-            ARG_DELEGATOR => *BID_ACCOUNT_1_PK,
+            ARG_VALIDATOR => *NON_FOUNDER_VALIDATOR_1_PUBLIC_KEY,
+            ARG_DELEGATOR => *BID_ACCOUNT_1_PUBLIC_KEY,
             ARG_UNBOND_PURSE => Some(delegator_1_undelegate_purse),
         },
     )

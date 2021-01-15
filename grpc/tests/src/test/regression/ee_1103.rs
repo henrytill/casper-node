@@ -37,10 +37,6 @@ static DELEGATOR_3: Lazy<PublicKey> =
 // These values were chosen to correspond to the values in accounts.csv
 // at the time of their introduction.
 
-static FAUCET_ADDR: Lazy<AccountHash> = Lazy::new(|| AccountHash::from(&*FAUCET));
-static VALIDATOR_1_ADDR: Lazy<AccountHash> = Lazy::new(|| AccountHash::from(&*VALIDATOR_1));
-static VALIDATOR_2_ADDR: Lazy<AccountHash> = Lazy::new(|| AccountHash::from(&*VALIDATOR_2));
-static VALIDATOR_3_ADDR: Lazy<AccountHash> = Lazy::new(|| AccountHash::from(&*VALIDATOR_3));
 static FAUCET_BALANCE: Lazy<U512> = Lazy::new(|| U512::from(100_000_000_000_000_000u64));
 static VALIDATOR_1_BALANCE: Lazy<U512> = Lazy::new(|| U512::from(100_000_000_000_000_000u64));
 static VALIDATOR_2_BALANCE: Lazy<U512> = Lazy::new(|| U512::from(100_000_000_000_000_000u64));
@@ -48,9 +44,6 @@ static VALIDATOR_3_BALANCE: Lazy<U512> = Lazy::new(|| U512::from(100_000_000_000
 static VALIDATOR_1_STAKE: Lazy<U512> = Lazy::new(|| U512::from(500_000_000_000_000_000u64));
 static VALIDATOR_2_STAKE: Lazy<U512> = Lazy::new(|| U512::from(400_000_000_000_000u64));
 static VALIDATOR_3_STAKE: Lazy<U512> = Lazy::new(|| U512::from(300_000_000_000_000u64));
-static DELEGATOR_1_ADDR: Lazy<AccountHash> = Lazy::new(|| AccountHash::from(&*DELEGATOR_1));
-static DELEGATOR_2_ADDR: Lazy<AccountHash> = Lazy::new(|| AccountHash::from(&*DELEGATOR_2));
-static DELEGATOR_3_ADDR: Lazy<AccountHash> = Lazy::new(|| AccountHash::from(&*DELEGATOR_3));
 static DELEGATOR_1_BALANCE: Lazy<U512> = Lazy::new(|| U512::from(1_000_000_000_000_000u64));
 static DELEGATOR_2_BALANCE: Lazy<U512> = Lazy::new(|| U512::from(1_000_000_000_000_000u64));
 static DELEGATOR_3_BALANCE: Lazy<U512> = Lazy::new(|| U512::from(1_000_000_000_000_000u64));
@@ -64,25 +57,21 @@ fn validator_scores_should_reflect_delegates() {
     let accounts = {
         let faucet = GenesisAccount::new(
             *FAUCET,
-            *FAUCET_ADDR,
             Motes::new(*FAUCET_BALANCE),
             Motes::new(U512::zero()),
         );
         let validator_1 = GenesisAccount::new(
             *VALIDATOR_1,
-            *VALIDATOR_1_ADDR,
             Motes::new(*VALIDATOR_1_BALANCE),
             Motes::new(*VALIDATOR_1_STAKE),
         );
         let validator_2 = GenesisAccount::new(
             *VALIDATOR_2,
-            *VALIDATOR_2_ADDR,
             Motes::new(*VALIDATOR_2_BALANCE),
             Motes::new(*VALIDATOR_2_STAKE),
         );
         let validator_3 = GenesisAccount::new(
             *VALIDATOR_3,
-            *VALIDATOR_3_ADDR,
             Motes::new(*VALIDATOR_3_BALANCE),
             Motes::new(*VALIDATOR_3_STAKE),
         );
@@ -95,7 +84,7 @@ fn validator_scores_should_reflect_delegates() {
     };
 
     let system_fund_request = ExecuteRequestBuilder::standard(
-        *FAUCET_ADDR,
+        *FAUCET,
         CONTRACT_TRANSFER_TO_ACCOUNT,
         runtime_args! {
             ARG_TARGET => SYSTEM_ADDR,
@@ -105,30 +94,30 @@ fn validator_scores_should_reflect_delegates() {
     .build();
 
     let delegator_1_fund_request = ExecuteRequestBuilder::standard(
-        *FAUCET_ADDR,
+        *FAUCET,
         CONTRACT_TRANSFER_TO_ACCOUNT,
         runtime_args! {
-            ARG_TARGET => *DELEGATOR_1_ADDR,
+            ARG_TARGET => *DELEGATOR_1,
             ARG_AMOUNT => *DELEGATOR_1_BALANCE
         },
     )
     .build();
 
     let delegator_2_fund_request = ExecuteRequestBuilder::standard(
-        *FAUCET_ADDR,
+        *FAUCET,
         CONTRACT_TRANSFER_TO_ACCOUNT,
         runtime_args! {
-            ARG_TARGET => *DELEGATOR_2_ADDR,
+            ARG_TARGET => *DELEGATOR_2,
             ARG_AMOUNT => *DELEGATOR_2_BALANCE
         },
     )
     .build();
 
     let delegator_3_fund_request = ExecuteRequestBuilder::standard(
-        *FAUCET_ADDR,
+        *FAUCET,
         CONTRACT_TRANSFER_TO_ACCOUNT,
         runtime_args! {
-            ARG_TARGET => *DELEGATOR_3_ADDR,
+            ARG_TARGET => *DELEGATOR_3,
             ARG_AMOUNT => *DELEGATOR_3_BALANCE
         },
     )
@@ -185,7 +174,7 @@ fn validator_scores_should_reflect_delegates() {
     // Check weights after Delegator 1 delegates to Validator 1 (and auction_delay)
     {
         let delegator_1_delegate_request = ExecuteRequestBuilder::standard(
-            *DELEGATOR_1_ADDR,
+            *DELEGATOR_1,
             CONTRACT_DELEGATE,
             runtime_args! {
                 ARG_AMOUNT => *DELEGATOR_1_STAKE,
@@ -234,7 +223,7 @@ fn validator_scores_should_reflect_delegates() {
     // Check weights after Delegator 2 delegates to Validator 1 (and auction_delay)
     {
         let delegator_2_delegate_request = ExecuteRequestBuilder::standard(
-            *DELEGATOR_2_ADDR,
+            *DELEGATOR_2,
             CONTRACT_DELEGATE,
             runtime_args! {
                 ARG_AMOUNT => *DELEGATOR_2_STAKE,
@@ -284,7 +273,7 @@ fn validator_scores_should_reflect_delegates() {
     // Check weights after Delegator 3 delegates to Validator 2 (and auction_delay)
     {
         let delegator_3_delegate_request = ExecuteRequestBuilder::standard(
-            *DELEGATOR_3_ADDR,
+            *DELEGATOR_3,
             CONTRACT_DELEGATE,
             runtime_args! {
                 ARG_AMOUNT => *DELEGATOR_3_STAKE,

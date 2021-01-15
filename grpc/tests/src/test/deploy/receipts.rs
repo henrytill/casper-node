@@ -2,14 +2,14 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use once_cell::sync::Lazy;
 
-use casper_engine_test_support::{
-    internal::{ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_RUN_GENESIS_REQUEST},
-    DEFAULT_ACCOUNT_ADDR,
+use casper_engine_test_support::internal::{
+    ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_ACCOUNT_PUBLIC_KEY,
+    DEFAULT_RUN_GENESIS_REQUEST,
 };
 use casper_execution_engine::storage::protocol_data::DEFAULT_WASMLESS_TRANSFER_COST;
 use casper_types::{
-    account::AccountHash, runtime_args, AccessRights, DeployHash, PublicKey, RuntimeArgs,
-    SecretKey, Transfer, TransferAddr, U512,
+    runtime_args, AccessRights, DeployHash, PublicKey, RuntimeArgs, SecretKey, Transfer,
+    TransferAddr, U512,
 };
 
 const CONTRACT_TRANSFER_PURSE_TO_ACCOUNT: &str = "transfer_purse_to_account.wasm";
@@ -29,10 +29,6 @@ static ALICE_KEY: Lazy<PublicKey> = Lazy::new(|| SecretKey::ed25519([3; 32]).int
 static BOB_KEY: Lazy<PublicKey> = Lazy::new(|| SecretKey::ed25519([5; 32]).into());
 static CAROL_KEY: Lazy<PublicKey> = Lazy::new(|| SecretKey::ed25519([7; 32]).into());
 
-static ALICE_ADDR: Lazy<AccountHash> = Lazy::new(|| AccountHash::from(&*ALICE_KEY));
-static BOB_ADDR: Lazy<AccountHash> = Lazy::new(|| AccountHash::from(&*BOB_KEY));
-static CAROL_ADDR: Lazy<AccountHash> = Lazy::new(|| AccountHash::from(&*CAROL_KEY));
-
 static TRANSFER_AMOUNT_1: Lazy<U512> = Lazy::new(|| U512::from(100_100_000));
 static TRANSFER_AMOUNT_2: Lazy<U512> = Lazy::new(|| U512::from(200_100_000));
 static TRANSFER_AMOUNT_3: Lazy<U512> = Lazy::new(|| U512::from(300_100_000));
@@ -46,9 +42,9 @@ fn should_record_wasmless_transfer() {
     let id = Some(0);
 
     let transfer_request = ExecuteRequestBuilder::transfer(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         runtime_args! {
-            TRANSFER_ARG_TARGET => *ALICE_ADDR,
+            TRANSFER_ARG_TARGET => *ALICE_KEY,
             TRANSFER_ARG_AMOUNT => *TRANSFER_AMOUNT_1,
             TRANSFER_ARG_ID => id
         },
@@ -69,11 +65,11 @@ fn should_record_wasmless_transfer() {
     builder.exec(transfer_request).commit().expect_success();
 
     let default_account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have default account");
 
     let alice_account = builder
-        .get_account(*ALICE_ADDR)
+        .get_account(*ALICE_KEY)
         .expect("should have Alice's account");
 
     let alice_attenuated_main_purse = alice_account
@@ -85,7 +81,7 @@ fn should_record_wasmless_transfer() {
         .expect("should have deploy info");
 
     assert_eq!(deploy_info.deploy_hash, deploy_hash);
-    assert_eq!(deploy_info.from, *DEFAULT_ACCOUNT_ADDR);
+    assert_eq!(deploy_info.from, *DEFAULT_ACCOUNT_PUBLIC_KEY);
     assert_eq!(deploy_info.source, default_account.main_purse());
 
     // TODO: this is borked
@@ -101,8 +97,8 @@ fn should_record_wasmless_transfer() {
         .expect("should have transfer");
 
     assert_eq!(transfer.deploy_hash, deploy_hash);
-    assert_eq!(transfer.from, *DEFAULT_ACCOUNT_ADDR);
-    assert_eq!(transfer.to, Some(*ALICE_ADDR));
+    assert_eq!(transfer.from, *DEFAULT_ACCOUNT_PUBLIC_KEY);
+    assert_eq!(transfer.to, Some(*ALICE_KEY));
     assert_eq!(transfer.source, default_account.main_purse());
     assert_eq!(transfer.target, alice_attenuated_main_purse);
     assert_eq!(transfer.amount, *TRANSFER_AMOUNT_1);
@@ -117,10 +113,10 @@ fn should_record_wasm_transfer() {
     builder.run_genesis(&DEFAULT_RUN_GENESIS_REQUEST);
 
     let transfer_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_PURSE_TO_ACCOUNT,
         runtime_args! {
-            TRANSFER_ARG_TARGET => *ALICE_ADDR,
+            TRANSFER_ARG_TARGET => *ALICE_KEY,
             TRANSFER_ARG_AMOUNT => *TRANSFER_AMOUNT_1
         },
     )
@@ -140,11 +136,11 @@ fn should_record_wasm_transfer() {
     builder.exec(transfer_request).commit().expect_success();
 
     let default_account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have default account");
 
     let alice_account = builder
-        .get_account(*ALICE_ADDR)
+        .get_account(*ALICE_KEY)
         .expect("should have Alice's account");
 
     let alice_attenuated_main_purse = alice_account
@@ -156,7 +152,7 @@ fn should_record_wasm_transfer() {
         .expect("should have deploy info");
 
     assert_eq!(deploy_info.deploy_hash, deploy_hash);
-    assert_eq!(deploy_info.from, *DEFAULT_ACCOUNT_ADDR);
+    assert_eq!(deploy_info.from, *DEFAULT_ACCOUNT_PUBLIC_KEY);
     assert_eq!(deploy_info.source, default_account.main_purse());
     assert_ne!(deploy_info.gas, U512::zero());
 
@@ -168,7 +164,7 @@ fn should_record_wasm_transfer() {
         .expect("should have transfer");
 
     assert_eq!(transfer.deploy_hash, deploy_hash);
-    assert_eq!(transfer.from, *DEFAULT_ACCOUNT_ADDR);
+    assert_eq!(transfer.from, *DEFAULT_ACCOUNT_PUBLIC_KEY);
     assert_eq!(transfer.source, default_account.main_purse());
     assert_eq!(transfer.target, alice_attenuated_main_purse);
     assert_eq!(transfer.amount, *TRANSFER_AMOUNT_1);
@@ -184,10 +180,10 @@ fn should_record_wasm_transfer_with_id() {
     let id = Some(0);
 
     let transfer_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_PURSE_TO_ACCOUNT_WITH_ID,
         runtime_args! {
-            TRANSFER_ARG_TARGET => *ALICE_ADDR,
+            TRANSFER_ARG_TARGET => *ALICE_KEY,
             TRANSFER_ARG_AMOUNT => *TRANSFER_AMOUNT_1,
             TRANSFER_ARG_ID => id
         },
@@ -208,11 +204,11 @@ fn should_record_wasm_transfer_with_id() {
     builder.exec(transfer_request).commit().expect_success();
 
     let default_account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have default account");
 
     let alice_account = builder
-        .get_account(*ALICE_ADDR)
+        .get_account(*ALICE_KEY)
         .expect("should have Alice's account");
 
     let alice_attenuated_main_purse = alice_account
@@ -224,7 +220,7 @@ fn should_record_wasm_transfer_with_id() {
         .expect("should have deploy info");
 
     assert_eq!(deploy_info.deploy_hash, deploy_hash);
-    assert_eq!(deploy_info.from, *DEFAULT_ACCOUNT_ADDR);
+    assert_eq!(deploy_info.from, *DEFAULT_ACCOUNT_PUBLIC_KEY);
     assert_eq!(deploy_info.source, default_account.main_purse());
     assert_ne!(deploy_info.gas, U512::zero());
 
@@ -236,7 +232,7 @@ fn should_record_wasm_transfer_with_id() {
         .expect("should have transfer");
 
     assert_eq!(transfer.deploy_hash, deploy_hash);
-    assert_eq!(transfer.from, *DEFAULT_ACCOUNT_ADDR);
+    assert_eq!(transfer.from, *DEFAULT_ACCOUNT_PUBLIC_KEY);
     assert_eq!(transfer.source, default_account.main_purse());
     assert_eq!(transfer.target, alice_attenuated_main_purse);
     assert_eq!(transfer.amount, *TRANSFER_AMOUNT_1);
@@ -251,23 +247,23 @@ fn should_record_wasm_transfers() {
     builder.run_genesis(&DEFAULT_RUN_GENESIS_REQUEST);
 
     let default_account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have default account");
 
     let alice_id = Some(0);
     let bob_id = Some(1);
     let carol_id = Some(2);
 
-    let targets: BTreeMap<AccountHash, (U512, Option<u64>)> = {
+    let targets: BTreeMap<PublicKey, (U512, Option<u64>)> = {
         let mut tmp = BTreeMap::new();
-        tmp.insert(*ALICE_ADDR, (*TRANSFER_AMOUNT_1, alice_id));
-        tmp.insert(*BOB_ADDR, (*TRANSFER_AMOUNT_2, bob_id));
-        tmp.insert(*CAROL_ADDR, (*TRANSFER_AMOUNT_3, carol_id));
+        tmp.insert(*ALICE_KEY, (*TRANSFER_AMOUNT_1, alice_id));
+        tmp.insert(*BOB_KEY, (*TRANSFER_AMOUNT_2, bob_id));
+        tmp.insert(*CAROL_KEY, (*TRANSFER_AMOUNT_3, carol_id));
         tmp
     };
 
     let transfer_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_PURSE_TO_ACCOUNTS,
         runtime_args! {
             TRANSFER_ARG_SOURCE => default_account.main_purse(),
@@ -290,19 +286,19 @@ fn should_record_wasm_transfers() {
     builder.exec(transfer_request).commit().expect_success();
 
     let default_account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have default account");
 
     let alice_account = builder
-        .get_account(*ALICE_ADDR)
+        .get_account(*ALICE_KEY)
         .expect("should have Alice's account");
 
     let bob_account = builder
-        .get_account(*BOB_ADDR)
+        .get_account(*BOB_KEY)
         .expect("should have Bob's account");
 
     let carol_account = builder
-        .get_account(*CAROL_ADDR)
+        .get_account(*CAROL_KEY)
         .expect("should have Carol's account");
 
     let alice_attenuated_main_purse = alice_account
@@ -322,7 +318,7 @@ fn should_record_wasm_transfers() {
         .expect("should have deploy info");
 
     assert_eq!(deploy_info.deploy_hash, deploy_hash);
-    assert_eq!(deploy_info.from, *DEFAULT_ACCOUNT_ADDR);
+    assert_eq!(deploy_info.from, *DEFAULT_ACCOUNT_PUBLIC_KEY);
     assert_eq!(deploy_info.source, default_account.main_purse());
     assert_ne!(deploy_info.gas, U512::zero());
 
@@ -353,8 +349,8 @@ fn should_record_wasm_transfers() {
 
     assert!(transfers.contains(&Transfer {
         deploy_hash,
-        from: *DEFAULT_ACCOUNT_ADDR,
-        to: Some(*ALICE_ADDR),
+        from: *DEFAULT_ACCOUNT_PUBLIC_KEY,
+        to: Some(*ALICE_KEY),
         source: default_account.main_purse(),
         target: alice_attenuated_main_purse,
         amount: *TRANSFER_AMOUNT_1,
@@ -364,8 +360,8 @@ fn should_record_wasm_transfers() {
 
     assert!(transfers.contains(&Transfer {
         deploy_hash,
-        from: *DEFAULT_ACCOUNT_ADDR,
-        to: Some(*BOB_ADDR),
+        from: *DEFAULT_ACCOUNT_PUBLIC_KEY,
+        to: Some(*BOB_KEY),
         source: default_account.main_purse(),
         target: bob_attenuated_main_purse,
         amount: *TRANSFER_AMOUNT_2,
@@ -375,8 +371,8 @@ fn should_record_wasm_transfers() {
 
     assert!(transfers.contains(&Transfer {
         deploy_hash,
-        from: *DEFAULT_ACCOUNT_ADDR,
-        to: Some(*CAROL_ADDR),
+        from: *DEFAULT_ACCOUNT_PUBLIC_KEY,
+        to: Some(*CAROL_KEY),
         source: default_account.main_purse(),
         target: carol_attenuated_main_purse,
         amount: *TRANSFER_AMOUNT_3,
@@ -396,26 +392,26 @@ fn should_record_wasm_transfers_with_subcall() {
     let carol_id = Some(2);
 
     let default_account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have default account");
 
     let store_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_PURSE_TO_ACCOUNTS_STORED,
         runtime_args! {},
     )
     .build();
 
-    let targets: BTreeMap<AccountHash, (U512, Option<u64>)> = {
+    let targets: BTreeMap<PublicKey, (U512, Option<u64>)> = {
         let mut tmp = BTreeMap::new();
-        tmp.insert(*ALICE_ADDR, (*TRANSFER_AMOUNT_1, alice_id));
-        tmp.insert(*BOB_ADDR, (*TRANSFER_AMOUNT_2, bob_id));
-        tmp.insert(*CAROL_ADDR, (*TRANSFER_AMOUNT_3, carol_id));
+        tmp.insert(*ALICE_KEY, (*TRANSFER_AMOUNT_1, alice_id));
+        tmp.insert(*BOB_KEY, (*TRANSFER_AMOUNT_2, bob_id));
+        tmp.insert(*CAROL_KEY, (*TRANSFER_AMOUNT_3, carol_id));
         tmp
     };
 
     let transfer_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_PURSE_TO_ACCOUNTS_SUBCALL,
         runtime_args! {
             TRANSFER_ARG_SOURCE => default_account.main_purse(),
@@ -439,15 +435,15 @@ fn should_record_wasm_transfers_with_subcall() {
     builder.exec(transfer_request).commit().expect_success();
 
     let alice_account = builder
-        .get_account(*ALICE_ADDR)
+        .get_account(*ALICE_KEY)
         .expect("should have Alice's account");
 
     let bob_account = builder
-        .get_account(*BOB_ADDR)
+        .get_account(*BOB_KEY)
         .expect("should have Bob's account");
 
     let carol_account = builder
-        .get_account(*CAROL_ADDR)
+        .get_account(*CAROL_KEY)
         .expect("should have Carol's account");
 
     let alice_attenuated_main_purse = alice_account
@@ -467,7 +463,7 @@ fn should_record_wasm_transfers_with_subcall() {
         .expect("should have deploy info");
 
     assert_eq!(deploy_info.deploy_hash, transfer_deploy_hash);
-    assert_eq!(deploy_info.from, *DEFAULT_ACCOUNT_ADDR);
+    assert_eq!(deploy_info.from, *DEFAULT_ACCOUNT_PUBLIC_KEY);
     assert_eq!(deploy_info.source, default_account.main_purse());
     assert_ne!(deploy_info.gas, U512::zero());
 
@@ -496,8 +492,8 @@ fn should_record_wasm_transfers_with_subcall() {
 
     let expected_alice = Transfer {
         deploy_hash: transfer_deploy_hash,
-        from: *DEFAULT_ACCOUNT_ADDR,
-        to: Some(*ALICE_ADDR),
+        from: *DEFAULT_ACCOUNT_PUBLIC_KEY,
+        to: Some(*ALICE_KEY),
         source: default_account.main_purse(),
         target: alice_attenuated_main_purse,
         amount: *TRANSFER_AMOUNT_1,
@@ -507,8 +503,8 @@ fn should_record_wasm_transfers_with_subcall() {
 
     let expected_bob = Transfer {
         deploy_hash: transfer_deploy_hash,
-        from: *DEFAULT_ACCOUNT_ADDR,
-        to: Some(*BOB_ADDR),
+        from: *DEFAULT_ACCOUNT_PUBLIC_KEY,
+        to: Some(*BOB_KEY),
         source: default_account.main_purse(),
         target: bob_attenuated_main_purse,
         amount: *TRANSFER_AMOUNT_2,
@@ -518,8 +514,8 @@ fn should_record_wasm_transfers_with_subcall() {
 
     let expected_carol = Transfer {
         deploy_hash: transfer_deploy_hash,
-        from: *DEFAULT_ACCOUNT_ADDR,
-        to: Some(*CAROL_ADDR),
+        from: *DEFAULT_ACCOUNT_PUBLIC_KEY,
+        to: Some(*CAROL_KEY),
         source: default_account.main_purse(),
         target: carol_attenuated_main_purse,
         amount: *TRANSFER_AMOUNT_3,

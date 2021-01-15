@@ -1,8 +1,8 @@
 use num_traits::cast::AsPrimitive;
 
-use casper_engine_test_support::{
-    internal::{ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_RUN_GENESIS_REQUEST},
-    DEFAULT_ACCOUNT_ADDR,
+use casper_engine_test_support::internal::{
+    ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_ACCOUNT_PUBLIC_KEY,
+    DEFAULT_RUN_GENESIS_REQUEST,
 };
 use casper_types::{contracts::CONTRACT_INITIAL_VERSION, runtime_args, RuntimeArgs, U512};
 
@@ -19,21 +19,21 @@ fn should_charge_gas_for_subcall() {
     const NO_SUBCALL: &str = "no-subcall";
 
     let do_nothing_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_NAME,
         runtime_args! { ARG_TARGET => DO_NOTHING },
     )
     .build();
 
     let do_something_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_NAME,
         runtime_args! { ARG_TARGET => DO_SOMETHING },
     )
     .build();
 
     let no_subcall_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_NAME,
         runtime_args! { ARG_TARGET => NO_SUBCALL },
     )
@@ -89,7 +89,7 @@ fn should_add_all_gas_for_subcall() {
     let gas_to_add_as_arg: u32 = gas_to_add.as_();
 
     let add_zero_gas_from_session_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_NAME,
         runtime_args! {
             ARG_GAS_AMOUNT => 0,
@@ -99,7 +99,7 @@ fn should_add_all_gas_for_subcall() {
     .build();
 
     let add_some_gas_from_session_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_NAME,
         runtime_args! {
             ARG_GAS_AMOUNT => gas_to_add_as_arg,
@@ -109,7 +109,7 @@ fn should_add_all_gas_for_subcall() {
     .build();
 
     let add_zero_gas_via_subcall_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_NAME,
         runtime_args! {
             ARG_GAS_AMOUNT => 0,
@@ -119,7 +119,7 @@ fn should_add_all_gas_for_subcall() {
     .build();
 
     let add_some_gas_via_subcall_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_NAME,
         runtime_args! {
             ARG_GAS_AMOUNT => gas_to_add_as_arg,
@@ -177,12 +177,15 @@ fn expensive_subcall_should_cost_more() {
     const EXPENSIVE_CALCULATION_KEY: &str = "expensive-calculation";
     const ENTRY_FUNCTION_NAME: &str = "delegate";
 
-    let store_do_nothing_request =
-        ExecuteRequestBuilder::standard(*DEFAULT_ACCOUNT_ADDR, DO_NOTHING, RuntimeArgs::default())
-            .build();
+    let store_do_nothing_request = ExecuteRequestBuilder::standard(
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
+        DO_NOTHING,
+        RuntimeArgs::default(),
+    )
+    .build();
 
     let store_calculation_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         EXPENSIVE_CALCULATION,
         RuntimeArgs::default(),
     )
@@ -205,7 +208,7 @@ fn expensive_subcall_should_cost_more() {
         .finish();
 
     let account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should get account");
 
     let expensive_calculation_contract_hash = account
@@ -218,7 +221,7 @@ fn expensive_subcall_should_cost_more() {
     // execute the contracts via subcalls
 
     let call_do_nothing_request = ExecuteRequestBuilder::versioned_contract_call_by_hash_key_name(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         DO_NOTHING_PACKAGE_HASH_KEY_NAME,
         Some(CONTRACT_INITIAL_VERSION),
         ENTRY_FUNCTION_NAME,
@@ -227,7 +230,7 @@ fn expensive_subcall_should_cost_more() {
     .build();
 
     let call_expensive_calculation_request = ExecuteRequestBuilder::contract_call_by_hash(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         expensive_calculation_contract_hash,
         "calculate",
         RuntimeArgs::default(),

@@ -4,16 +4,15 @@ use once_cell::sync::Lazy;
 
 use casper_engine_test_support::{
     internal::{utils, ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_ACCOUNTS},
-    DEFAULT_ACCOUNT_ADDR, DEFAULT_ACCOUNT_INITIAL_BALANCE, MINIMUM_ACCOUNT_CREATION_BALANCE,
+    DEFAULT_ACCOUNT_INITIAL_BALANCE, DEFAULT_ACCOUNT_PUBLIC_KEY, MINIMUM_ACCOUNT_CREATION_BALANCE,
 };
 use casper_execution_engine::{core::engine_state::genesis::GenesisAccount, shared::motes::Motes};
 use casper_types::{
-    account::{AccountHash, ACCOUNT_HASH_LENGTH},
     auction::{
         Bids, UnbondingPurses, ARG_DELEGATOR, ARG_UNBOND_PURSE, ARG_VALIDATOR,
         ARG_VALIDATOR_PUBLIC_KEYS, BIDS_KEY, METHOD_SLASH, UNBONDING_PURSES_KEY,
     },
-    runtime_args, PublicKey, RuntimeArgs, SecretKey, URef, U512,
+    runtime_args, PublicKey, RuntimeArgs, SecretKey, URef, SYSTEM_ACCOUNT, U512,
 };
 
 const CONTRACT_TRANSFER_TO_ACCOUNT: &str = "transfer_to_account_u512.wasm";
@@ -38,11 +37,6 @@ static VALIDATOR_2: Lazy<PublicKey> =
 static DELEGATOR_1: Lazy<PublicKey> =
     Lazy::new(|| SecretKey::ed25519([5; SecretKey::ED25519_LENGTH]).into());
 
-static SYSTEM_ADDR: Lazy<AccountHash> = Lazy::new(|| AccountHash::new([0u8; ACCOUNT_HASH_LENGTH]));
-static VALIDATOR_1_ADDR: Lazy<AccountHash> = Lazy::new(|| AccountHash::from(&*VALIDATOR_1));
-static VALIDATOR_2_ADDR: Lazy<AccountHash> = Lazy::new(|| AccountHash::from(&*VALIDATOR_2));
-static DELEGATOR_1_ADDR: Lazy<AccountHash> = Lazy::new(|| AccountHash::from(&*DELEGATOR_1));
-
 const VALIDATOR_1_STAKE: u64 = 250_000;
 const VALIDATOR_2_STAKE: u64 = 350_000;
 
@@ -52,13 +46,11 @@ fn should_run_ee_1120_slash_delegators() {
     let accounts = {
         let validator_1 = GenesisAccount::new(
             *VALIDATOR_1,
-            *VALIDATOR_1_ADDR,
             Motes::new(DEFAULT_ACCOUNT_INITIAL_BALANCE.into()),
             Motes::new(VALIDATOR_1_STAKE.into()),
         );
         let validator_2 = GenesisAccount::new(
             *VALIDATOR_2,
-            *VALIDATOR_2_ADDR,
             Motes::new(DEFAULT_ACCOUNT_INITIAL_BALANCE.into()),
             Motes::new(VALIDATOR_2_STAKE.into()),
         );
@@ -74,10 +66,10 @@ fn should_run_ee_1120_slash_delegators() {
     builder.run_genesis(&run_genesis_request);
 
     let transfer_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
         runtime_args! {
-            "target" => *SYSTEM_ADDR,
+            "target" => SYSTEM_ACCOUNT,
             "amount" => U512::from(TRANSFER_AMOUNT)
         },
     )
@@ -86,10 +78,10 @@ fn should_run_ee_1120_slash_delegators() {
     builder.exec(transfer_request_1).expect_success().commit();
 
     let transfer_request_2 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
         runtime_args! {
-            "target" => *DELEGATOR_1_ADDR,
+            "target" => *DELEGATOR_1,
             "amount" => U512::from(TRANSFER_AMOUNT)
         },
     )
@@ -102,7 +94,7 @@ fn should_run_ee_1120_slash_delegators() {
     // Validator delegates funds to other genesis validator
 
     let delegate_exec_request_1 = ExecuteRequestBuilder::standard(
-        *DELEGATOR_1_ADDR,
+        *DELEGATOR_1,
         CONTRACT_DELEGATE,
         runtime_args! {
             ARG_AMOUNT => U512::from(DELEGATE_AMOUNT_1),
@@ -113,7 +105,7 @@ fn should_run_ee_1120_slash_delegators() {
     .build();
 
     let delegate_exec_request_2 = ExecuteRequestBuilder::standard(
-        *DELEGATOR_1_ADDR,
+        *DELEGATOR_1,
         CONTRACT_DELEGATE,
         runtime_args! {
             ARG_AMOUNT => U512::from(DELEGATE_AMOUNT_2),
@@ -124,7 +116,7 @@ fn should_run_ee_1120_slash_delegators() {
     .build();
 
     let delegate_exec_request_3 = ExecuteRequestBuilder::standard(
-        *VALIDATOR_2_ADDR,
+        *VALIDATOR_2,
         CONTRACT_DELEGATE,
         runtime_args! {
             ARG_AMOUNT => U512::from(DELEGATE_AMOUNT_3),
@@ -161,7 +153,7 @@ fn should_run_ee_1120_slash_delegators() {
 
     // DELEGATOR_1 partially unbonds from VALIDATOR_1
     let undelegate_request_1 = ExecuteRequestBuilder::standard(
-        *DELEGATOR_1_ADDR,
+        *DELEGATOR_1,
         CONTRACT_UNDELEGATE,
         runtime_args! {
             ARG_AMOUNT => U512::from(UNDELEGATE_AMOUNT_1),
@@ -174,7 +166,7 @@ fn should_run_ee_1120_slash_delegators() {
 
     // DELEGATOR_1 partially unbonds from VALIDATOR_2
     let undelegate_request_2 = ExecuteRequestBuilder::standard(
-        *DELEGATOR_1_ADDR,
+        *DELEGATOR_1,
         CONTRACT_UNDELEGATE,
         runtime_args! {
             ARG_AMOUNT => U512::from(UNDELEGATE_AMOUNT_2),
@@ -187,7 +179,7 @@ fn should_run_ee_1120_slash_delegators() {
 
     // VALIDATOR_2 partially unbonds from VALIDATOR_1
     let undelegate_request_3 = ExecuteRequestBuilder::standard(
-        *VALIDATOR_2_ADDR,
+        *VALIDATOR_2,
         CONTRACT_UNDELEGATE,
         runtime_args! {
             ARG_AMOUNT => U512::from(UNDELEGATE_AMOUNT_3),
@@ -269,7 +261,7 @@ fn should_run_ee_1120_slash_delegators() {
     );
 
     let slash_request_1 = ExecuteRequestBuilder::contract_call_by_hash(
-        *SYSTEM_ADDR,
+        SYSTEM_ACCOUNT,
         auction,
         METHOD_SLASH,
         runtime_args! {
@@ -324,7 +316,7 @@ fn should_run_ee_1120_slash_delegators() {
 
     // slash validator 1 to clear remaining bids and unbonding purses
     let slash_request_2 = ExecuteRequestBuilder::contract_call_by_hash(
-        *SYSTEM_ADDR,
+        SYSTEM_ACCOUNT,
         auction,
         METHOD_SLASH,
         runtime_args! {
