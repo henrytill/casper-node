@@ -2291,6 +2291,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "get-mint"
+version = "0.1.0"
+dependencies = [
+ "casper-contract",
+ "casper-types",
+]
+
+[[package]]
 name = "get-phase"
 version = "0.1.0"
 dependencies = [
@@ -6808,6 +6816,14 @@ dependencies = [
 
 [[package]]
 name = "withdraw-validator-reward"
+version = "0.1.0"
+dependencies = [
+ "casper-contract",
+ "casper-types",
+]
+
+[[package]]
+name = "write-local"
 version = "0.1.0"
 dependencies = [
  "casper-contract",
