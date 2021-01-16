@@ -99,7 +99,7 @@ macro_rules! make_array_newtype {
             }
         }
 
-        impl bytesrepr::ToBytes for $name {
+        impl ToBytes for $name {
             fn to_bytes(&self) -> Result<Vec<u8>, bytesrepr::Error> {
                 self.0.to_bytes()
             }
@@ -109,7 +109,7 @@ macro_rules! make_array_newtype {
             }
         }
 
-        impl bytesrepr::FromBytes for $name {
+        impl FromBytes for $name {
             fn from_bytes(bytes: &[u8]) -> Result<(Self, &[u8]), bytesrepr::Error> {
                 let (dat, rem) = <[$ty; $len]>::from_bytes(bytes)?;
                 Ok(($name(dat), rem))
