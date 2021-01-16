@@ -593,8 +593,8 @@ mod tests {
     use std::{convert::TryFrom, result::Result as StdResult};
 
     use casper_types::{
-        account::AccountHash, bytesrepr::ToBytes, AccessRights, CLTyped, CLValue, NamedArg,
-        PublicKey, RuntimeArgs, URef, U128, U256, U512,
+        bytesrepr::ToBytes, AccessRights, CLTyped, CLValue, NamedArg, PublicKey, RuntimeArgs, URef,
+        U128, U256, U512,
     };
 
     use crate::{PaymentStrParams, SessionStrParams};
@@ -812,22 +812,6 @@ mod tests {
             );
             valid_simple_args_test::<Option<Key>>("x:opt_key=null", None);
         }
-    }
-
-    #[test]
-    fn should_parse_account_hash_via_args_simple() {
-        let bytes = (1..33).collect::<Vec<_>>();
-        let array = <[u8; 32]>::try_from(bytes.as_ref()).unwrap();
-        let value = AccountHash::new(array);
-        valid_simple_args_test(
-            &format!("x:account_hash='{}'", value.to_formatted_string()),
-            value,
-        );
-        valid_simple_args_test(
-            &format!("x:opt_account_hash='{}'", value.to_formatted_string()),
-            Some(value),
-        );
-        valid_simple_args_test::<Option<AccountHash>>("x:opt_account_hash=null", None);
     }
 
     #[test]

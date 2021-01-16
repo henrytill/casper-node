@@ -44,7 +44,7 @@ fn should_verify_key_management_permission_with_sufficient_weight() {
     .build();
     let exec_request_2 = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
             // This test verifies that all key management operations succeed
             .with_session_code(

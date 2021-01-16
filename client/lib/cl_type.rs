@@ -40,7 +40,7 @@ pub(crate) fn parse(strval: &str) -> StdResult<CLType, ()> {
         t if t == supported_types[24].0 => supported_types[24].1.clone(),
         t if t == supported_types[25].0 => supported_types[25].1.clone(),
         t if t == supported_types[26].0 => supported_types[26].1.clone(),
-        t if t == supported_types[28].0 => supported_types[28].1.clone(),
+        t if t == supported_types[27].0 => supported_types[27].1.clone(),
         _ => return Err(()),
     };
     Ok(cl_type)

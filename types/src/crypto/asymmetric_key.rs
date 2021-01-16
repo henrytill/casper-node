@@ -357,14 +357,14 @@ impl PublicKey {
         AccountHash::from(self)
     }
 
-    /// TODO
-    pub fn to_formatted_string(&self) -> &str {
-        unimplemented!()
+    /// Returns a human-readable version of `self`, with the inner bytes encoded to Base16.
+    pub fn to_formatted_string(&self) -> String {
+        self.to_hex()
     }
 
-    /// TODO
-    pub fn from_formatted_str(_str: &str) -> Result<Self, Error> {
-        unimplemented!()
+    /// Parses a string formatted as per `Self::to_formatted_string()` into a [`PublicKey`].
+    pub fn from_formatted_str(str: &str) -> Result<Self, Error> {
+        Self::from_hex(str)
     }
 
     fn variant_name(&self) -> &str {

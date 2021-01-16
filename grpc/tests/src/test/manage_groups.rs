@@ -78,7 +78,7 @@ fn should_create_and_remove_group() {
         // can work from different accounts which might not have the same keys in their session
         // code.
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 PACKAGE_HASH_KEY,
                 Some(CONTRACT_INITIAL_VERSION),
@@ -116,7 +116,7 @@ fn should_create_and_remove_group() {
             GROUP_NAME_ARG => GROUP_1_NAME,
         };
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 PACKAGE_HASH_KEY,
                 Some(CONTRACT_INITIAL_VERSION),
@@ -184,7 +184,7 @@ fn should_create_and_extend_user_group() {
         // can work from different accounts which might not have the same keys in their session
         // code.
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 PACKAGE_HASH_KEY,
                 Some(CONTRACT_INITIAL_VERSION),
@@ -223,7 +223,7 @@ fn should_create_and_extend_user_group() {
             TOTAL_NEW_UREFS_ARG => NEW_UREFS_COUNT,
         };
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 PACKAGE_HASH_KEY,
                 Some(CONTRACT_INITIAL_VERSION),
@@ -295,7 +295,7 @@ fn should_create_and_remove_urefs_from_group() {
         // can work from different accounts which might not have the same keys in their session
         // code.
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 PACKAGE_HASH_KEY,
                 Some(CONTRACT_INITIAL_VERSION),
@@ -336,7 +336,7 @@ fn should_create_and_remove_urefs_from_group() {
             UREFS_ARG => urefs_to_remove,
         };
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 PACKAGE_HASH_KEY,
                 Some(CONTRACT_INITIAL_VERSION),
@@ -405,7 +405,7 @@ fn should_limit_max_urefs_while_extending() {
         // can work from different accounts which might not have the same keys in their session
         // code.
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 PACKAGE_HASH_KEY,
                 Some(CONTRACT_INITIAL_VERSION),
@@ -444,7 +444,7 @@ fn should_limit_max_urefs_while_extending() {
             TOTAL_NEW_UREFS_ARG => 8u64,
         };
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 PACKAGE_HASH_KEY,
                 Some(CONTRACT_INITIAL_VERSION),
@@ -469,7 +469,7 @@ fn should_limit_max_urefs_while_extending() {
             TOTAL_NEW_UREFS_ARG => 1u64,
         };
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 PACKAGE_HASH_KEY,
                 Some(CONTRACT_INITIAL_VERSION),

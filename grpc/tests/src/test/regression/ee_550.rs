@@ -33,7 +33,7 @@ fn should_run_ee_550_remove_with_saturated_threshold_regression() {
 
     let exec_request_2 = {
         let deploy_item = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_session_code(
                 CONTRACT_EE_550_REGRESSION,
                 runtime_args! { ARG_PASS => String::from(PASS_TEST_REMOVE) },
@@ -70,7 +70,7 @@ fn should_run_ee_550_update_with_saturated_threshold_regression() {
 
     let exec_request_2 = {
         let deploy_item = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_session_code(
                 CONTRACT_EE_550_REGRESSION,
                 runtime_args! { ARG_PASS => String::from(PASS_TEST_UPDATE) },

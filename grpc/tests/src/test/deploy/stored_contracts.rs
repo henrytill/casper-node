@@ -105,7 +105,7 @@ fn should_exec_non_stored_code() {
 
     let exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_session_code(
                 &format!("{}.wasm", TRANSFER_PURSE_TO_ACCOUNT_CONTRACT_NAME),
                 runtime_args! {
@@ -191,7 +191,7 @@ fn should_exec_stored_code_by_hash() {
         let exec_request_stored_payment = {
             let account_1_account_hash = *ACCOUNT_1_PUBLIC_KEY;
             let deploy = DeployItemBuilder::new()
-                .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+                .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
                 .with_session_code(
                     &format!("{}.wasm", TRANSFER_PURSE_TO_ACCOUNT_CONTRACT_NAME),
                     runtime_args! { ARG_TARGET => account_1_account_hash, ARG_AMOUNT => U512::from(transferred_amount) },
@@ -286,7 +286,7 @@ fn should_exec_stored_code_by_named_hash() {
         let exec_request_stored_payment = {
             let account_1_account_hash = *ACCOUNT_1_PUBLIC_KEY;
             let deploy = DeployItemBuilder::new()
-                .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+                .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
                 .with_session_code(
                     &format!("{}.wasm", TRANSFER_PURSE_TO_ACCOUNT_CONTRACT_NAME),
                     runtime_args! { ARG_TARGET => account_1_account_hash, ARG_AMOUNT => U512::from(transferred_amount) },
@@ -375,7 +375,7 @@ fn should_exec_payment_and_session_stored_code() {
     // next store transfer contract
     let exec_request_store_transfer = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_session_code(
                 &format!("{}_stored.wasm", TRANSFER_PURSE_TO_ACCOUNT_CONTRACT_NAME),
                 RuntimeArgs::default(),
@@ -415,7 +415,7 @@ fn should_exec_payment_and_session_stored_code() {
     // logic
     let exec_request_stored_only = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 TRANSFER_PURSE_TO_ACCOUNT_CONTRACT_NAME,
                 Some(CONTRACT_INITIAL_VERSION),
@@ -485,7 +485,7 @@ fn should_have_equivalent_transforms_with_stored_contract_pointers() {
 
         let exec_request_1 = {
             let store_transfer = DeployItemBuilder::new()
-                .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+                .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
                 .with_session_code(
                     &format!("{}_stored.wasm", TRANSFER_PURSE_TO_ACCOUNT_CONTRACT_NAME),
                     RuntimeArgs::default(),
@@ -504,7 +504,7 @@ fn should_have_equivalent_transforms_with_stored_contract_pointers() {
 
         let exec_request_2 = {
             let store_transfer = DeployItemBuilder::new()
-                .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+                .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
                 .with_session_code(STORED_PAYMENT_CONTRACT_NAME, RuntimeArgs::default())
                 .with_empty_payment_bytes(runtime_args! {
                     ARG_AMOUNT => *DEFAULT_PAYMENT,
@@ -528,7 +528,7 @@ fn should_have_equivalent_transforms_with_stored_contract_pointers() {
 
         let call_stored_request = {
             let deploy = DeployItemBuilder::new()
-                .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+                .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
                 .with_stored_session_named_key(
                     TRANSFER_PURSE_TO_ACCOUNT_STORED_HASH_KEY_NAME,
                     TRANSFER,
@@ -559,7 +559,7 @@ fn should_have_equivalent_transforms_with_stored_contract_pointers() {
     let provided_transforms = {
         let do_nothing_request = |deploy_hash: [u8; 32]| {
             let deploy = DeployItemBuilder::new()
-                .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+                .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
                 .with_session_code(&format!("{}.wasm", DO_NOTHING_NAME), RuntimeArgs::default())
                 .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
                 .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
@@ -571,7 +571,7 @@ fn should_have_equivalent_transforms_with_stored_contract_pointers() {
 
         let provided_request = {
             let deploy = DeployItemBuilder::new()
-                .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+                .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
                 .with_session_code(
                     &format!("{}.wasm", TRANSFER_PURSE_TO_ACCOUNT_CONTRACT_NAME),
                     runtime_args! { ARG_TARGET => *ACCOUNT_1_PUBLIC_KEY, ARG_AMOUNT => U512::from(transferred_amount) },
@@ -717,7 +717,7 @@ fn should_fail_payment_stored_at_named_key_with_incompatible_major_version() {
     // next make another deploy that USES stored payment logic
     let exec_request_stored_payment = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_session_code(&format!("{}.wasm", DO_NOTHING_NAME), RuntimeArgs::default())
             .with_stored_payment_named_key(
                 STORED_PAYMENT_CONTRACT_HASH_NAME,
@@ -815,7 +815,7 @@ fn should_fail_payment_stored_at_hash_with_incompatible_major_version() {
     // next make another deploy that USES stored payment logic
     let exec_request_stored_payment = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_session_code(&format!("{}.wasm", DO_NOTHING_NAME), RuntimeArgs::default())
             .with_stored_payment_hash(
                 stored_payment_contract_hash,
@@ -895,7 +895,7 @@ fn should_fail_session_stored_at_named_key_with_incompatible_major_version() {
 
     let exec_request_stored_payment = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_session_named_key(
                 DO_NOTHING_CONTRACT_HASH_NAME,
                 ENTRY_FUNCTION_NAME,
@@ -984,7 +984,7 @@ fn should_fail_session_stored_at_named_key_with_missing_new_major_version() {
 
     let exec_request_stored_payment = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 DO_NOTHING_CONTRACT_PACKAGE_HASH_NAME,
                 Some(INITIAL_VERSION),
@@ -1061,7 +1061,7 @@ fn should_fail_session_stored_at_hash_with_incompatible_major_version() {
 
     let exec_request_stored_payment = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_session_named_key(
                 DO_NOTHING_CONTRACT_HASH_NAME,
                 ENTRY_FUNCTION_NAME,
@@ -1171,7 +1171,7 @@ fn should_execute_stored_payment_and_session_code_with_new_major_version() {
 
     let exec_request_stored_payment = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 DO_NOTHING_CONTRACT_PACKAGE_HASH_NAME,
                 Some(INITIAL_VERSION),

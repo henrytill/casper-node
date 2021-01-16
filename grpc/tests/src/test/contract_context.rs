@@ -35,7 +35,7 @@ fn should_enforce_intended_execution_contexts() {
     let exec_request_2 = {
         let args = runtime_args! {};
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 PACKAGE_HASH_KEY,
                 Some(CONTRACT_INITIAL_VERSION),
@@ -53,7 +53,7 @@ fn should_enforce_intended_execution_contexts() {
     let exec_request_3 = {
         let args = runtime_args! {};
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 PACKAGE_HASH_KEY,
                 Some(CONTRACT_INITIAL_VERSION),
@@ -71,7 +71,7 @@ fn should_enforce_intended_execution_contexts() {
     let exec_request_4 = {
         let args = runtime_args! {};
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 PACKAGE_HASH_KEY,
                 Some(CONTRACT_INITIAL_VERSION),
@@ -147,7 +147,7 @@ fn should_enforce_intended_execution_context_direct_by_name() {
     let exec_request_2 = {
         let args = runtime_args! {};
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_session_named_key(CONTRACT_HASH_KEY, SESSION_CODE_TEST, args)
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
             .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
@@ -160,7 +160,7 @@ fn should_enforce_intended_execution_context_direct_by_name() {
     let exec_request_3 = {
         let args = runtime_args! {};
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_session_named_key(CONTRACT_HASH_KEY, CONTRACT_CODE_TEST, args)
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
             .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
@@ -173,7 +173,7 @@ fn should_enforce_intended_execution_context_direct_by_name() {
     let exec_request_4 = {
         let args = runtime_args! {};
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_session_named_key(CONTRACT_HASH_KEY, ADD_NEW_KEY_AS_SESSION, args)
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
             .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
@@ -250,7 +250,7 @@ fn should_enforce_intended_execution_context_direct_by_hash() {
     let exec_request_2 = {
         let args = runtime_args! {};
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_session_hash(contract_hash, SESSION_CODE_TEST, args)
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
             .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
@@ -263,7 +263,7 @@ fn should_enforce_intended_execution_context_direct_by_hash() {
     let exec_request_3 = {
         let args = runtime_args! {};
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_session_hash(contract_hash, CONTRACT_CODE_TEST, args)
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
             .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
@@ -276,7 +276,7 @@ fn should_enforce_intended_execution_context_direct_by_hash() {
     let exec_request_4 = {
         let args = runtime_args! {};
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_session_hash(contract_hash, ADD_NEW_KEY_AS_SESSION, args)
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
             .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
@@ -349,7 +349,7 @@ fn should_not_call_session_from_contract() {
             PACKAGE_HASH_KEY => contract_package_hash,
         };
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 PACKAGE_HASH_KEY,
                 Some(CONTRACT_INITIAL_VERSION),

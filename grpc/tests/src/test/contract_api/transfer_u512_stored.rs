@@ -63,7 +63,7 @@ fn should_transfer_to_account_stored() {
     // next make another deploy that USES stored payment logic
     let exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_session_hash(
                 contract_hash,
                 FUNCTION_NAME,

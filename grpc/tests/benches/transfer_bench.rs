@@ -135,7 +135,7 @@ fn transfer_to_account_multiple_deploys(
 
     for i in 0..TRANSFER_BATCH_SIZE {
         let deploy = DeployItemBuilder::default()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT })
             .with_session_code(
                 CONTRACT_TRANSFER_TO_EXISTING_ACCOUNT,
@@ -192,7 +192,7 @@ fn transfer_to_purse_multiple_deploys(
 
     for i in 0..TRANSFER_BATCH_SIZE {
         let deploy = DeployItemBuilder::default()
-            .with_address(*TARGET_ADDR)
+            .with_public_key(*TARGET_ADDR)
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
             .with_session_code(
                 CONTRACT_TRANSFER_TO_PURSE,

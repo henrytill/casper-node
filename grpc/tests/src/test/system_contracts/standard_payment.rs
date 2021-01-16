@@ -89,7 +89,7 @@ fn should_raise_insufficient_payment_when_payment_code_does_not_pay_enough() {
 
     let exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_deploy_hash([1; 32])
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => U512::from(1)})
             .with_session_code(
@@ -160,7 +160,7 @@ fn should_raise_insufficient_payment_error_when_out_of_gas() {
 
     let exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_deploy_hash([1; 32])
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => payment_purse_amount})
             .with_session_code(
@@ -232,7 +232,7 @@ fn should_forward_payment_execution_runtime_error() {
 
     let exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_deploy_hash([1; 32])
             .with_payment_code(REVERT_WASM, RuntimeArgs::default())
             .with_session_code(
@@ -304,7 +304,7 @@ fn should_forward_payment_execution_gas_limit_error() {
 
     let exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_deploy_hash([1; 32])
             .with_payment_code(ENDLESS_LOOP_WASM, RuntimeArgs::default())
             .with_session_code(
@@ -372,7 +372,7 @@ fn should_run_out_of_gas_when_session_code_exceeds_gas_limit() {
 
     let exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_deploy_hash([1; 32])
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT })
             .with_session_code(
@@ -415,7 +415,7 @@ fn should_run_out_of_gas_when_session_code_exceeds_gas_limit() {
 fn should_correctly_charge_when_session_code_runs_out_of_gas() {
     let exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_deploy_hash([1; 32])
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT })
             .with_session_code(ENDLESS_LOOP_WASM, RuntimeArgs::default())
@@ -478,7 +478,7 @@ fn should_correctly_charge_when_session_code_fails() {
 
     let exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_deploy_hash([1; 32])
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT })
             .with_session_code(
@@ -533,7 +533,7 @@ fn should_correctly_charge_when_session_code_succeeds() {
 
     let exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_deploy_hash([1; 32])
             .with_session_code(
                 TRANSFER_PURSE_TO_ACCOUNT_WASM,
@@ -594,7 +594,7 @@ fn should_finalize_to_rewards_purse() {
 
     let exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_session_code(
                 TRANSFER_PURSE_TO_ACCOUNT_WASM,
                 runtime_args! { ARG_TARGET => *ACCOUNT_1_PUBLIC_KEY, ARG_AMOUNT => U512::from(transferred_amount) },
@@ -632,7 +632,7 @@ fn independent_standard_payments_should_not_write_the_same_keys() {
 
     let setup_exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_session_code(
                 TRANSFER_PURSE_TO_ACCOUNT_WASM,
                 runtime_args! { ARG_TARGET => *ACCOUNT_1_PUBLIC_KEY, ARG_AMOUNT => U512::from(transfer_amount) },
@@ -654,7 +654,7 @@ fn independent_standard_payments_should_not_write_the_same_keys() {
 
     let exec_request_from_genesis = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_session_code(DO_NOTHING_WASM, RuntimeArgs::default())
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT })
             .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
@@ -666,7 +666,7 @@ fn independent_standard_payments_should_not_write_the_same_keys() {
 
     let exec_request_from_account_1 = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*ACCOUNT_1_PUBLIC_KEY)
+            .with_public_key(*ACCOUNT_1_PUBLIC_KEY)
             .with_session_code(DO_NOTHING_WASM, RuntimeArgs::default())
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT })
             .with_authorization_keys(&[*ACCOUNT_1_PUBLIC_KEY])

@@ -82,9 +82,9 @@ impl SessionBuilder {
         }
     }
 
-    /// Returns `self` with the provided account address set.
-    pub fn with_address(mut self, address: PublicKey) -> Self {
-        self.di_builder = self.di_builder.with_address(address);
+    /// Returns `self` with the provided account public key.
+    pub fn with_public_key(mut self, public_key: PublicKey) -> Self {
+        self.di_builder = self.di_builder.with_public_key(public_key);
         self
     }
 

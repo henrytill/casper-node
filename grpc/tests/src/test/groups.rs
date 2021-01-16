@@ -74,7 +74,7 @@ fn should_call_group_restricted_session() {
         // code.
         let args = runtime_args! {};
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 PACKAGE_HASH_KEY,
                 Some(CONTRACT_INITIAL_VERSION),
@@ -138,7 +138,7 @@ fn should_call_group_restricted_session_caller() {
             PACKAGE_HASH_ARG => package_hash.into_hash(),
         };
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 PACKAGE_HASH_KEY,
                 Some(CONTRACT_INITIAL_VERSION),
@@ -208,7 +208,7 @@ fn should_not_call_restricted_session_from_wrong_account() {
     let exec_request_3 = {
         let args = runtime_args! {};
         let deploy = DeployItemBuilder::new()
-            .with_address(*ACCOUNT_1_PUBLIC_KEY)
+            .with_public_key(*ACCOUNT_1_PUBLIC_KEY)
             .with_stored_versioned_contract_by_hash(
                 package_hash.into_hash().expect("should be hash"),
                 Some(CONTRACT_INITIAL_VERSION),
@@ -290,7 +290,7 @@ fn should_not_call_restricted_session_caller_from_wrong_account() {
             "package_hash" => *package_hash,
         };
         let deploy = DeployItemBuilder::new()
-            .with_address(*ACCOUNT_1_PUBLIC_KEY)
+            .with_public_key(*ACCOUNT_1_PUBLIC_KEY)
             .with_stored_versioned_contract_by_hash(
                 package_hash.into_hash().expect("should be hash"),
                 Some(CONTRACT_INITIAL_VERSION),
@@ -366,7 +366,7 @@ fn should_call_group_restricted_contract() {
             PACKAGE_HASH_ARG => package_hash.into_hash(),
         };
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 PACKAGE_HASH_KEY,
                 Some(CONTRACT_INITIAL_VERSION),
@@ -440,7 +440,7 @@ fn should_not_call_group_restricted_contract_from_wrong_account() {
             PACKAGE_HASH_ARG => package_hash.into_hash(),
         };
         let deploy = DeployItemBuilder::new()
-            .with_address(*ACCOUNT_1_PUBLIC_KEY)
+            .with_public_key(*ACCOUNT_1_PUBLIC_KEY)
             .with_stored_versioned_contract_by_hash(
                 package_hash.into_hash().expect("should be hash"),
                 Some(CONTRACT_INITIAL_VERSION),
@@ -506,7 +506,7 @@ fn should_call_group_unrestricted_contract_caller() {
             PACKAGE_HASH_ARG => package_hash.into_hash(),
         };
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 PACKAGE_HASH_KEY,
                 Some(CONTRACT_INITIAL_VERSION),
@@ -577,7 +577,7 @@ fn should_call_unrestricted_contract_caller_from_different_account() {
             PACKAGE_HASH_ARG => package_hash.into_hash(),
         };
         let deploy = DeployItemBuilder::new()
-            .with_address(*ACCOUNT_1_PUBLIC_KEY)
+            .with_public_key(*ACCOUNT_1_PUBLIC_KEY)
             .with_stored_versioned_contract_by_hash(
                 package_hash.into_hash().expect("should be hash"),
                 Some(CONTRACT_INITIAL_VERSION),
@@ -644,7 +644,7 @@ fn should_call_group_restricted_contract_as_session() {
             PACKAGE_HASH_ARG => package_hash.into_hash(),
         };
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_hash(
                 package_hash.into_hash().expect("should be hash"),
                 Some(CONTRACT_INITIAL_VERSION),
@@ -711,7 +711,7 @@ fn should_call_group_restricted_contract_as_session_from_wrong_account() {
             PACKAGE_HASH_ARG => package_hash.into_hash(),
         };
         let deploy = DeployItemBuilder::new()
-            .with_address(*ACCOUNT_1_PUBLIC_KEY)
+            .with_public_key(*ACCOUNT_1_PUBLIC_KEY)
             .with_stored_versioned_contract_by_hash(
                 package_hash.into_hash().expect("should be hash"),
                 Some(CONTRACT_INITIAL_VERSION),
@@ -780,7 +780,7 @@ fn should_not_call_uncallable_contract_from_deploy() {
             PACKAGE_HASH_ARG => package_hash.into_hash(),
         };
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 PACKAGE_HASH_KEY,
                 Some(CONTRACT_INITIAL_VERSION),
@@ -810,7 +810,7 @@ fn should_not_call_uncallable_contract_from_deploy() {
             PACKAGE_HASH_ARG => package_hash.into_hash(),
         };
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 PACKAGE_HASH_KEY,
                 Some(CONTRACT_INITIAL_VERSION),
@@ -870,7 +870,7 @@ fn should_not_call_uncallable_session_from_deploy() {
             PACKAGE_HASH_ARG => package_hash.into_hash(),
         };
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 PACKAGE_HASH_KEY,
                 Some(CONTRACT_INITIAL_VERSION),
@@ -900,7 +900,7 @@ fn should_not_call_uncallable_session_from_deploy() {
             PACKAGE_HASH_ARG => package_hash.into_hash(),
         };
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_versioned_contract_by_name(
                 PACKAGE_HASH_KEY,
                 Some(CONTRACT_INITIAL_VERSION),

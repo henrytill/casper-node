@@ -25,13 +25,13 @@ fn should_raise_precondition_authorization_failure_invalid_account() {
 
     let exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_deploy_hash([1; 32])
             .with_session_code(
                 "transfer_purse_to_account.wasm",
                 runtime_args! { "target" => *ACCOUNT_1_PUBLIC_KEY, "amount" => U512::from(transferred_amount) },
             )
-            .with_address(nonexistent_account)
+            .with_public_key(nonexistent_account)
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => U512::from(payment_purse_amount) })
             .with_authorization_keys(&[nonexistent_account])
             .build();
@@ -59,7 +59,7 @@ fn should_raise_precondition_authorization_failure_empty_authorized_keys() {
     let empty_keys: [PublicKey; 0] = [];
     let exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_session_code("do_nothing.wasm", RuntimeArgs::default())
             .with_empty_payment_bytes(RuntimeArgs::default())
             .with_deploy_hash([1; 32])
@@ -93,7 +93,7 @@ fn should_raise_precondition_authorization_failure_invalid_authorized_keys() {
 
     let exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_deploy_hash([1; 32])
             .with_session_code(
                 "transfer_purse_to_account.wasm",

@@ -127,7 +127,7 @@ fn transfer_wasmless(wasmless_transfer: WasmlessTransfer) {
 
     let no_wasm_transfer_request = {
         let deploy_item = DeployItemBuilder::new()
-            .with_address(*ACCOUNT_1_PUBLIC_KEY)
+            .with_public_key(*ACCOUNT_1_PUBLIC_KEY)
             .with_empty_payment_bytes(runtime_args! {})
             .with_transfer_args(runtime_args)
             .with_authorization_keys(&[*ACCOUNT_1_PUBLIC_KEY])
@@ -456,7 +456,7 @@ fn invalid_transfer_wasmless(invalid_wasmless_transfer: InvalidWasmlessTransfer)
 
     let no_wasm_transfer_request = {
         let deploy_item = DeployItemBuilder::new()
-            .with_address(addr)
+            .with_public_key(addr)
             .with_empty_payment_bytes(runtime_args! {})
             .with_transfer_args(runtime_args)
             .with_authorization_keys(&[addr])
@@ -540,7 +540,7 @@ fn transfer_wasmless_should_create_target_if_it_doesnt_exist() {
 
     let no_wasm_transfer_request = {
         let deploy_item = DeployItemBuilder::new()
-            .with_address(*ACCOUNT_1_PUBLIC_KEY)
+            .with_public_key(*ACCOUNT_1_PUBLIC_KEY)
             .with_empty_payment_bytes(runtime_args! {})
             .with_transfer_args(runtime_args)
             .with_authorization_keys(&[*ACCOUNT_1_PUBLIC_KEY])
@@ -657,7 +657,7 @@ fn transfer_wasmless_should_fail_without_main_purse_minimum_balance() {
 
     let no_wasm_transfer_request_1 = {
         let deploy_item = DeployItemBuilder::new()
-            .with_address(*ACCOUNT_1_PUBLIC_KEY)
+            .with_public_key(*ACCOUNT_1_PUBLIC_KEY)
             .with_empty_payment_bytes(runtime_args! {})
             .with_transfer_args(runtime_args)
             .with_authorization_keys(&[*ACCOUNT_1_PUBLIC_KEY])
@@ -698,7 +698,7 @@ fn transfer_wasmless_should_fail_without_main_purse_minimum_balance() {
 
     let no_wasm_transfer_request_2 = {
         let deploy_item = DeployItemBuilder::new()
-            .with_address(*ACCOUNT_2_PUBLIC_KEY)
+            .with_public_key(*ACCOUNT_2_PUBLIC_KEY)
             .with_empty_payment_bytes(runtime_args! {})
             .with_transfer_args(runtime_args)
             .with_authorization_keys(&[*ACCOUNT_2_PUBLIC_KEY])
@@ -751,7 +751,7 @@ fn transfer_wasmless_should_transfer_funds_after_paying_for_transfer() {
 
     let no_wasm_transfer_request_1 = {
         let deploy_item = DeployItemBuilder::new()
-            .with_address(*ACCOUNT_1_PUBLIC_KEY)
+            .with_public_key(*ACCOUNT_1_PUBLIC_KEY)
             .with_empty_payment_bytes(runtime_args! {})
             .with_transfer_args(runtime_args)
             .with_authorization_keys(&[*ACCOUNT_1_PUBLIC_KEY])
@@ -792,7 +792,7 @@ fn transfer_wasmless_should_transfer_funds_after_paying_for_transfer() {
 
     let no_wasm_transfer_request_2 = {
         let deploy_item = DeployItemBuilder::new()
-            .with_address(*ACCOUNT_2_PUBLIC_KEY)
+            .with_public_key(*ACCOUNT_2_PUBLIC_KEY)
             .with_empty_payment_bytes(runtime_args! {})
             .with_transfer_args(runtime_args)
             .with_authorization_keys(&[*ACCOUNT_2_PUBLIC_KEY])
@@ -846,7 +846,7 @@ fn transfer_wasmless_should_fail_with_secondary_purse_insufficient_funds() {
 
     let no_wasm_transfer_request_1 = {
         let deploy_item = DeployItemBuilder::new()
-            .with_address(*ACCOUNT_1_PUBLIC_KEY)
+            .with_public_key(*ACCOUNT_1_PUBLIC_KEY)
             .with_empty_payment_bytes(runtime_args! {})
             .with_transfer_args(runtime_args)
             .with_authorization_keys(&[*ACCOUNT_1_PUBLIC_KEY])
@@ -907,7 +907,7 @@ fn transfer_wasmless_should_observe_upgraded_cost() {
         };
 
         let deploy_item = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_empty_payment_bytes(runtime_args! {})
             .with_transfer_args(wasmless_transfer_args)
             .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])

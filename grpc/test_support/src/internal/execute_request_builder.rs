@@ -63,7 +63,7 @@ impl ExecuteRequestBuilder {
         let deploy_hash: [u8; 32] = rng.gen();
 
         let deploy = DeployItemBuilder::new()
-            .with_address(public_key)
+            .with_public_key(public_key)
             .with_session_code(session_file, session_args)
             .with_empty_payment_bytes(runtime_args! {
                 ARG_AMOUNT => *DEFAULT_PAYMENT
@@ -85,7 +85,7 @@ impl ExecuteRequestBuilder {
         let deploy_hash = rng.gen();
 
         let deploy = DeployItemBuilder::new()
-            .with_address(sender)
+            .with_public_key(sender)
             .with_stored_session_hash(contract_hash, entry_point, args)
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
             .with_authorization_keys(&[sender])
@@ -107,7 +107,7 @@ impl ExecuteRequestBuilder {
         let deploy_hash = rng.gen();
 
         let deploy = DeployItemBuilder::new()
-            .with_address(sender)
+            .with_public_key(sender)
             .with_stored_versioned_contract_by_name(hash_key_name, version, entry_point_name, args)
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
             .with_authorization_keys(&[sender])
@@ -122,7 +122,7 @@ impl ExecuteRequestBuilder {
         let deploy_hash = rng.gen();
 
         let deploy_item = DeployItemBuilder::new()
-            .with_address(sender)
+            .with_public_key(sender)
             .with_empty_payment_bytes(runtime_args! {})
             .with_transfer_args(transfer_args)
             .with_authorization_keys(&[sender])

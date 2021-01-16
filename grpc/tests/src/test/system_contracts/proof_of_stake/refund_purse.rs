@@ -61,7 +61,7 @@ fn transfer(builder: &mut InMemoryWasmTestBuilder, public_key: PublicKey, amount
 fn refund_tests(builder: &mut InMemoryWasmTestBuilder, public_key: PublicKey) {
     let exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(public_key)
+            .with_public_key(public_key)
             .with_deploy_hash([2; 32])
             .with_session_code("do_nothing.wasm", RuntimeArgs::default())
             .with_payment_code(

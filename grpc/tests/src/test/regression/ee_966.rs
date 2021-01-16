@@ -71,7 +71,7 @@ fn make_session_code_with_memory_pages(initial_pages: u32, max_pages: Option<u32
 
 fn make_request_with_session_bytes(session_code: Vec<u8>) -> ExecuteRequest {
     let deploy = DeployItemBuilder::new()
-        .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+        .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .with_session_bytes(session_code, RuntimeArgs::new())
         .with_empty_payment_bytes(runtime_args! {
             ARG_AMOUNT => *DEFAULT_PAYMENT

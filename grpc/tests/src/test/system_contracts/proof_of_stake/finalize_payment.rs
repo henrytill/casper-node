@@ -124,7 +124,7 @@ fn finalize_payment_should_refund_to_specified_purse() {
         let genesis_account_hash = *DEFAULT_ACCOUNT_PUBLIC_KEY;
 
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_deploy_hash([1; 32])
             .with_session_code("do_nothing.wasm", RuntimeArgs::default())
             .with_payment_code(FINALIZE_PAYMENT, args)

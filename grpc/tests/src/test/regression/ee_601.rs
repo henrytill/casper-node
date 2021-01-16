@@ -18,7 +18,7 @@ fn should_run_ee_601_pay_session_new_uref_collision() {
     let exec_request = {
         let deploy = DeployItemBuilder::new()
             .with_deploy_hash([1; 32])
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_payment_code(
                 "ee_601_regression.wasm",
                 runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT },

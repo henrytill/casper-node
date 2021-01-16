@@ -46,7 +46,7 @@ fn test_check_transfer_success_with_source_only() {
         ARG_AMOUNT => transfer_amount
     };
     let session = SessionBuilder::new(session_code, session_args)
-        .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+        .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
         .with_check_transfer_success(source_only_session_transfer_info)
         .build();
@@ -83,7 +83,7 @@ fn test_check_transfer_success_with_source_only_errors() {
     };
     // Handle expected assertion fail.
     let session = SessionBuilder::new(session_code, session_args)
-        .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+        .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
         .with_check_transfer_success(source_only_session_transfer_info)
         .build();
@@ -117,7 +117,7 @@ fn test_check_transfer_success_with_source_and_target() {
         ARG_AMOUNT => transfer_amount
     };
     let session = SessionBuilder::new(session_code, session_args)
-        .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+        .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
         .with_check_transfer_success(source_and_target_session_transfer_info)
         .build();
@@ -166,7 +166,7 @@ fn test_check_transfer_success_with_target_error() {
         TRANSFER_AMOUNT_TWO => transfer_two_amount,
     };
     let session = SessionBuilder::new(session_code, session_args)
-        .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+        .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
         .with_check_transfer_success(source_only_session_transfer_info)
         .build();
@@ -202,7 +202,7 @@ fn test_check_transfer_success_with_target_error() {
         TRANSFER_AMOUNT_TWO => transfer_two_amount,
     };
     let session = SessionBuilder::new(session_code, session_args)
-        .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+        .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
         .with_check_transfer_success(source_and_target_session_transfer_info)
         .build();

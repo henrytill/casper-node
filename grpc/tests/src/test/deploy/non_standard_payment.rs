@@ -75,7 +75,7 @@ fn should_charge_non_main_purse() {
     // should be able to pay for exec using new purse
     let account_payment_exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*ACCOUNT_1_PUBLIC_KEY)
+            .with_public_key(*ACCOUNT_1_PUBLIC_KEY)
             .with_session_code(DO_NOTHING_WASM, RuntimeArgs::default())
             .with_payment_code(
                 NAMED_PURSE_PAYMENT_WASM,

@@ -23,7 +23,7 @@ fn should_put_system_contract_hashes_to_account_context() {
 
     let request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_session_code(SYSTEM_CONTRACT_HASHES_WASM, runtime_args! {})
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => payment_purse_amount})
             .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])

@@ -13,7 +13,7 @@ use crate::internal::utils;
 
 #[derive(Default)]
 struct DeployItemData {
-    pub address: Option<PublicKey>,
+    pub public_key: Option<PublicKey>,
     pub payment_code: Option<ExecutableDeployItem>,
     pub session_code: Option<ExecutableDeployItem>,
     pub gas_price: u64,
@@ -30,8 +30,8 @@ impl DeployItemBuilder {
         Default::default()
     }
 
-    pub fn with_address(mut self, address: PublicKey) -> Self {
-        self.deploy_item.address = Some(address);
+    pub fn with_public_key(mut self, public_key: PublicKey) -> Self {
+        self.deploy_item.public_key = Some(public_key);
         self
     }
 
@@ -233,7 +233,7 @@ impl DeployItemBuilder {
         DeployItem {
             public_key: self
                 .deploy_item
-                .address
+                .public_key
                 .unwrap_or_else(|| SecretKey::ed25519([0u8; SecretKey::ED25519_LENGTH]).into()),
             session: self
                 .deploy_item

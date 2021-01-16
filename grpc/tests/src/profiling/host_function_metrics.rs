@@ -158,7 +158,7 @@ fn run_test(root_hash: Vec<u8>, repetitions: usize, data_dir: &Path) {
         rng.fill(random_bytes.as_mut_slice());
 
         let deploy = DeployItemBuilder::new()
-            .with_address(account_1_account_hash)
+            .with_public_key(account_1_account_hash)
             .with_deploy_hash(rng.gen())
             .with_session_code(
                 HOST_FUNCTION_METRICS_CONTRACT,

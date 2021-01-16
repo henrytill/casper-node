@@ -38,7 +38,7 @@ fn should_raise_auth_failure_with_invalid_key() {
 
     let exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
             .with_session_code(
                 CONTRACT_AUTHORIZED_KEYS,
@@ -91,7 +91,7 @@ fn should_raise_auth_failure_with_invalid_keys() {
 
     let exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_empty_payment_bytes(
                 runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, },
             )
@@ -213,7 +213,7 @@ fn should_raise_deploy_authorization_failure() {
     }
     let exec_request_6 = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_empty_payment_bytes(
                 runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, },
             )
@@ -263,7 +263,7 @@ fn should_raise_deploy_authorization_failure() {
 
     let exec_request_8 = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
             // change deployment threshold to 4
             .with_session_code(
@@ -375,7 +375,7 @@ fn should_not_authorize_deploy_with_duplicated_keys() {
 
     let exec_request_3 = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_PUBLIC_KEY)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
             .with_session_code(
                 "authorized_keys.wasm",

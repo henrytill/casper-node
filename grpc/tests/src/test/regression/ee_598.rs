@@ -56,7 +56,7 @@ fn should_fail_unbonding_more_than_it_was_staked_ee_598_regression() {
     .build();
     let exec_request_2 = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*ACCOUNT_1_PUBLIC_KEY)
+            .with_public_key(*ACCOUNT_1_PUBLIC_KEY)
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *ACCOUNT_1_FUND })
             .with_session_code(
                 "ee_598_regression.wasm",
