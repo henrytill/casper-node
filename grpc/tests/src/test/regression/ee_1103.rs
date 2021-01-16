@@ -6,9 +6,8 @@ use casper_engine_test_support::{
 };
 use casper_execution_engine::{core::engine_state::GenesisAccount, shared::motes::Motes};
 use casper_types::{
-    account::AccountHash,
     auction::{ARG_DELEGATOR, ARG_VALIDATOR},
-    runtime_args, PublicKey, RuntimeArgs, SecretKey, U512,
+    runtime_args, PublicKey, RuntimeArgs, SecretKey, SYSTEM_ACCOUNT, U512,
 };
 
 const ARG_TARGET: &str = "target";
@@ -17,7 +16,6 @@ const ARG_AMOUNT: &str = "amount";
 const CONTRACT_TRANSFER_TO_ACCOUNT: &str = "transfer_to_account_u512.wasm";
 const CONTRACT_DELEGATE: &str = "delegate.wasm";
 const TRANSFER_AMOUNT: u64 = MINIMUM_ACCOUNT_CREATION_BALANCE;
-const SYSTEM_ADDR: AccountHash = AccountHash::new([0u8; 32]);
 
 static FAUCET: Lazy<PublicKey> =
     Lazy::new(|| SecretKey::ed25519([1; SecretKey::ED25519_LENGTH]).into());
@@ -87,7 +85,7 @@ fn validator_scores_should_reflect_delegates() {
         *FAUCET,
         CONTRACT_TRANSFER_TO_ACCOUNT,
         runtime_args! {
-            ARG_TARGET => SYSTEM_ADDR,
+            ARG_TARGET => SYSTEM_ACCOUNT,
             ARG_AMOUNT => U512::from(TRANSFER_AMOUNT)
         },
     )

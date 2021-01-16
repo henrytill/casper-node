@@ -15,7 +15,6 @@ use casper_types::{
 const ARG_AMOUNT: &str = "amount";
 const ARG_PUBLIC_KEY: &str = "public_key";
 const ARG_ENTRY_POINT: &str = "entry_point";
-const ARG_ACCOUNT_HASH: &str = "account_hash";
 
 const CONTRACT_AUCTION_BIDDING: &str = "auction_bidding.wasm";
 
@@ -50,7 +49,7 @@ fn should_fail_unbonding_more_than_it_was_staked_ee_598_regression() {
         CONTRACT_AUCTION_BIDDING,
         runtime_args! {
             ARG_ENTRY_POINT => "seed_new_account",
-            ARG_ACCOUNT_HASH => *ACCOUNT_1_PUBLIC_KEY,
+            ARG_PUBLIC_KEY => *ACCOUNT_1_PUBLIC_KEY,
             ARG_AMOUNT => *ACCOUNT_1_BALANCE,
         },
     )

@@ -8,8 +8,8 @@ use alloc::string::ToString;
 
 use casper_contract::contract_api::{runtime, storage};
 use casper_types::{
-    account::AccountHash, CLType, CLTyped, ContractHash, ContractVersion, EntryPoint,
-    EntryPointAccess, EntryPointType, EntryPoints, Parameter, PublicKey,
+    CLType, CLTyped, ContractHash, ContractVersion, EntryPoint, EntryPointAccess, EntryPointType,
+    EntryPoints, Parameter, PublicKey,
 };
 
 const CONTRACT_NAME: &str = "transfer_to_account";

@@ -11,9 +11,7 @@ use casper_contract::{
     unwrap_or_revert::UnwrapOrRevert,
 };
 
-use casper_types::{
-    auction, runtime_args, ApiError, ContractHash, PublicKey, RuntimeArgs, URef, U512,
-};
+use casper_types::{auction, runtime_args, ApiError, PublicKey, RuntimeArgs, U512};
 
 const ARG_AMOUNT: &str = "amount";
 const ARG_ENTRY_POINT: &str = "entry_point";
@@ -39,25 +37,15 @@ pub extern "C" fn call() {
 }
 
 fn bond_from_main_purse() {
-    let auction_contract_hash = system::get_auction();
-    let amount = runtime::get_named_arg(ARG_AMOUNT);
-    let public_key = runtime::get_named_arg(ARG_PUBLIC_KEY);
-    call_bond(
-        auction_contract_hash,
-        public_key,
-        amount,
-        account::get_main_purse(),
-    );
-}
-
-fn call_bond(auction: ContractHash, public_key: PublicKey, bond_amount: U512, bonding_purse: URef) {
+    let auction = system::get_auction();
+    let bond_amount: U512 = runtime::get_named_arg(ARG_AMOUNT);
+    let public_key: PublicKey = runtime::get_named_arg(ARG_PUBLIC_KEY);
     let args = runtime_args! {
         auction::ARG_PUBLIC_KEY => public_key,
-        auction::ARG_SOURCE_PURSE => bonding_purse,
+        auction::ARG_SOURCE_PURSE => account::get_main_purse(),
         auction::ARG_DELEGATION_RATE => DelegationRate::from(42u8),
         auction::ARG_AMOUNT => bond_amount,
     };
-
     let _amount: U512 = runtime::call_contract(auction, METHOD_ADD_BID, args);
 }
 

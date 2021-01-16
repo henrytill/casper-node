@@ -11,7 +11,6 @@ use casper_contract::{
     unwrap_or_revert::UnwrapOrRevert,
 };
 use casper_types::{
-    account::AccountHash,
     auction::{
         Auction, DelegationRate, EraId, EraInfo, MintProvider, RuntimeProvider,
         SeigniorageRecipients, StorageProvider, SystemProvider, ValidatorWeights, ARG_AMOUNT,

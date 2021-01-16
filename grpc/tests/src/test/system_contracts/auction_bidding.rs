@@ -42,7 +42,6 @@ const TEST_SEED_NEW_ACCOUNT: &str = "seed_new_account";
 const ARG_AMOUNT: &str = "amount";
 const ARG_PUBLIC_KEY: &str = "public_key";
 const ARG_ENTRY_POINT: &str = "entry_point";
-const ARG_ACCOUNT: &str = "account";
 const ARG_RUN_AUCTION: &str = "run_auction";
 const ARG_DELEGATION_RATE: &str = "delegation_rate";
 const ARG_PURSE_NAME: &str = "purse_name";
@@ -226,7 +225,7 @@ fn should_fail_bonding_with_insufficient_funds() {
         CONTRACT_AUCTION_BIDDING,
         runtime_args! {
             ARG_ENTRY_POINT => TEST_SEED_NEW_ACCOUNT,
-            ARG_ACCOUNT => account_1_public_key,
+            ARG_PUBLIC_KEY => account_1_public_key,
             ARG_AMOUNT => *DEFAULT_PAYMENT + GENESIS_ACCOUNT_STAKE,
         },
     )
