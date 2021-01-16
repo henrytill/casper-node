@@ -1,23 +1,27 @@
+use once_cell::sync::Lazy;
+
 use casper_engine_test_support::{
     internal::{ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_RUN_GENESIS_REQUEST},
-    DEFAULT_ACCOUNT_ADDR,
+    DEFAULT_ACCOUNT_PUBLIC_KEY,
 };
-use casper_types::{account::AccountHash, runtime_args, ApiError, RuntimeArgs, U512};
+use casper_types::{runtime_args, ApiError, PublicKey, RuntimeArgs, SecretKey, U512};
 
 const FAUCET_CONTRACT: &str = "faucet.wasm";
-const NEW_ACCOUNT_ADDR: AccountHash = AccountHash::new([99u8; 32]);
 
 const ARG_TARGET: &str = "target";
 const ARG_AMOUNT: &str = "amount";
+
+static NEW_ACCOUNT_PUBLIC_KEY: Lazy<PublicKey> =
+    Lazy::new(|| SecretKey::ed25519([99u8; SecretKey::ED25519_LENGTH]).into());
 
 #[ignore]
 #[test]
 fn should_get_funds_from_faucet() {
     let amount = U512::from(1000);
     let exec_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         FAUCET_CONTRACT,
-        runtime_args! { ARG_TARGET => NEW_ACCOUNT_ADDR, ARG_AMOUNT => amount },
+        runtime_args! { ARG_TARGET => *NEW_ACCOUNT_PUBLIC_KEY, ARG_AMOUNT => amount },
     )
     .build();
 
@@ -29,7 +33,7 @@ fn should_get_funds_from_faucet() {
         .commit();
 
     let account = builder
-        .get_account(NEW_ACCOUNT_ADDR)
+        .get_account(*NEW_ACCOUNT_PUBLIC_KEY)
         .expect("should get account");
 
     let account_purse = account.main_purse();
@@ -45,15 +49,15 @@ fn should_get_funds_from_faucet() {
 fn should_fail_if_already_funded() {
     let amount = U512::from(1000);
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         FAUCET_CONTRACT,
-        runtime_args! { ARG_TARGET => NEW_ACCOUNT_ADDR, ARG_AMOUNT => amount },
+        runtime_args! { ARG_TARGET => *NEW_ACCOUNT_PUBLIC_KEY, ARG_AMOUNT => amount },
     )
     .build();
     let exec_request_2 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         FAUCET_CONTRACT,
-        runtime_args! { ARG_TARGET => NEW_ACCOUNT_ADDR, ARG_AMOUNT => amount },
+        runtime_args! { ARG_TARGET => *NEW_ACCOUNT_PUBLIC_KEY, ARG_AMOUNT => amount },
     )
     .build();
 

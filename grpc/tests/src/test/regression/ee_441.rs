@@ -1,9 +1,6 @@
-use casper_engine_test_support::{
-    internal::{
-        DeployItemBuilder, ExecuteRequestBuilder, InMemoryWasmTestBuilder, ARG_AMOUNT,
-        DEFAULT_PAYMENT, DEFAULT_RUN_GENESIS_REQUEST,
-    },
-    DEFAULT_ACCOUNT_ADDR,
+use casper_engine_test_support::internal::{
+    DeployItemBuilder, ExecuteRequestBuilder, InMemoryWasmTestBuilder, ARG_AMOUNT,
+    DEFAULT_ACCOUNT_PUBLIC_KEY, DEFAULT_PAYMENT, DEFAULT_RUN_GENESIS_REQUEST,
 };
 use casper_types::{runtime_args, Key, RuntimeArgs, URef};
 
@@ -21,7 +18,7 @@ fn do_pass(pass: &str) -> (URef, URef) {
     // more data
     let exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_ADDR)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
             .with_session_code(
                 EE_441_RNG_STATE,
@@ -30,7 +27,7 @@ fn do_pass(pass: &str) -> (URef, URef) {
                 },
             )
             .with_deploy_hash([1u8; 32])
-            .with_authorization_keys(&[*DEFAULT_ACCOUNT_ADDR])
+            .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
             .build();
         ExecuteRequestBuilder::from_deploy_item(deploy).build()
     };
@@ -43,7 +40,7 @@ fn do_pass(pass: &str) -> (URef, URef) {
         .commit();
 
     let account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     (

@@ -3,7 +3,7 @@ use casper_engine_test_support::{
         DeployItemBuilder, ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_PAYMENT,
         DEFAULT_RUN_GENESIS_REQUEST,
     },
-    DEFAULT_ACCOUNT_ADDR,
+    DEFAULT_ACCOUNT_PUBLIC_KEY,
 };
 use casper_types::{runtime_args, Phase, RuntimeArgs};
 
@@ -13,11 +13,11 @@ const ARG_AMOUNT: &str = "amount";
 #[ignore]
 #[test]
 fn should_run_get_phase_contract() {
-    let default_account = *DEFAULT_ACCOUNT_ADDR;
+    let default_account = *DEFAULT_ACCOUNT_PUBLIC_KEY;
 
     let exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_ADDR)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_deploy_hash([1; 32])
             .with_session_code(
                 "get_phase.wasm",

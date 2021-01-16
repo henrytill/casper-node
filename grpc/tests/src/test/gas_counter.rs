@@ -9,7 +9,7 @@ use casper_engine_test_support::{
         DeployItemBuilder, ExecuteRequestBuilder, InMemoryWasmTestBuilder, ARG_AMOUNT,
         DEFAULT_PAYMENT, DEFAULT_RUN_GENESIS_REQUEST, DEFAULT_WASM_CONFIG,
     },
-    DEFAULT_ACCOUNT_ADDR,
+    DEFAULT_ACCOUNT_PUBLIC_KEY,
 };
 use casper_execution_engine::{
     core::engine_state::Error,
@@ -105,12 +105,12 @@ fn should_fail_to_overflow_gas_counter() {
 
     let exec_request = {
         let deploy_item = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_ADDR)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_session_bytes(session_bytes, RuntimeArgs::default())
             .with_empty_payment_bytes(runtime_args! {
                 ARG_AMOUNT => *DEFAULT_PAYMENT
             })
-            .with_authorization_keys(&[*DEFAULT_ACCOUNT_ADDR])
+            .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
             .with_deploy_hash([42; 32])
             .build();
         ExecuteRequestBuilder::from_deploy_item(deploy_item).build()
@@ -215,12 +215,12 @@ fn should_correctly_measure_gas_for_opcodes() {
         let do_nothing_bytes = make_minimal_do_nothing();
 
         let deploy_item = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_ADDR)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_session_bytes(do_nothing_bytes, RuntimeArgs::default())
             .with_empty_payment_bytes(runtime_args! {
                 ARG_AMOUNT => *DEFAULT_PAYMENT
             })
-            .with_authorization_keys(&[*DEFAULT_ACCOUNT_ADDR])
+            .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
             .with_deploy_hash([43; 32])
             .build();
         ExecuteRequestBuilder::from_deploy_item(deploy_item).build()
@@ -238,12 +238,12 @@ fn should_correctly_measure_gas_for_opcodes() {
 
     let exec_request = {
         let deploy_item = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_ADDR)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_session_bytes(session_bytes, RuntimeArgs::default())
             .with_empty_payment_bytes(runtime_args! {
                 ARG_AMOUNT => *DEFAULT_PAYMENT
             })
-            .with_authorization_keys(&[*DEFAULT_ACCOUNT_ADDR])
+            .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
             .with_deploy_hash([42; 32])
             .build();
         ExecuteRequestBuilder::from_deploy_item(deploy_item).build()

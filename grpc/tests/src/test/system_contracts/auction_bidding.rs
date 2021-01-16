@@ -6,7 +6,7 @@ use casper_engine_test_support::{
         DEFAULT_ACCOUNTS, DEFAULT_ACCOUNT_PUBLIC_KEY, DEFAULT_PAYMENT, DEFAULT_PROTOCOL_VERSION,
         DEFAULT_RUN_GENESIS_REQUEST, DEFAULT_UNBONDING_DELAY,
     },
-    DEFAULT_ACCOUNT_ADDR, MINIMUM_ACCOUNT_CREATION_BALANCE,
+    MINIMUM_ACCOUNT_CREATION_BALANCE,
 };
 use casper_execution_engine::{
     core::{
@@ -16,14 +16,13 @@ use casper_execution_engine::{
     shared::motes::Motes,
 };
 use casper_types::{
-    account::AccountHash,
     auction::{
         Bids, DelegationRate, EraId, UnbondingPurses, ARG_UNBOND_PURSE, ARG_VALIDATOR_PUBLIC_KEYS,
         BIDS_KEY, INITIAL_ERA_ID, METHOD_RUN_AUCTION, METHOD_SLASH, UNBONDING_PURSES_KEY,
     },
     runtime_args,
     system_contract_errors::auction,
-    ApiError, ProtocolVersion, PublicKey, RuntimeArgs, SecretKey, URef, U512,
+    ApiError, ProtocolVersion, PublicKey, RuntimeArgs, SecretKey, URef, SYSTEM_ACCOUNT, U512,
 };
 
 const CONTRACT_TRANSFER_TO_ACCOUNT: &str = "transfer_to_account_u512.wasm";
@@ -43,12 +42,10 @@ const TEST_SEED_NEW_ACCOUNT: &str = "seed_new_account";
 const ARG_AMOUNT: &str = "amount";
 const ARG_PUBLIC_KEY: &str = "public_key";
 const ARG_ENTRY_POINT: &str = "entry_point";
-const ARG_ACCOUNT_HASH: &str = "account_hash";
 const ARG_RUN_AUCTION: &str = "run_auction";
 const ARG_DELEGATION_RATE: &str = "delegation_rate";
 const ARG_PURSE_NAME: &str = "purse_name";
 
-const SYSTEM_ADDR: AccountHash = AccountHash::new([0u8; 32]);
 const UNBONDING_PURSE_NAME: &str = "unbonding_purse";
 
 #[ignore]
@@ -59,10 +56,10 @@ fn should_run_successful_bond_and_unbond_and_slashing() {
     builder.run_genesis(&DEFAULT_RUN_GENESIS_REQUEST);
 
     let exec_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
         runtime_args! {
-            "target" => SYSTEM_ADDR,
+            "target" => SYSTEM_ACCOUNT,
             "amount" => U512::from(TRANSFER_AMOUNT)
         },
     )
@@ -71,13 +68,13 @@ fn should_run_successful_bond_and_unbond_and_slashing() {
     builder.exec(exec_request).expect_success().commit();
 
     let _default_account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should get account 1");
 
     let auction = builder.get_auction_contract_hash();
 
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_ADD_BID,
         runtime_args! {
             ARG_AMOUNT => U512::from(GENESIS_ACCOUNT_STAKE),
@@ -109,7 +106,7 @@ fn should_run_successful_bond_and_unbond_and_slashing() {
     let unbond_amount = U512::from(GENESIS_ACCOUNT_STAKE) - 1;
 
     let exec_request_2 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_CREATE_PURSE_01,
         runtime_args! {
             ARG_PURSE_NAME => UNBONDING_PURSE_NAME,
@@ -119,7 +116,7 @@ fn should_run_successful_bond_and_unbond_and_slashing() {
 
     builder.exec(exec_request_2).expect_success().commit();
     let unbonding_purse = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have default account")
         .named_keys()
         .get(UNBONDING_PURSE_NAME)
@@ -128,7 +125,7 @@ fn should_run_successful_bond_and_unbond_and_slashing() {
         .expect("unbonding purse should be an uref");
 
     let exec_request_3 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_WITHDRAW_BID,
         runtime_args! {
             ARG_AMOUNT => unbond_amount,
@@ -162,7 +159,7 @@ fn should_run_successful_bond_and_unbond_and_slashing() {
     let unbond_era_1 = unbond_list[0].era_of_creation();
 
     let exec_request_3 = ExecuteRequestBuilder::contract_call_by_hash(
-        SYSTEM_ADDR,
+        SYSTEM_ACCOUNT,
         auction,
         METHOD_RUN_AUCTION,
         runtime_args! {},
@@ -194,7 +191,7 @@ fn should_run_successful_bond_and_unbond_and_slashing() {
     assert_eq!(unbond_era_2, unbond_era_1);
 
     let exec_request_4 = ExecuteRequestBuilder::contract_call_by_hash(
-        SYSTEM_ADDR,
+        SYSTEM_ACCOUNT,
         auction,
         METHOD_SLASH,
         runtime_args! {
@@ -222,20 +219,19 @@ fn should_run_successful_bond_and_unbond_and_slashing() {
 fn should_fail_bonding_with_insufficient_funds() {
     let account_1_public_key: PublicKey =
         SecretKey::ed25519([123; SecretKey::ED25519_LENGTH]).into();
-    let account_1_hash = AccountHash::from(&account_1_public_key);
 
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_AUCTION_BIDDING,
         runtime_args! {
             ARG_ENTRY_POINT => TEST_SEED_NEW_ACCOUNT,
-            ARG_ACCOUNT_HASH => account_1_hash,
+            ARG_PUBLIC_KEY => account_1_public_key,
             ARG_AMOUNT => *DEFAULT_PAYMENT + GENESIS_ACCOUNT_STAKE,
         },
     )
     .build();
     let exec_request_2 = ExecuteRequestBuilder::standard(
-        account_1_hash,
+        account_1_public_key,
         CONTRACT_AUCTION_BIDDING,
         runtime_args! {
             ARG_ENTRY_POINT => TEST_BOND_FROM_MAIN_PURSE,
@@ -270,14 +266,12 @@ fn should_fail_bonding_with_insufficient_funds() {
 fn should_fail_unbonding_validator_with_locked_funds() {
     let account_1_public_key: PublicKey =
         SecretKey::ed25519([42; SecretKey::ED25519_LENGTH]).into();
-    let account_1_hash = AccountHash::from(&account_1_public_key);
     let account_1_balance = U512::from(MINIMUM_ACCOUNT_CREATION_BALANCE);
 
     let accounts = {
         let mut tmp: Vec<GenesisAccount> = DEFAULT_ACCOUNTS.clone();
         let account = GenesisAccount::new(
             account_1_public_key,
-            account_1_hash,
             Motes::new(account_1_balance),
             Motes::new(GENESIS_VALIDATOR_STAKE.into()),
         );
@@ -288,7 +282,7 @@ fn should_fail_unbonding_validator_with_locked_funds() {
     let run_genesis_request = utils::create_run_genesis_request(accounts);
 
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_CREATE_PURSE_01,
         runtime_args! {
             ARG_PURSE_NAME => UNBONDING_PURSE_NAME,
@@ -303,7 +297,7 @@ fn should_fail_unbonding_validator_with_locked_funds() {
     builder.exec(exec_request_1).expect_success().commit();
 
     let unbonding_purse = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have default account")
         .named_keys()
         .get(UNBONDING_PURSE_NAME)
@@ -312,7 +306,7 @@ fn should_fail_unbonding_validator_with_locked_funds() {
         .expect("unbonding purse should be an uref");
 
     let exec_request_2 = ExecuteRequestBuilder::standard(
-        account_1_hash,
+        account_1_public_key,
         CONTRACT_WITHDRAW_BID,
         runtime_args! {
             ARG_AMOUNT => U512::from(42),
@@ -346,7 +340,7 @@ fn should_fail_unbonding_validator_with_locked_funds() {
 #[test]
 fn should_fail_unbonding_validator_without_bonding_first() {
     let exec_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_WITHDRAW_BID,
         runtime_args! {
             ARG_AMOUNT => U512::from(42),
@@ -388,7 +382,7 @@ fn should_run_successful_bond_and_unbond_with_release() {
     builder.run_genesis(&DEFAULT_RUN_GENESIS_REQUEST);
 
     let create_purse_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_CREATE_PURSE_01,
         runtime_args! {
             ARG_PURSE_NAME => UNBONDING_PURSE_NAME,
@@ -401,7 +395,7 @@ fn should_run_successful_bond_and_unbond_with_release() {
         .expect_success()
         .commit();
     let unbonding_purse = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have default account")
         .named_keys()
         .get(UNBONDING_PURSE_NAME)
@@ -410,10 +404,10 @@ fn should_run_successful_bond_and_unbond_with_release() {
         .expect("unbonding purse should be an uref");
 
     let exec_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
         runtime_args! {
-            "target" => SYSTEM_ADDR,
+            "target" => SYSTEM_ACCOUNT,
             "amount" => U512::from(TRANSFER_AMOUNT)
         },
     )
@@ -422,13 +416,13 @@ fn should_run_successful_bond_and_unbond_with_release() {
     builder.exec(exec_request).expect_success().commit();
 
     let _default_account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should get account 1");
 
     let auction = builder.get_auction_contract_hash();
 
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_ADD_BID,
         runtime_args! {
             ARG_AMOUNT => U512::from(GENESIS_ACCOUNT_STAKE),
@@ -455,7 +449,7 @@ fn should_run_successful_bond_and_unbond_with_release() {
     // Advance era by calling run_auction
     //
     let run_auction_request_1 = ExecuteRequestBuilder::standard(
-        SYSTEM_ADDR,
+        SYSTEM_ACCOUNT,
         CONTRACT_AUCTION_BIDS,
         runtime_args! {
             ARG_ENTRY_POINT => ARG_RUN_AUCTION,
@@ -475,7 +469,7 @@ fn should_run_successful_bond_and_unbond_with_release() {
     let unbond_amount = U512::from(GENESIS_ACCOUNT_STAKE) - 1;
 
     let exec_request_2 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_WITHDRAW_BID,
         runtime_args! {
             ARG_AMOUNT => unbond_amount,
@@ -509,7 +503,7 @@ fn should_run_successful_bond_and_unbond_with_release() {
     let unbond_era_1 = unbond_list[0].era_of_creation();
 
     let exec_request_3 = ExecuteRequestBuilder::contract_call_by_hash(
-        SYSTEM_ADDR,
+        SYSTEM_ACCOUNT,
         auction,
         METHOD_RUN_AUCTION,
         runtime_args! {},
@@ -546,7 +540,7 @@ fn should_run_successful_bond_and_unbond_with_release() {
 
     for _ in 0..DEFAULT_UNBONDING_DELAY {
         let run_auction_request_1 = ExecuteRequestBuilder::standard(
-            SYSTEM_ADDR,
+            SYSTEM_ACCOUNT,
             CONTRACT_AUCTION_BIDS,
             runtime_args! {
                 ARG_ENTRY_POINT => ARG_RUN_AUCTION,
@@ -563,7 +557,7 @@ fn should_run_successful_bond_and_unbond_with_release() {
     // Should pay out
 
     let exec_request_4 = ExecuteRequestBuilder::contract_call_by_hash(
-        SYSTEM_ADDR,
+        SYSTEM_ACCOUNT,
         auction,
         METHOD_RUN_AUCTION,
         runtime_args! {},
@@ -619,7 +613,7 @@ fn should_run_successful_unbond_funds_after_changing_unbonding_delay() {
     builder.upgrade_with_upgrade_request(&mut upgrade_request);
 
     let create_purse_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_CREATE_PURSE_01,
         runtime_args! {
             ARG_PURSE_NAME => UNBONDING_PURSE_NAME,
@@ -633,7 +627,7 @@ fn should_run_successful_unbond_funds_after_changing_unbonding_delay() {
         .expect_success()
         .commit();
     let unbonding_purse = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have default account")
         .named_keys()
         .get(UNBONDING_PURSE_NAME)
@@ -642,10 +636,10 @@ fn should_run_successful_unbond_funds_after_changing_unbonding_delay() {
         .expect("unbonding purse should be an uref");
 
     let exec_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_TO_ACCOUNT,
         runtime_args! {
-            "target" => SYSTEM_ADDR,
+            "target" => SYSTEM_ACCOUNT,
             "amount" => U512::from(TRANSFER_AMOUNT)
         },
     )
@@ -655,13 +649,13 @@ fn should_run_successful_unbond_funds_after_changing_unbonding_delay() {
     builder.exec(exec_request).expect_success().commit();
 
     let _default_account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should get account 1");
 
     let auction = builder.get_auction_contract_hash();
 
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_ADD_BID,
         runtime_args! {
             ARG_AMOUNT => U512::from(GENESIS_ACCOUNT_STAKE),
@@ -689,7 +683,7 @@ fn should_run_successful_unbond_funds_after_changing_unbonding_delay() {
     // Advance era by calling run_auction
     //
     let run_auction_request_1 = ExecuteRequestBuilder::standard(
-        SYSTEM_ADDR,
+        SYSTEM_ACCOUNT,
         CONTRACT_AUCTION_BIDS,
         runtime_args! {
             ARG_ENTRY_POINT => ARG_RUN_AUCTION,
@@ -710,7 +704,7 @@ fn should_run_successful_unbond_funds_after_changing_unbonding_delay() {
     let unbond_amount = U512::from(GENESIS_ACCOUNT_STAKE) - 1;
 
     let exec_request_2 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_WITHDRAW_BID,
         runtime_args! {
             ARG_AMOUNT => unbond_amount,
@@ -745,7 +739,7 @@ fn should_run_successful_unbond_funds_after_changing_unbonding_delay() {
     let unbond_era_1 = unbond_list[0].era_of_creation();
 
     let exec_request_3 = ExecuteRequestBuilder::contract_call_by_hash(
-        SYSTEM_ADDR,
+        SYSTEM_ACCOUNT,
         auction,
         METHOD_RUN_AUCTION,
         runtime_args! {},
@@ -783,7 +777,7 @@ fn should_run_successful_unbond_funds_after_changing_unbonding_delay() {
 
     for _ in 0..DEFAULT_UNBONDING_DELAY {
         let run_auction_request = ExecuteRequestBuilder::standard(
-            SYSTEM_ADDR,
+            SYSTEM_ACCOUNT,
             CONTRACT_AUCTION_BIDS,
             runtime_args! {
                 ARG_ENTRY_POINT => ARG_RUN_AUCTION,
@@ -797,7 +791,7 @@ fn should_run_successful_unbond_funds_after_changing_unbonding_delay() {
 
     // Won't pay out (yet) as we increased unbonding period
     let run_auction_request_1 = ExecuteRequestBuilder::contract_call_by_hash(
-        SYSTEM_ADDR,
+        SYSTEM_ACCOUNT,
         auction,
         METHOD_RUN_AUCTION,
         runtime_args! {},
@@ -820,7 +814,7 @@ fn should_run_successful_unbond_funds_after_changing_unbonding_delay() {
     // -1 below is the extra run auction above in `run_auction_request_1`
     for _ in 0..new_unbonding_delay - DEFAULT_UNBONDING_DELAY - 1 {
         let run_auction_request = ExecuteRequestBuilder::contract_call_by_hash(
-            SYSTEM_ADDR,
+            SYSTEM_ACCOUNT,
             auction,
             METHOD_RUN_AUCTION,
             runtime_args! {},

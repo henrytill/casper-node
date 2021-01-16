@@ -346,17 +346,17 @@ impl Drop for ClientPool {
 }
 
 fn new_execute_request(args: &Args) -> ExecuteRequest {
-    let account_1_addr = profiling::account_1_account_hash();
-    let transfer_args = runtime_args! { ARG_TARGET => profiling::account_2_account_hash(), ARG_AMOUNT => U512::one() };
+    let account_1_addr = profiling::account_1_public_key();
+    let transfer_args = runtime_args! { ARG_TARGET => profiling::account_2_public_key(), ARG_AMOUNT => U512::one() };
     let deploy_item = match args.transfer_mode {
         TransferMode::WASM => DeployItemBuilder::new()
-            .with_address(account_1_addr)
+            .with_public_key(account_1_addr)
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT })
             .with_session_code(CONTRACT_NAME, transfer_args)
             .with_authorization_keys(&[account_1_addr])
             .build(),
         TransferMode::WASMLESS => DeployItemBuilder::new()
-            .with_address(account_1_addr)
+            .with_public_key(account_1_addr)
             .with_empty_payment_bytes(runtime_args! {})
             .with_transfer_args(transfer_args)
             .with_authorization_keys(&[account_1_addr])

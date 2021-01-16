@@ -1,17 +1,22 @@
 use std::convert::TryInto;
 
+use once_cell::sync::Lazy;
+
 use casper_engine_test_support::{
     internal::{
         utils, DeployItemBuilder, ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_PAYMENT,
         DEFAULT_RUN_GENESIS_REQUEST,
     },
-    DEFAULT_ACCOUNT_ADDR, MINIMUM_ACCOUNT_CREATION_BALANCE,
+    DEFAULT_ACCOUNT_PUBLIC_KEY, MINIMUM_ACCOUNT_CREATION_BALANCE,
 };
 use casper_execution_engine::{
     core::engine_state::{genesis::POS_PAYMENT_PURSE, CONV_RATE},
     shared::{account::Account, motes::Motes},
 };
-use casper_types::{account::AccountHash, runtime_args, Key, RuntimeArgs, URef, U512};
+use casper_types::{
+    account::AccountHash, runtime_args, Key, PublicKey, RuntimeArgs, SecretKey, URef,
+    SYSTEM_ACCOUNT, U512,
+};
 
 const CONTRACT_FINALIZE_PAYMENT: &str = "pos_finalize_payment.wasm";
 const CONTRACT_TRANSFER_PURSE_TO_ACCOUNT: &str = "transfer_purse_to_account.wasm";
@@ -19,28 +24,29 @@ const FINALIZE_PAYMENT: &str = "pos_finalize_payment.wasm";
 const LOCAL_REFUND_PURSE: &str = "local_refund_purse";
 const POS_REFUND_PURSE_NAME: &str = "pos_refund_purse";
 
-const SYSTEM_ADDR: AccountHash = AccountHash::new([0u8; 32]);
-const ACCOUNT_ADDR: AccountHash = AccountHash::new([1u8; 32]);
 pub const ARG_AMOUNT: &str = "amount";
 pub const ARG_AMOUNT_SPENT: &str = "amount_spent";
 pub const ARG_REFUND_FLAG: &str = "refund";
 pub const ARG_ACCOUNT_KEY: &str = "account";
 pub const ARG_TARGET: &str = "target";
 
+static ACCOUNT_PUBLIC_KEY: Lazy<PublicKey> =
+    Lazy::new(|| SecretKey::ed25519([1u8; SecretKey::ED25519_LENGTH]).into());
+
 fn initialize() -> InMemoryWasmTestBuilder {
     let mut builder = InMemoryWasmTestBuilder::default();
 
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_PURSE_TO_ACCOUNT,
-        runtime_args! { ARG_TARGET => SYSTEM_ADDR, ARG_AMOUNT => U512::from(MINIMUM_ACCOUNT_CREATION_BALANCE) },
+        runtime_args! { ARG_TARGET => SYSTEM_ACCOUNT, ARG_AMOUNT => U512::from(MINIMUM_ACCOUNT_CREATION_BALANCE) },
     )
     .build();
 
     let exec_request_2 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_PURSE_TO_ACCOUNT,
-        runtime_args! { ARG_TARGET => ACCOUNT_ADDR, ARG_AMOUNT => U512::from(MINIMUM_ACCOUNT_CREATION_BALANCE) },
+        runtime_args! { ARG_TARGET => *ACCOUNT_PUBLIC_KEY, ARG_AMOUNT => U512::from(MINIMUM_ACCOUNT_CREATION_BALANCE) },
     )
     .build();
 
@@ -64,17 +70,18 @@ fn finalize_payment_should_not_be_run_by_non_system_accounts() {
         ARG_AMOUNT => payment_amount,
         ARG_REFUND_FLAG => refund_purse,
         ARG_AMOUNT_SPENT => Some(spent_amount),
-        ARG_ACCOUNT_KEY => Some(ACCOUNT_ADDR),
+        ARG_ACCOUNT_KEY => Some(*ACCOUNT_PUBLIC_KEY),
     };
 
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_FINALIZE_PAYMENT,
         args.clone(),
     )
     .build();
     let exec_request_2 =
-        ExecuteRequestBuilder::standard(ACCOUNT_ADDR, CONTRACT_FINALIZE_PAYMENT, args).build();
+        ExecuteRequestBuilder::standard(*ACCOUNT_PUBLIC_KEY, CONTRACT_FINALIZE_PAYMENT, args)
+            .build();
 
     assert!(builder.exec(exec_request_1).is_error());
 
@@ -101,7 +108,7 @@ fn finalize_payment_should_refund_to_specified_purse() {
     let rewards_pre_balance = builder.get_proposer_purse_balance();
     let payment_pre_balance = get_pos_payment_purse_balance(&builder);
     let refund_pre_balance =
-        get_named_account_balance(&builder, *DEFAULT_ACCOUNT_ADDR, LOCAL_REFUND_PURSE)
+        get_named_account_balance(&builder, *DEFAULT_ACCOUNT_PUBLIC_KEY, LOCAL_REFUND_PURSE)
             .unwrap_or_else(U512::zero);
 
     assert!(
@@ -114,10 +121,10 @@ fn finalize_payment_should_refund_to_specified_purse() {
     );
 
     let exec_request = {
-        let genesis_account_hash = *DEFAULT_ACCOUNT_ADDR;
+        let genesis_account_hash = *DEFAULT_ACCOUNT_PUBLIC_KEY;
 
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_ADDR)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_deploy_hash([1; 32])
             .with_session_code("do_nothing.wasm", RuntimeArgs::default())
             .with_payment_code(FINALIZE_PAYMENT, args)
@@ -142,7 +149,7 @@ fn finalize_payment_should_refund_to_specified_purse() {
     let payment_post_balance = get_pos_payment_purse_balance(&builder);
     let rewards_post_balance = builder.get_proposer_purse_balance();
     let refund_post_balance =
-        get_named_account_balance(&builder, *DEFAULT_ACCOUNT_ADDR, LOCAL_REFUND_PURSE)
+        get_named_account_balance(&builder, *DEFAULT_ACCOUNT_PUBLIC_KEY, LOCAL_REFUND_PURSE)
             .expect("should have refund balance");
     let expected_amount = rewards_pre_balance + spent_amount;
     assert_eq!(
@@ -195,10 +202,10 @@ fn get_pos_purse_by_name(builder: &InMemoryWasmTestBuilder, purse_name: &str) ->
 
 fn get_named_account_balance(
     builder: &InMemoryWasmTestBuilder,
-    account_address: AccountHash,
+    public_key: PublicKey,
     name: &str,
 ) -> Option<U512> {
-    let account_key = Key::Account(account_address);
+    let account_key = Key::Account(public_key);
 
     let account: Account = builder
         .query(None, account_key, &[])

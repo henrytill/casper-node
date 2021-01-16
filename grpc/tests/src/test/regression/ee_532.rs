@@ -1,11 +1,15 @@
+use once_cell::sync::Lazy;
+
 use casper_engine_test_support::internal::{
     ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_RUN_GENESIS_REQUEST,
 };
 use casper_execution_engine::core::engine_state::Error;
-use casper_types::{account::AccountHash, RuntimeArgs};
+use casper_types::{PublicKey, RuntimeArgs, SecretKey};
 
 const CONTRACT_EE_532_REGRESSION: &str = "ee_532_regression.wasm";
-const UNKNOWN_ADDR: AccountHash = AccountHash::new([42u8; 32]);
+
+static UNKNOWN_PUBLIC_KEY: Lazy<PublicKey> =
+    Lazy::new(|| SecretKey::ed25519([42u8; SecretKey::ED25519_LENGTH]).into());
 
 #[ignore]
 #[test]
@@ -14,7 +18,7 @@ fn should_run_ee_532_get_uref_regression_test() {
     // more data
 
     let exec_request = ExecuteRequestBuilder::standard(
-        UNKNOWN_ADDR,
+        *UNKNOWN_PUBLIC_KEY,
         CONTRACT_EE_532_REGRESSION,
         RuntimeArgs::default(),
     )

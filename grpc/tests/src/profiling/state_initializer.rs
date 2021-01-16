@@ -8,7 +8,7 @@ use clap::{crate_version, App};
 
 use casper_engine_test_support::internal::{
     utils, DeployItemBuilder, ExecuteRequestBuilder, LmdbWasmTestBuilder, ARG_AMOUNT,
-    AUCTION_INSTALL_CONTRACT, DEFAULT_ACCOUNTS, DEFAULT_ACCOUNT_ADDR, DEFAULT_AUCTION_DELAY,
+    AUCTION_INSTALL_CONTRACT, DEFAULT_ACCOUNTS, DEFAULT_ACCOUNT_PUBLIC_KEY, DEFAULT_AUCTION_DELAY,
     DEFAULT_GENESIS_CONFIG_HASH, DEFAULT_LOCKED_FUNDS_PERIOD, DEFAULT_PAYMENT,
     DEFAULT_PROTOCOL_VERSION, DEFAULT_ROUND_SEIGNIORAGE_RATE, DEFAULT_SYSTEM_CONFIG,
     DEFAULT_UNBONDING_DELAY, DEFAULT_VALIDATOR_SLOTS, DEFAULT_WASM_CONFIG, MINT_INSTALL_CONTRACT,
@@ -41,14 +41,13 @@ fn data_dir() -> PathBuf {
 fn main() {
     let data_dir = data_dir();
 
-    let genesis_account_hash = *DEFAULT_ACCOUNT_ADDR;
-    let account_1_account_hash = profiling::account_1_account_hash();
+    let account_1_account_hash = profiling::account_1_public_key();
     let account_1_initial_amount = profiling::account_1_initial_amount();
-    let account_2_account_hash = profiling::account_2_account_hash();
+    let account_2_account_hash = profiling::account_2_public_key();
 
     let exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_ADDR)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_deploy_hash([1; 32])
             .with_session_code(
                 STATE_INITIALIZER_CONTRACT,
@@ -59,7 +58,7 @@ fn main() {
                 },
             )
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
-            .with_authorization_keys(&[genesis_account_hash])
+            .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
             .build();
 
         ExecuteRequestBuilder::new().push_deploy(deploy).build()

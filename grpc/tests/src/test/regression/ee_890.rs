@@ -5,7 +5,7 @@ use casper_engine_test_support::{
         DeployItemBuilder, ExecuteRequestBuilder, InMemoryWasmTestBuilder, ARG_AMOUNT,
         DEFAULT_PAYMENT, DEFAULT_RUN_GENESIS_REQUEST,
     },
-    DEFAULT_ACCOUNT_ADDR,
+    DEFAULT_ACCOUNT_PUBLIC_KEY,
 };
 use casper_types::{contracts::DEFAULT_ENTRY_POINT_NAME, runtime_args, RuntimeArgs};
 
@@ -44,10 +44,10 @@ fn should_run_ee_890_gracefully_reject_start_node_in_session() {
     let wasm_binary = make_do_nothing_with_start();
 
     let deploy_1 = DeployItemBuilder::new()
-        .with_address(*DEFAULT_ACCOUNT_ADDR)
+        .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .with_session_bytes(wasm_binary, RuntimeArgs::new())
         .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
-        .with_authorization_keys(&[*DEFAULT_ACCOUNT_ADDR])
+        .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
         .with_deploy_hash([123; 32])
         .build();
 
@@ -72,10 +72,10 @@ fn should_run_ee_890_gracefully_reject_start_node_in_payment() {
     let wasm_binary = make_do_nothing_with_start();
 
     let deploy_1 = DeployItemBuilder::new()
-        .with_address(*DEFAULT_ACCOUNT_ADDR)
+        .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .with_session_code(DO_NOTHING_WASM, RuntimeArgs::new())
         .with_payment_bytes(wasm_binary, RuntimeArgs::new())
-        .with_authorization_keys(&[*DEFAULT_ACCOUNT_ADDR])
+        .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
         .with_deploy_hash([123; 32])
         .build();
 

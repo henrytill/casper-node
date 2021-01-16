@@ -6,10 +6,10 @@ use casper_types::{
 
 use casper_engine_test_support::{
     internal::{
-        ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_PAYMENT,
-        DEFAULT_RUN_GENESIS_REQUEST,
+        ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_ACCOUNT_PUBLIC_KEY,
+        DEFAULT_PAYMENT, DEFAULT_RUN_GENESIS_REQUEST,
     },
-    DEFAULT_ACCOUNT_ADDR, DEFAULT_ACCOUNT_INITIAL_BALANCE,
+    DEFAULT_ACCOUNT_INITIAL_BALANCE,
 };
 
 const CONTRACT_TRANSFER_PURSE_TO_PURSE: &str = "transfer_purse_to_purse.wasm";
@@ -25,7 +25,7 @@ fn should_run_purse_to_purse_transfer() {
     let target = "purse:secondary".to_string();
 
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_PURSE_TO_PURSE,
         runtime_args! {
             ARG_SOURCE => source,
@@ -44,7 +44,7 @@ fn should_run_purse_to_purse_transfer() {
         .finish();
 
     let default_account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should get genesis account");
 
     // Get the `purse_transfer_result` for a given
@@ -119,7 +119,7 @@ fn should_run_purse_to_purse_transfer_with_error() {
     let source = "purse:main".to_string();
     let target = "purse:secondary".to_string();
     let exec_request_1 = ExecuteRequestBuilder::standard(
-       *DEFAULT_ACCOUNT_ADDR,
+       *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_PURSE_TO_PURSE,
         runtime_args! { ARG_SOURCE => source, ARG_TARGET => target, ARG_AMOUNT => U512::from(DEFAULT_ACCOUNT_INITIAL_BALANCE + 1) },
     )
@@ -133,7 +133,7 @@ fn should_run_purse_to_purse_transfer_with_error() {
         .finish();
 
     let default_account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should get genesis account");
 
     // Get the `purse_transfer_result` for a given

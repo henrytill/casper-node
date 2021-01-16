@@ -5,10 +5,9 @@ use core::convert::TryFrom;
 
 use casper_types::{
     account::{
-        AccountHash, ActionType, AddKeyFailure, RemoveKeyFailure, SetThresholdFailure,
-        UpdateKeyFailure, Weight,
+        ActionType, AddKeyFailure, RemoveKeyFailure, SetThresholdFailure, UpdateKeyFailure, Weight,
     },
-    bytesrepr, URef, UREF_SERIALIZED_LENGTH,
+    bytesrepr, PublicKey, URef, UREF_SERIALIZED_LENGTH,
 };
 
 use super::to_ptr;
@@ -44,16 +43,12 @@ pub fn set_action_threshold(
     }
 }
 
-/// Adds the given [`AccountHash`] with associated [`Weight`] to the account's associated keys.
-pub fn add_associated_key(account_hash: AccountHash, weight: Weight) -> Result<(), AddKeyFailure> {
-    let (account_hash_ptr, account_hash_size, _bytes) = to_ptr(account_hash);
+/// Adds the given [`PublicKey`] with associated [`Weight`] to the account's associated keys.
+pub fn add_associated_key(public_key: PublicKey, weight: Weight) -> Result<(), AddKeyFailure> {
+    let (public_key_ptr, public_key_size, _bytes) = to_ptr(public_key);
     // Cast of u8 (weight) into i32 is assumed to be always safe
     let result = unsafe {
-        ext_ffi::casper_add_associated_key(
-            account_hash_ptr,
-            account_hash_size,
-            weight.value().into(),
-        )
+        ext_ffi::casper_add_associated_key(public_key_ptr, public_key_size, weight.value().into())
     };
     if result == 0 {
         Ok(())
@@ -62,11 +57,10 @@ pub fn add_associated_key(account_hash: AccountHash, weight: Weight) -> Result<(
     }
 }
 
-/// Removes the given [`AccountHash`] from the account's associated keys.
-pub fn remove_associated_key(account_hash: AccountHash) -> Result<(), RemoveKeyFailure> {
-    let (account_hash_ptr, account_hash_size, _bytes) = to_ptr(account_hash);
-    let result =
-        unsafe { ext_ffi::casper_remove_associated_key(account_hash_ptr, account_hash_size) };
+/// Removes the given [`PublicKey`] from the account's associated keys.
+pub fn remove_associated_key(public_key: PublicKey) -> Result<(), RemoveKeyFailure> {
+    let (public_key_ptr, public_key_size, _bytes) = to_ptr(public_key);
+    let result = unsafe { ext_ffi::casper_remove_associated_key(public_key_ptr, public_key_size) };
     if result == 0 {
         Ok(())
     } else {
@@ -74,17 +68,17 @@ pub fn remove_associated_key(account_hash: AccountHash) -> Result<(), RemoveKeyF
     }
 }
 
-/// Updates the [`Weight`] of the given [`AccountHash`] in the account's associated keys.
+/// Updates the [`Weight`] of the given [`PublicKey`] in the account's associated keys.
 pub fn update_associated_key(
-    account_hash: AccountHash,
+    public_key: PublicKey,
     weight: Weight,
 ) -> Result<(), UpdateKeyFailure> {
-    let (account_hash_ptr, account_hash_size, _bytes) = to_ptr(account_hash);
+    let (public_key_ptr, public_key_size, _bytes) = to_ptr(public_key);
     // Cast of u8 (weight) into i32 is assumed to be always safe
     let result = unsafe {
         ext_ffi::casper_update_associated_key(
-            account_hash_ptr,
-            account_hash_size,
+            public_key_ptr,
+            public_key_size,
             weight.value().into(),
         )
     };

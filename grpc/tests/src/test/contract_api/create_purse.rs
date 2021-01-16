@@ -1,20 +1,19 @@
 use once_cell::sync::Lazy;
 
-use casper_engine_test_support::{
-    internal::{
-        ExecuteRequestBuilder, WasmTestBuilder, DEFAULT_PAYMENT, DEFAULT_RUN_GENESIS_REQUEST,
-    },
-    DEFAULT_ACCOUNT_ADDR,
+use casper_engine_test_support::internal::{
+    ExecuteRequestBuilder, WasmTestBuilder, DEFAULT_ACCOUNT_PUBLIC_KEY, DEFAULT_PAYMENT,
+    DEFAULT_RUN_GENESIS_REQUEST,
 };
 use casper_execution_engine::shared::transform::Transform;
-use casper_types::{account::AccountHash, runtime_args, Key, RuntimeArgs, U512};
+use casper_types::{runtime_args, Key, PublicKey, RuntimeArgs, SecretKey, U512};
 
 const CONTRACT_CREATE_PURSE_01: &str = "create_purse_01.wasm";
 const CONTRACT_TRANSFER_PURSE_TO_ACCOUNT: &str = "transfer_purse_to_account.wasm";
-const ACCOUNT_1_ADDR: AccountHash = AccountHash::new([1u8; 32]);
 const TEST_PURSE_NAME: &str = "test_purse";
 const ARG_PURSE_NAME: &str = "purse_name";
 
+static ACCOUNT_1_PUBLIC_KEY: Lazy<PublicKey> =
+    Lazy::new(|| SecretKey::ed25519([1u8; SecretKey::ED25519_LENGTH]).into());
 static ACCOUNT_1_INITIAL_BALANCE: Lazy<U512> = Lazy::new(|| *DEFAULT_PAYMENT);
 
 fn get_purse_key_from_mint_transform(mint_transform: &Transform) -> Key {
@@ -50,13 +49,13 @@ fn get_purse_key_from_mint_transform(mint_transform: &Transform) -> Key {
 #[test]
 fn should_insert_mint_add_keys_transform() {
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_PURSE_TO_ACCOUNT,
-        runtime_args! { "target" => ACCOUNT_1_ADDR, "amount" => *ACCOUNT_1_INITIAL_BALANCE},
+        runtime_args! { "target" => *ACCOUNT_1_PUBLIC_KEY, "amount" => *ACCOUNT_1_INITIAL_BALANCE},
     )
     .build();
     let exec_request_2 = ExecuteRequestBuilder::standard(
-        ACCOUNT_1_ADDR,
+        *ACCOUNT_1_PUBLIC_KEY,
         CONTRACT_CREATE_PURSE_01,
         runtime_args! { ARG_PURSE_NAME => TEST_PURSE_NAME },
     )
@@ -84,14 +83,14 @@ fn should_insert_mint_add_keys_transform() {
 #[test]
 fn should_insert_account_into_named_keys() {
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_PURSE_TO_ACCOUNT,
-        runtime_args! { "target" => ACCOUNT_1_ADDR, "amount" => *ACCOUNT_1_INITIAL_BALANCE},
+        runtime_args! { "target" => *ACCOUNT_1_PUBLIC_KEY, "amount" => *ACCOUNT_1_INITIAL_BALANCE},
     )
     .build();
 
     let exec_request_2 = ExecuteRequestBuilder::standard(
-        ACCOUNT_1_ADDR,
+        *ACCOUNT_1_PUBLIC_KEY,
         CONTRACT_CREATE_PURSE_01,
         runtime_args! { ARG_PURSE_NAME => TEST_PURSE_NAME },
     )
@@ -106,7 +105,7 @@ fn should_insert_account_into_named_keys() {
     builder.exec(exec_request_2).expect_success().commit();
 
     let account_1 = builder
-        .get_account(ACCOUNT_1_ADDR)
+        .get_account(*ACCOUNT_1_PUBLIC_KEY)
         .expect("should have account");
 
     assert!(
@@ -119,14 +118,14 @@ fn should_insert_account_into_named_keys() {
 #[test]
 fn should_create_usable_purse() {
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_PURSE_TO_ACCOUNT,
-        runtime_args! { "target" => ACCOUNT_1_ADDR, "amount" => *ACCOUNT_1_INITIAL_BALANCE},
+        runtime_args! { "target" => *ACCOUNT_1_PUBLIC_KEY, "amount" => *ACCOUNT_1_INITIAL_BALANCE},
     )
     .build();
 
     let exec_request_2 = ExecuteRequestBuilder::standard(
-        ACCOUNT_1_ADDR,
+        *ACCOUNT_1_PUBLIC_KEY,
         CONTRACT_CREATE_PURSE_01,
         runtime_args! { ARG_PURSE_NAME => TEST_PURSE_NAME },
     )
@@ -143,7 +142,7 @@ fn should_create_usable_purse() {
 
     let account_1 = result
         .builder()
-        .get_account(ACCOUNT_1_ADDR)
+        .get_account(*ACCOUNT_1_PUBLIC_KEY)
         .expect("should have account");
 
     let purse = account_1

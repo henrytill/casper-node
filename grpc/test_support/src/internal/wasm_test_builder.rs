@@ -26,7 +26,7 @@ use casper_execution_engine::{
         engine_state::{
             era_validators::GetEraValidatorsRequest, execute_request::ExecuteRequest,
             execution_result::ExecutionResult, run_genesis_request::RunGenesisRequest,
-            BalanceResult, EngineConfig, EngineState, SYSTEM_ACCOUNT_ADDR,
+            BalanceResult, EngineConfig, EngineState,
         },
         execution,
     },
@@ -49,18 +49,17 @@ use casper_execution_engine::{
     },
 };
 use casper_types::{
-    account::AccountHash,
     auction::{
         EraId, EraValidators, ValidatorWeights, AUCTION_DELAY_KEY, ERA_ID_KEY, METHOD_RUN_AUCTION,
     },
     bytesrepr::{self},
     mint::TOTAL_SUPPLY_KEY,
     runtime_args, CLTyped, CLValue, Contract, ContractHash, ContractWasm, DeployHash, DeployInfo,
-    Key, RuntimeArgs, Transfer, TransferAddr, URef, U512,
+    Key, PublicKey, RuntimeArgs, Transfer, TransferAddr, URef, SYSTEM_ACCOUNT, U512,
 };
 
 use crate::internal::{
-    utils, ExecuteRequestBuilder, DEFAULT_PROPOSER_ADDR, DEFAULT_PROTOCOL_VERSION,
+    utils, ExecuteRequestBuilder, DEFAULT_PROPOSER_PUBLIC_KEY, DEFAULT_PROTOCOL_VERSION,
 };
 
 /// LMDB initial map size is calculated based on DEFAULT_LMDB_PAGES and systems page size.
@@ -332,7 +331,7 @@ where
     }
 
     pub fn run_genesis(&mut self, run_genesis_request: &RunGenesisRequest) -> &mut Self {
-        let system_account = Key::Account(SYSTEM_ACCOUNT_ADDR);
+        let system_account = Key::Account(SYSTEM_ACCOUNT);
         let run_genesis_request_proto = run_genesis_request
             .to_owned()
             .try_into()
@@ -558,10 +557,9 @@ where
 
     pub fn run_auction(&mut self) -> &mut Self {
         const ARG_ENTRY_POINT: &str = "entry_point";
-        const SYSTEM_ADDR: AccountHash = AccountHash::new([0u8; 32]);
         const CONTRACT_AUCTION_BIDS: &str = "auction_bids.wasm";
         let run_request = ExecuteRequestBuilder::standard(
-            SYSTEM_ADDR,
+            SYSTEM_ACCOUNT,
             CONTRACT_AUCTION_BIDS,
             runtime_args! {
                 ARG_ENTRY_POINT => METHOD_RUN_AUCTION
@@ -753,13 +751,13 @@ where
 
     pub fn get_proposer_purse_balance(&self) -> U512 {
         let proposer_account = self
-            .get_account(*DEFAULT_PROPOSER_ADDR)
+            .get_account(*DEFAULT_PROPOSER_PUBLIC_KEY)
             .expect("proposer account should exist");
         self.get_purse_balance(proposer_account.main_purse())
     }
 
-    pub fn get_account(&self, account_hash: AccountHash) -> Option<Account> {
-        match self.query(None, Key::Account(account_hash), &[]) {
+    pub fn get_account(&self, public_key: PublicKey) -> Option<Account> {
+        match self.query(None, Key::Account(public_key), &[]) {
             Ok(account_value) => match account_value {
                 StoredValue::Account(account) => Some(account),
                 _ => None,

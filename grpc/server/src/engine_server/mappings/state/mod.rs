@@ -13,6 +13,7 @@ mod deploy_info;
 mod key;
 mod named_key;
 mod protocol_version;
+mod public_key;
 mod semver;
 mod stored_value;
 mod transfer;

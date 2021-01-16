@@ -7,12 +7,12 @@ use alloc::vec::Vec;
 use core::mem::MaybeUninit;
 
 use casper_types::{
-    account::AccountHash,
     api_error,
     bytesrepr::{self, FromBytes},
     contracts::{ContractVersion, NamedKeys},
     ApiError, BlockTime, CLTyped, CLValue, ContractHash, ContractPackageHash, Key, Phase,
-    RuntimeArgs, URef, BLAKE2B_DIGEST_LENGTH, BLOCKTIME_SERIALIZED_LENGTH, PHASE_SERIALIZED_LENGTH,
+    PublicKey, RuntimeArgs, URef, BLAKE2B_DIGEST_LENGTH, BLOCKTIME_SERIALIZED_LENGTH,
+    PHASE_SERIALIZED_LENGTH,
 };
 
 use crate::{contract_api, ext_ffi, unwrap_or_revert::UnwrapOrRevert};
@@ -179,9 +179,9 @@ pub fn get_named_arg<T: FromBytes>(name: &str) -> T {
     bytesrepr::deserialize(arg_bytes).unwrap_or_revert_with(ApiError::InvalidArgument)
 }
 
-/// Returns the caller of the current context, i.e. the [`AccountHash`] of the account which made
+/// Returns the caller of the current context, i.e. the [`PublicKey`] of the account which made
 /// the deploy request.
-pub fn get_caller() -> AccountHash {
+pub fn get_caller() -> PublicKey {
     let output_size = {
         let mut output_size = MaybeUninit::uninit();
         let ret = unsafe { ext_ffi::casper_get_caller(output_size.as_mut_ptr()) };

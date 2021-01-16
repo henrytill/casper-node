@@ -141,8 +141,8 @@ fn run_test(root_hash: Vec<u8>, repetitions: usize, data_dir: &Path) {
     let log_settings = Settings::new(LevelFilter::Warn).with_metrics_enabled(true);
     let _ = logging::initialize(log_settings);
 
-    let account_1_account_hash = profiling::account_1_account_hash();
-    let account_2_account_hash = profiling::account_2_account_hash();
+    let account_1_account_hash = profiling::account_1_public_key();
+    let account_2_account_hash = profiling::account_2_public_key();
 
     let engine_config =
         EngineConfig::new().with_use_system_contracts(cfg!(feature = "use-system-contracts"));
@@ -158,7 +158,7 @@ fn run_test(root_hash: Vec<u8>, repetitions: usize, data_dir: &Path) {
         rng.fill(random_bytes.as_mut_slice());
 
         let deploy = DeployItemBuilder::new()
-            .with_address(account_1_account_hash)
+            .with_public_key(account_1_account_hash)
             .with_deploy_hash(rng.gen())
             .with_session_code(
                 HOST_FUNCTION_METRICS_CONTRACT,

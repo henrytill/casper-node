@@ -1,21 +1,20 @@
 use once_cell::sync::Lazy;
 
-use casper_engine_test_support::{
-    internal::{
-        utils, ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_PAYMENT,
-        DEFAULT_RUN_GENESIS_REQUEST,
-    },
-    DEFAULT_ACCOUNT_ADDR,
+use casper_engine_test_support::internal::{
+    utils, ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_ACCOUNT_PUBLIC_KEY,
+    DEFAULT_PAYMENT, DEFAULT_RUN_GENESIS_REQUEST,
 };
 use casper_execution_engine::{core::engine_state::CONV_RATE, shared::motes::Motes};
-use casper_types::{account::AccountHash, runtime_args, RuntimeArgs, U512};
+use casper_types::{runtime_args, PublicKey, RuntimeArgs, SecretKey, U512};
 
 const CONTRACT_EE_599_REGRESSION: &str = "ee_599_regression.wasm";
 const CONTRACT_TRANSFER_TO_ACCOUNT: &str = "transfer_to_account_u512.wasm";
 const DONATION_PURSE_COPY_KEY: &str = "donation_purse_copy";
 const EXPECTED_ERROR: &str = "InvalidContext";
 const TRANSFER_FUNDS_KEY: &str = "transfer_funds";
-const VICTIM_ADDR: AccountHash = AccountHash::new([42; 32]);
+
+static VICTIM_PUBLIC_KEY: Lazy<PublicKey> =
+    Lazy::new(|| SecretKey::ed25519([42; SecretKey::ED25519_LENGTH]).into());
 
 static VICTIM_INITIAL_FUNDS: Lazy<U512> = Lazy::new(|| *DEFAULT_PAYMENT * 10);
 
@@ -23,11 +22,15 @@ fn setup() -> InMemoryWasmTestBuilder {
     // Creates victim account
     let exec_request_1 = {
         let args = runtime_args! {
-            "target" => VICTIM_ADDR,
+            "target" => *VICTIM_PUBLIC_KEY,
             "amount" => *VICTIM_INITIAL_FUNDS,
         };
-        ExecuteRequestBuilder::standard(*DEFAULT_ACCOUNT_ADDR, CONTRACT_TRANSFER_TO_ACCOUNT, args)
-            .build()
+        ExecuteRequestBuilder::standard(
+            *DEFAULT_ACCOUNT_PUBLIC_KEY,
+            CONTRACT_TRANSFER_TO_ACCOUNT,
+            args,
+        )
+        .build()
     };
 
     // Deploy contract
@@ -35,8 +38,12 @@ fn setup() -> InMemoryWasmTestBuilder {
         let args = runtime_args! {
             "method" => "install".to_string(),
         };
-        ExecuteRequestBuilder::standard(*DEFAULT_ACCOUNT_ADDR, CONTRACT_EE_599_REGRESSION, args)
-            .build()
+        ExecuteRequestBuilder::standard(
+            *DEFAULT_ACCOUNT_PUBLIC_KEY,
+            CONTRACT_EE_599_REGRESSION,
+            args,
+        )
+        .build()
     };
 
     let result = InMemoryWasmTestBuilder::default()
@@ -58,11 +65,11 @@ fn should_not_be_able_to_transfer_funds_with_transfer_purse_to_purse() {
     let mut builder = setup();
 
     let victim_account = builder
-        .get_account(VICTIM_ADDR)
+        .get_account(*VICTIM_PUBLIC_KEY)
         .expect("should have victim account");
 
     let default_account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have default account");
     let transfer_funds = default_account
         .named_keys()
@@ -83,7 +90,8 @@ fn should_not_be_able_to_transfer_funds_with_transfer_purse_to_purse() {
             "contract_key" => transfer_funds.into_hash().expect("should be hash"),
             "sub_contract_method_fwd" => "transfer_from_purse_to_purse_ext",
         };
-        ExecuteRequestBuilder::standard(VICTIM_ADDR, CONTRACT_EE_599_REGRESSION, args).build()
+        ExecuteRequestBuilder::standard(*VICTIM_PUBLIC_KEY, CONTRACT_EE_599_REGRESSION, args)
+            .build()
     };
 
     let result_2 = builder.exec(exec_request_3).commit().finish();
@@ -126,11 +134,11 @@ fn should_not_be_able_to_transfer_funds_with_transfer_from_purse_to_account() {
     let mut builder = setup();
 
     let victim_account = builder
-        .get_account(VICTIM_ADDR)
+        .get_account(*VICTIM_PUBLIC_KEY)
         .expect("should have victim account");
 
     let default_account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have default account");
 
     let default_account_balance = builder.get_purse_balance(default_account.main_purse());
@@ -154,7 +162,8 @@ fn should_not_be_able_to_transfer_funds_with_transfer_from_purse_to_account() {
             "contract_key" => transfer_funds.into_hash().expect("should get key"),
             "sub_contract_method_fwd" => "transfer_from_purse_to_account_ext",
         };
-        ExecuteRequestBuilder::standard(VICTIM_ADDR, CONTRACT_EE_599_REGRESSION, args).build()
+        ExecuteRequestBuilder::standard(*VICTIM_PUBLIC_KEY, CONTRACT_EE_599_REGRESSION, args)
+            .build()
     };
 
     let result_2 = builder.exec(exec_request_3).commit().finish();
@@ -208,11 +217,11 @@ fn should_not_be_able_to_transfer_funds_with_transfer_to_account() {
     let mut builder = setup();
 
     let victim_account = builder
-        .get_account(VICTIM_ADDR)
+        .get_account(*VICTIM_PUBLIC_KEY)
         .expect("should have victim account");
 
     let default_account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have default account");
 
     let default_account_balance = builder.get_purse_balance(default_account.main_purse());
@@ -236,7 +245,8 @@ fn should_not_be_able_to_transfer_funds_with_transfer_to_account() {
             "contract_key" => transfer_funds.into_hash().expect("should be hash"),
             "sub_contract_method_fwd" => "transfer_to_account_ext",
         };
-        ExecuteRequestBuilder::standard(VICTIM_ADDR, CONTRACT_EE_599_REGRESSION, args).build()
+        ExecuteRequestBuilder::standard(*VICTIM_PUBLIC_KEY, CONTRACT_EE_599_REGRESSION, args)
+            .build()
     };
 
     let result_2 = builder.exec(exec_request_3).commit().finish();
@@ -291,11 +301,11 @@ fn should_not_be_able_to_get_main_purse_in_invalid_context() {
     let mut builder = setup();
 
     let victim_account = builder
-        .get_account(VICTIM_ADDR)
+        .get_account(*VICTIM_PUBLIC_KEY)
         .expect("should have victim account");
 
     let default_account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have default account");
 
     let transfer_funds = default_account
@@ -310,7 +320,8 @@ fn should_not_be_able_to_get_main_purse_in_invalid_context() {
             "contract_key" => transfer_funds.into_hash().expect("should be hash"),
             "sub_contract_method_fwd" => "transfer_to_account_ext",
         };
-        ExecuteRequestBuilder::standard(VICTIM_ADDR, CONTRACT_EE_599_REGRESSION, args).build()
+        ExecuteRequestBuilder::standard(*VICTIM_PUBLIC_KEY, CONTRACT_EE_599_REGRESSION, args)
+            .build()
     };
 
     let victim_balance_before = builder.get_purse_balance(victim_account.main_purse());

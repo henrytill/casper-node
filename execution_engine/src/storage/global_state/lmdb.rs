@@ -237,7 +237,7 @@ mod tests {
     use tempfile::tempdir;
 
     use crate::shared::newtypes::Blake2bHash;
-    use casper_types::{account::AccountHash, CLValue};
+    use casper_types::{CLValue, PublicKey, SecretKey};
 
     use super::*;
     use crate::storage::{
@@ -251,31 +251,41 @@ mod tests {
         value: StoredValue,
     }
 
+    fn create_test_keys() -> [PublicKey; 3] {
+        [
+            SecretKey::ed25519([1u8; 32]).into(),
+            SecretKey::ed25519([2u8; 32]).into(),
+            SecretKey::ed25519([3u8; 32]).into(),
+        ]
+    }
+
     fn create_test_pairs() -> [TestPair; 2] {
+        let test_keys = create_test_keys();
         [
             TestPair {
-                key: Key::Account(AccountHash::new([1_u8; 32])),
+                key: Key::Account(test_keys[0]),
                 value: StoredValue::CLValue(CLValue::from_t(1_i32).unwrap()),
             },
             TestPair {
-                key: Key::Account(AccountHash::new([2_u8; 32])),
+                key: Key::Account(test_keys[1]),
                 value: StoredValue::CLValue(CLValue::from_t(2_i32).unwrap()),
             },
         ]
     }
 
     fn create_test_pairs_updated() -> [TestPair; 3] {
+        let test_keys = create_test_keys();
         [
             TestPair {
-                key: Key::Account(AccountHash::new([1u8; 32])),
+                key: Key::Account(test_keys[0]),
                 value: StoredValue::CLValue(CLValue::from_t("one".to_string()).unwrap()),
             },
             TestPair {
-                key: Key::Account(AccountHash::new([2u8; 32])),
+                key: Key::Account(test_keys[1]),
                 value: StoredValue::CLValue(CLValue::from_t("two".to_string()).unwrap()),
             },
             TestPair {
-                key: Key::Account(AccountHash::new([3u8; 32])),
+                key: Key::Account(test_keys[2]),
                 value: StoredValue::CLValue(CLValue::from_t(3_i32).unwrap()),
             },
         ]

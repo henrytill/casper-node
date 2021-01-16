@@ -1,20 +1,24 @@
+use once_cell::sync::Lazy;
+
 use casper_engine_test_support::{
     internal::{
         utils, DeployItemBuilder, ExecuteRequestBuilder, InMemoryWasmTestBuilder,
-        DEFAULT_ACCOUNT_KEY, DEFAULT_PAYMENT, DEFAULT_RUN_GENESIS_REQUEST,
+        DEFAULT_ACCOUNT_PUBLIC_KEY, DEFAULT_PAYMENT, DEFAULT_RUN_GENESIS_REQUEST,
     },
-    DEFAULT_ACCOUNT_ADDR, DEFAULT_ACCOUNT_INITIAL_BALANCE,
+    DEFAULT_ACCOUNT_INITIAL_BALANCE,
 };
 use casper_execution_engine::{core::engine_state::CONV_RATE, shared::motes::Motes};
-use casper_types::{account::AccountHash, runtime_args, RuntimeArgs, U512};
+use casper_types::{runtime_args, PublicKey, RuntimeArgs, SecretKey, U512};
 
 const FUNCTION_NAME: &str = "transfer";
 const CONTRACT_KEY_NAME: &str = "transfer_to_account";
 const CONTRACT_TRANSFER_TO_ACCOUNT_NAME: &str = "transfer_to_account_u512";
-const ACCOUNT_1_ADDR: AccountHash = AccountHash::new([1u8; 32]);
 const TRANSFER_AMOUNT: u64 = 1;
 const ARG_AMOUNT: &str = "amount";
 const ARG_TARGET: &str = "target";
+
+static ACCOUNT_1_PUBLIC_KEY: Lazy<PublicKey> =
+    Lazy::new(|| SecretKey::ed25519([1u8; SecretKey::ED25519_LENGTH]).into());
 
 #[ignore]
 #[test]
@@ -23,7 +27,7 @@ fn should_transfer_to_account_stored() {
     {
         // first, store transfer contract
         let exec_request = ExecuteRequestBuilder::standard(
-            *DEFAULT_ACCOUNT_ADDR,
+            *DEFAULT_ACCOUNT_PUBLIC_KEY,
             &format!("{}_stored.wasm", CONTRACT_TRANSFER_TO_ACCOUNT_NAME),
             RuntimeArgs::default(),
         )
@@ -33,7 +37,7 @@ fn should_transfer_to_account_stored() {
     }
 
     let default_account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     let contract_hash = default_account
@@ -59,16 +63,16 @@ fn should_transfer_to_account_stored() {
     // next make another deploy that USES stored payment logic
     let exec_request = {
         let deploy = DeployItemBuilder::new()
-            .with_address(*DEFAULT_ACCOUNT_ADDR)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_stored_session_hash(
                 contract_hash,
                 FUNCTION_NAME,
-                runtime_args! { ARG_TARGET => ACCOUNT_1_ADDR, ARG_AMOUNT => transferred_amount },
+                runtime_args! { ARG_TARGET => *ACCOUNT_1_PUBLIC_KEY, ARG_AMOUNT => transferred_amount },
             )
             .with_empty_payment_bytes(runtime_args! {
                 ARG_AMOUNT => payment_purse_amount,
             })
-            .with_authorization_keys(&[*DEFAULT_ACCOUNT_KEY])
+            .with_authorization_keys(&[*DEFAULT_ACCOUNT_PUBLIC_KEY])
             .with_deploy_hash([2; 32])
             .build();
 

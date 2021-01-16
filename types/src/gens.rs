@@ -15,6 +15,7 @@ use proptest::{
 use crate::{
     account::{AccountHash, Weight},
     contracts::{ContractVersions, DisabledVersions, Groups, NamedKeys, Parameters},
+    crypto::gens::public_key_arb,
     AccessRights, CLType, CLValue, Contract, ContractPackage, ContractVersionKey, ContractWasm,
     EntryPoint, EntryPointAccess, EntryPointType, EntryPoints, Group, Key, NamedArg, Parameter,
     Phase, ProtocolVersion, SemVer, URef, U128, U256, U512,
@@ -60,7 +61,7 @@ pub fn uref_arb() -> impl Strategy<Value = URef> {
 
 pub fn key_arb() -> impl Strategy<Value = Key> {
     prop_oneof![
-        account_hash_arb().prop_map(Key::Account),
+        public_key_arb().prop_map(Key::Account),
         u8_slice_32().prop_map(Key::Hash),
         uref_arb().prop_map(Key::URef),
     ]

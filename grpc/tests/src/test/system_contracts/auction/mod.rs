@@ -2,17 +2,14 @@ mod bids;
 mod distribute;
 
 use casper_engine_test_support::internal::{ExecuteRequestBuilder, InMemoryWasmTestBuilder};
-use casper_types::{
-    self, account::AccountHash, auction::METHOD_RUN_AUCTION, runtime_args, RuntimeArgs,
-};
+use casper_types::{self, auction::METHOD_RUN_AUCTION, runtime_args, RuntimeArgs, SYSTEM_ACCOUNT};
 
 const ARG_ENTRY_POINT: &str = "entry_point";
-const SYSTEM_ADDR: AccountHash = AccountHash::new([0u8; 32]);
 const CONTRACT_AUCTION_BIDS: &str = "auction_bids.wasm";
 
 fn make_run_auction_request() -> ExecuteRequestBuilder {
     ExecuteRequestBuilder::standard(
-        SYSTEM_ADDR,
+        SYSTEM_ACCOUNT,
         CONTRACT_AUCTION_BIDS,
         runtime_args! {
             ARG_ENTRY_POINT => METHOD_RUN_AUCTION

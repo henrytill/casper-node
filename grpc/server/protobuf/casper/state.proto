@@ -245,8 +245,8 @@ message TransferId {
 
 message Transfer {
     DeployHash deploy = 1;
-    AccountHash from = 2;
-    AccountHash to = 3;
+    PublicKey from = 2;
+    PublicKey to = 3;
     Key.URef source = 4;
     Key.URef target = 5;
     BigInt amount = 6;
@@ -257,7 +257,7 @@ message Transfer {
 message DeployInfo {
     DeployHash deploy = 1;
     repeated TransferAddr transfers = 2;
-    AccountHash from = 3;
+    PublicKey from = 3;
     Key.URef source = 4;
     BigInt gas = 5;
 }
@@ -318,8 +318,8 @@ message DeployHash {
     bytes deploy_hash = 1;
 }
 
-message AccountHash {
-    bytes account_hash = 1;
+message PublicKey {
+    bytes public_key = 1;
 }
 
 message TransferAddr {
@@ -337,7 +337,7 @@ message Key {
 	}
 
 	message Address {
-		bytes account = 1;
+		PublicKey account = 1;
 	}
 
 	message Hash {
@@ -374,14 +374,14 @@ message Account {
 	// Removed: account_activity
 	reserved 7;
 
-	bytes public_key = 1;
+	PublicKey public_key = 1;
 	Key.URef main_purse = 3;
 	repeated NamedKey named_keys = 4;
 	repeated AssociatedKey associated_keys = 5;
 	ActionThresholds action_thresholds = 6;
 
 	message AssociatedKey {
-		bytes public_key = 1;
+		PublicKey public_key = 1;
 		uint32 weight = 2;
 	}
 	message ActionThresholds {

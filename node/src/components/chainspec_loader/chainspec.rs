@@ -185,13 +185,7 @@ impl Loadable for Vec<GenesisAccount> {
             let parsed: ParsedAccount = result?;
             let balance = Motes::new(parsed.balance);
             let bonded_amount = Motes::new(parsed.bonded_amount);
-
-            let account = GenesisAccount::new(
-                parsed.public_key,
-                parsed.public_key.to_account_hash(),
-                balance,
-                bonded_amount,
-            );
+            let account = GenesisAccount::new(parsed.public_key, balance, bonded_amount);
             accounts.push(account);
         }
         Ok(accounts)
@@ -239,10 +233,7 @@ impl GenesisConfig {
             .iter()
             .filter_map(|genesis_account| {
                 if genesis_account.is_genesis_validator() {
-                    let public_key = genesis_account
-                        .public_key()
-                        .expect("should have genesis public key");
-
+                    let public_key = genesis_account.public_key();
                     Some((public_key, genesis_account.bonded_amount()))
                 } else {
                     None

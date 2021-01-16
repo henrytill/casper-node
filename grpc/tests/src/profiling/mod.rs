@@ -3,7 +3,7 @@ use std::{env, path::PathBuf, str::FromStr};
 use clap::{Arg, ArgMatches};
 
 use casper_engine_test_support::DEFAULT_ACCOUNT_INITIAL_BALANCE;
-use casper_types::{account::AccountHash, U512};
+use casper_types::{PublicKey, SecretKey, U512};
 
 const DATA_DIR_ARG_NAME: &str = "data-dir";
 const DATA_DIR_ARG_SHORT: &str = "d";
@@ -12,9 +12,7 @@ const DATA_DIR_ARG_VALUE_NAME: &str = "PATH";
 const DATA_DIR_ARG_HELP: &str = "Directory in which persistent data is stored [default: current \
                                  working directory]";
 
-const ACCOUNT_1_ADDR: AccountHash = AccountHash::new([1u8; 32]);
 pub const ACCOUNT_1_INITIAL_AMOUNT: u64 = DEFAULT_ACCOUNT_INITIAL_BALANCE - 1_000_000_000;
-const ACCOUNT_2_ADDR: AccountHash = AccountHash::new([2u8; 32]);
 
 pub enum TransferMode {
     WASM,
@@ -64,14 +62,14 @@ pub fn parse_transfer_mode(transfer_mode: &str) -> TransferMode {
     }
 }
 
-pub fn account_1_account_hash() -> AccountHash {
-    ACCOUNT_1_ADDR
+pub fn account_1_public_key() -> PublicKey {
+    SecretKey::ed25519([42; SecretKey::ED25519_LENGTH]).into()
 }
 
 pub fn account_1_initial_amount() -> U512 {
     ACCOUNT_1_INITIAL_AMOUNT.into()
 }
 
-pub fn account_2_account_hash() -> AccountHash {
-    ACCOUNT_2_ADDR
+pub fn account_2_public_key() -> PublicKey {
+    SecretKey::ed25519([43; SecretKey::ED25519_LENGTH]).into()
 }

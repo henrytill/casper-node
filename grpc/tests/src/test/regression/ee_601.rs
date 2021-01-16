@@ -3,7 +3,7 @@ use casper_engine_test_support::{
         DeployItemBuilder, ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_PAYMENT,
         DEFAULT_RUN_GENESIS_REQUEST,
     },
-    DEFAULT_ACCOUNT_ADDR,
+    DEFAULT_ACCOUNT_PUBLIC_KEY,
 };
 use casper_execution_engine::shared::{stored_value::StoredValue, transform::Transform};
 use casper_types::{runtime_args, CLValue, Key, RuntimeArgs};
@@ -13,12 +13,12 @@ const ARG_AMOUNT: &str = "amount";
 #[ignore]
 #[test]
 fn should_run_ee_601_pay_session_new_uref_collision() {
-    let genesis_account_hash = *DEFAULT_ACCOUNT_ADDR;
+    let genesis_account_hash = *DEFAULT_ACCOUNT_PUBLIC_KEY;
 
     let exec_request = {
         let deploy = DeployItemBuilder::new()
             .with_deploy_hash([1; 32])
-            .with_address(*DEFAULT_ACCOUNT_ADDR)
+            .with_public_key(*DEFAULT_ACCOUNT_PUBLIC_KEY)
             .with_payment_code(
                 "ee_601_regression.wasm",
                 runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT },
@@ -40,7 +40,7 @@ fn should_run_ee_601_pay_session_new_uref_collision() {
     let transform = &transforms[0];
 
     let add_keys = if let Some(Transform::AddKeys(keys)) =
-        transform.get(&Key::Account(*DEFAULT_ACCOUNT_ADDR))
+        transform.get(&Key::Account(*DEFAULT_ACCOUNT_PUBLIC_KEY))
     {
         keys
     } else {

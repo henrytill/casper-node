@@ -1,6 +1,6 @@
-use casper_engine_test_support::{
-    internal::{ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_RUN_GENESIS_REQUEST},
-    DEFAULT_ACCOUNT_ADDR,
+use casper_engine_test_support::internal::{
+    ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_ACCOUNT_PUBLIC_KEY,
+    DEFAULT_RUN_GENESIS_REQUEST,
 };
 use casper_execution_engine::shared::stored_value::StoredValue;
 use casper_types::{
@@ -45,7 +45,7 @@ fn should_upgrade_do_nothing_to_do_something_version_hash_call() {
         let exec_request = {
             let contract_name = format!("{}.wasm", DO_NOTHING_STORED_CONTRACT_NAME);
             ExecuteRequestBuilder::standard(
-                *DEFAULT_ACCOUNT_ADDR,
+                *DEFAULT_ACCOUNT_PUBLIC_KEY,
                 &contract_name,
                 RuntimeArgs::default(),
             )
@@ -59,7 +59,7 @@ fn should_upgrade_do_nothing_to_do_something_version_hash_call() {
     {
         let exec_request = {
             ExecuteRequestBuilder::versioned_contract_call_by_hash_key_name(
-                *DEFAULT_ACCOUNT_ADDR,
+                *DEFAULT_ACCOUNT_PUBLIC_KEY,
                 DO_NOTHING_PACKAGE_HASH_KEY_NAME,
                 Some(INITIAL_VERSION),
                 ENTRY_FUNCTION_NAME,
@@ -72,7 +72,7 @@ fn should_upgrade_do_nothing_to_do_something_version_hash_call() {
     }
 
     let account_1 = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should get account 1");
 
     assert!(
@@ -85,7 +85,7 @@ fn should_upgrade_do_nothing_to_do_something_version_hash_call() {
         let exec_request = {
             let contract_name = format!("{}.wasm", DO_NOTHING_STORED_UPGRADER_CONTRACT_NAME);
             ExecuteRequestBuilder::standard(
-                *DEFAULT_ACCOUNT_ADDR,
+                *DEFAULT_ACCOUNT_PUBLIC_KEY,
                 &contract_name,
                 RuntimeArgs::default(),
             )
@@ -102,7 +102,7 @@ fn should_upgrade_do_nothing_to_do_something_version_hash_call() {
         };
         let exec_request = {
             ExecuteRequestBuilder::versioned_contract_call_by_hash_key_name(
-                *DEFAULT_ACCOUNT_ADDR,
+                *DEFAULT_ACCOUNT_PUBLIC_KEY,
                 DO_NOTHING_PACKAGE_HASH_KEY_NAME,
                 Some(UPGRADED_VERSION),
                 ENTRY_FUNCTION_NAME,
@@ -115,7 +115,7 @@ fn should_upgrade_do_nothing_to_do_something_version_hash_call() {
     }
 
     let account_1 = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should get account 1");
 
     assert!(
@@ -137,7 +137,7 @@ fn should_upgrade_do_nothing_to_do_something_contract_call() {
         let exec_request = {
             let contract_name = format!("{}.wasm", DO_NOTHING_STORED_CONTRACT_NAME);
             ExecuteRequestBuilder::standard(
-                *DEFAULT_ACCOUNT_ADDR,
+                *DEFAULT_ACCOUNT_PUBLIC_KEY,
                 &contract_name,
                 RuntimeArgs::default(),
             )
@@ -148,7 +148,7 @@ fn should_upgrade_do_nothing_to_do_something_contract_call() {
     }
 
     let account_1 = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should get account 1");
 
     account_1
@@ -174,14 +174,15 @@ fn should_upgrade_do_nothing_to_do_something_contract_call() {
             ARG_NEW_PURSE_NAME => PURSE_1,
         };
         let exec_request = {
-            ExecuteRequestBuilder::standard(*DEFAULT_ACCOUNT_ADDR, &contract_name, args).build()
+            ExecuteRequestBuilder::standard(*DEFAULT_ACCOUNT_PUBLIC_KEY, &contract_name, args)
+                .build()
         };
 
         builder.exec(exec_request).expect_success().commit();
     }
 
     let account_1 = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should get account 1");
 
     assert!(
@@ -194,7 +195,7 @@ fn should_upgrade_do_nothing_to_do_something_contract_call() {
         let exec_request = {
             let contract_name = format!("{}.wasm", DO_NOTHING_STORED_UPGRADER_CONTRACT_NAME);
             ExecuteRequestBuilder::standard(
-                *DEFAULT_ACCOUNT_ADDR,
+                *DEFAULT_ACCOUNT_PUBLIC_KEY,
                 &contract_name,
                 RuntimeArgs::default(),
             )
@@ -221,14 +222,15 @@ fn should_upgrade_do_nothing_to_do_something_contract_call() {
         };
 
         let exec_request = {
-            ExecuteRequestBuilder::standard(*DEFAULT_ACCOUNT_ADDR, &contract_name, args).build()
+            ExecuteRequestBuilder::standard(*DEFAULT_ACCOUNT_PUBLIC_KEY, &contract_name, args)
+                .build()
         };
 
         builder.exec(exec_request).expect_success().commit();
     }
 
     let account_1 = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should get account 1");
 
     assert!(
@@ -249,7 +251,7 @@ fn should_be_able_to_observe_state_transition_across_upgrade() {
         let exec_request = {
             let contract_name = format!("{}.wasm", PURSE_HOLDER_STORED_CONTRACT_NAME);
             ExecuteRequestBuilder::standard(
-                *DEFAULT_ACCOUNT_ADDR,
+                *DEFAULT_ACCOUNT_PUBLIC_KEY,
                 &contract_name,
                 RuntimeArgs::default(),
             )
@@ -260,7 +262,7 @@ fn should_be_able_to_observe_state_transition_across_upgrade() {
     }
 
     let account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     assert!(
@@ -277,7 +279,7 @@ fn should_be_able_to_observe_state_transition_across_upgrade() {
 
     // verify version before upgrade
     let account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     let version = *account
@@ -300,7 +302,7 @@ fn should_be_able_to_observe_state_transition_across_upgrade() {
         let exec_request = {
             let contract_name = format!("{}.wasm", PURSE_HOLDER_STORED_UPGRADER_CONTRACT_NAME);
             ExecuteRequestBuilder::standard(
-                *DEFAULT_ACCOUNT_ADDR,
+                *DEFAULT_ACCOUNT_PUBLIC_KEY,
                 &contract_name,
                 runtime_args! {
                     ARG_CONTRACT_PACKAGE => stored_package_hash,
@@ -314,7 +316,7 @@ fn should_be_able_to_observe_state_transition_across_upgrade() {
 
     // version should change after upgrade
     let account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     let version = *account
@@ -345,7 +347,7 @@ fn should_support_extending_functionality() {
         let exec_request = {
             let contract_name = format!("{}.wasm", PURSE_HOLDER_STORED_CONTRACT_NAME);
             ExecuteRequestBuilder::standard(
-                *DEFAULT_ACCOUNT_ADDR,
+                *DEFAULT_ACCOUNT_PUBLIC_KEY,
                 &contract_name,
                 RuntimeArgs::default(),
             )
@@ -356,7 +358,7 @@ fn should_support_extending_functionality() {
     }
 
     let account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     let stored_package_hash = account
@@ -378,7 +380,7 @@ fn should_support_extending_functionality() {
         let exec_request = {
             let contract_name = format!("{}.wasm", PURSE_HOLDER_STORED_CALLER_CONTRACT_NAME);
             ExecuteRequestBuilder::standard(
-                *DEFAULT_ACCOUNT_ADDR,
+                *DEFAULT_ACCOUNT_PUBLIC_KEY,
                 &contract_name,
                 runtime_args! {
                     HASH_KEY_NAME => stored_hash,
@@ -406,7 +408,7 @@ fn should_support_extending_functionality() {
         let exec_request = {
             let contract_name = format!("{}.wasm", PURSE_HOLDER_STORED_UPGRADER_CONTRACT_NAME);
             ExecuteRequestBuilder::standard(
-                *DEFAULT_ACCOUNT_ADDR,
+                *DEFAULT_ACCOUNT_PUBLIC_KEY,
                 &contract_name,
                 runtime_args! {
                     ARG_CONTRACT_PACKAGE => stored_package_hash,
@@ -430,7 +432,7 @@ fn should_support_extending_functionality() {
 
     // Get account again after upgrade to refresh named keys
     let account_2 = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
     // Get contract again after upgrade
 
@@ -447,7 +449,7 @@ fn should_support_extending_functionality() {
         let exec_request = {
             let contract_name = format!("{}.wasm", PURSE_HOLDER_STORED_CALLER_CONTRACT_NAME);
             ExecuteRequestBuilder::standard(
-                *DEFAULT_ACCOUNT_ADDR,
+                *DEFAULT_ACCOUNT_PUBLIC_KEY,
                 &contract_name,
                 runtime_args! {
                     HASH_KEY_NAME => stored_hash_2,
@@ -484,7 +486,7 @@ fn should_maintain_named_keys_across_upgrade() {
         let exec_request = {
             let contract_name = format!("{}.wasm", PURSE_HOLDER_STORED_CONTRACT_NAME);
             ExecuteRequestBuilder::standard(
-                *DEFAULT_ACCOUNT_ADDR,
+                *DEFAULT_ACCOUNT_PUBLIC_KEY,
                 &contract_name,
                 RuntimeArgs::default(),
             )
@@ -495,7 +497,7 @@ fn should_maintain_named_keys_across_upgrade() {
     }
 
     let account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should have account");
 
     let stored_hash = account
@@ -519,7 +521,7 @@ fn should_maintain_named_keys_across_upgrade() {
         let exec_request = {
             let contract_name = format!("{}.wasm", PURSE_HOLDER_STORED_CALLER_CONTRACT_NAME);
             ExecuteRequestBuilder::standard(
-                *DEFAULT_ACCOUNT_ADDR,
+                *DEFAULT_ACCOUNT_PUBLIC_KEY,
                 &contract_name,
                 runtime_args! {
                     HASH_KEY_NAME => stored_hash,
@@ -547,7 +549,7 @@ fn should_maintain_named_keys_across_upgrade() {
         let exec_request = {
             let contract_name = format!("{}.wasm", PURSE_HOLDER_STORED_UPGRADER_CONTRACT_NAME);
             ExecuteRequestBuilder::standard(
-                *DEFAULT_ACCOUNT_ADDR,
+                *DEFAULT_ACCOUNT_PUBLIC_KEY,
                 &contract_name,
                 runtime_args! {
                     ARG_CONTRACT_PACKAGE => stored_package_hash,

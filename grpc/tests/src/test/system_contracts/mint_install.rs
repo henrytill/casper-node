@@ -4,7 +4,7 @@ use casper_engine_test_support::{
     internal::{
         exec_with_return, WasmTestBuilder, DEFAULT_BLOCK_TIME, DEFAULT_RUN_GENESIS_REQUEST,
     },
-    DEFAULT_ACCOUNT_ADDR,
+    DEFAULT_ACCOUNT_PUBLIC_KEY,
 };
 use casper_execution_engine::{
     core::engine_state::EngineConfig,
@@ -35,7 +35,7 @@ fn should_run_mint_install_contract() {
     ) = exec_with_return::exec(
         engine_config,
         &mut builder,
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         "mint_install.wasm",
         DEFAULT_BLOCK_TIME,
         DEPLOY_HASH_1,

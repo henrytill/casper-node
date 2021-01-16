@@ -10,7 +10,6 @@ use casper_contract::{
     unwrap_or_revert::UnwrapOrRevert,
 };
 use casper_types::{
-    account::AccountHash,
     bytesrepr::{FromBytes, ToBytes},
     contracts::Parameters,
     mint::{
@@ -20,13 +19,13 @@ use casper_types::{
     },
     system_contract_errors::mint::Error,
     CLType, CLTyped, CLValue, EntryPoint, EntryPointAccess, EntryPointType, EntryPoints, Key,
-    Parameter, URef, U512,
+    Parameter, PublicKey, URef, U512,
 };
 
 pub struct MintContract;
 
 impl RuntimeProvider for MintContract {
-    fn get_caller(&self) -> AccountHash {
+    fn get_caller(&self) -> PublicKey {
         runtime::get_caller()
     }
 
@@ -79,7 +78,7 @@ impl StorageProvider for MintContract {
 impl SystemProvider for MintContract {
     fn record_transfer(
         &mut self,
-        maybe_to: Option<AccountHash>,
+        maybe_to: Option<PublicKey>,
         source: URef,
         target: URef,
         amount: U512,
@@ -125,7 +124,7 @@ pub fn balance() {
 
 pub fn transfer() {
     let mut mint_contract = MintContract;
-    let maybe_to: Option<AccountHash> = runtime::get_named_arg(ARG_TO);
+    let maybe_to: Option<PublicKey> = runtime::get_named_arg(ARG_TO);
     let source: URef = runtime::get_named_arg(ARG_SOURCE);
     let target: URef = runtime::get_named_arg(ARG_TARGET);
     let amount: U512 = runtime::get_named_arg(ARG_AMOUNT);

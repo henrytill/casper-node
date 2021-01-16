@@ -4,13 +4,12 @@ use alloc::vec::Vec;
 use core::mem::MaybeUninit;
 
 use casper_types::{
-    account::AccountHash,
     api_error,
     auction::{EraId, EraInfo},
     bytesrepr,
     system_contract_errors::auction,
-    ApiError, ContractHash, SystemContractType, TransferResult, TransferredTo, URef, U512,
-    UREF_SERIALIZED_LENGTH,
+    ApiError, ContractHash, PublicKey, SystemContractType, TransferResult, TransferredTo, URef,
+    U512, UREF_SERIALIZED_LENGTH,
 };
 
 use crate::{
@@ -115,7 +114,7 @@ pub fn get_balance() -> Option<U512> {
 
 /// Transfers `amount` of motes from the default purse of the account to `target`
 /// account.  If `target` does not exist it will be created.
-pub fn transfer_to_account(target: AccountHash, amount: U512, id: Option<u64>) -> TransferResult {
+pub fn transfer_to_account(target: PublicKey, amount: U512, id: Option<u64>) -> TransferResult {
     let (target_ptr, target_size, _bytes1) = contract_api::to_ptr(target);
     let (amount_ptr, amount_size, _bytes2) = contract_api::to_ptr(amount);
     let (id_ptr, id_size, _bytes3) = contract_api::to_ptr(id);
@@ -146,7 +145,7 @@ pub fn transfer_to_account(target: AccountHash, amount: U512, id: Option<u64>) -
 #[doc(hidden)]
 pub fn transfer_from_purse_to_account(
     source: URef,
-    target: AccountHash,
+    target: PublicKey,
     amount: U512,
     id: Option<u64>,
 ) -> TransferResult {
@@ -210,7 +209,7 @@ pub fn transfer_from_purse_to_purse(
 /// Needed to support system contract-based execution.
 #[doc(hidden)]
 pub fn record_transfer(
-    maybe_to: Option<AccountHash>,
+    maybe_to: Option<PublicKey>,
     source: URef,
     target: URef,
     amount: U512,

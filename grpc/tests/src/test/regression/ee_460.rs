@@ -1,6 +1,6 @@
 use casper_engine_test_support::{
     internal::{ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_RUN_GENESIS_REQUEST},
-    DEFAULT_ACCOUNT_ADDR,
+    DEFAULT_ACCOUNT_PUBLIC_KEY,
 };
 use casper_execution_engine::shared::transform::Transform;
 use casper_types::{runtime_args, RuntimeArgs, U512};
@@ -13,7 +13,7 @@ const ARG_AMOUNT: &str = "amount";
 #[test]
 fn should_run_ee_460_no_side_effects_on_error_regression() {
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_EE_460_REGRESSION,
         runtime_args! { ARG_AMOUNT => U512::max_value() },
     )

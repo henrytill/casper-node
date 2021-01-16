@@ -41,8 +41,6 @@ pub(crate) fn parse(strval: &str) -> StdResult<CLType, ()> {
         t if t == supported_types[25].0 => supported_types[25].1.clone(),
         t if t == supported_types[26].0 => supported_types[26].1.clone(),
         t if t == supported_types[27].0 => supported_types[27].1.clone(),
-        t if t == supported_types[28].0 => supported_types[28].1.clone(),
-        t if t == supported_types[29].0 => supported_types[29].1.clone(),
         _ => return Err(()),
     };
     Ok(cl_type)
@@ -62,7 +60,6 @@ pub(crate) fn supported_cl_types() -> Vec<(&'static str, CLType)> {
         ("unit", CLType::Unit),
         ("string", CLType::String),
         ("key", CLType::Key),
-        ("account_hash", AccountHash::cl_type()),
         ("uref", CLType::URef),
         ("public_key", CLType::PublicKey),
         ("opt_bool", CLType::Option(Box::new(CLType::Bool))),
@@ -77,10 +74,6 @@ pub(crate) fn supported_cl_types() -> Vec<(&'static str, CLType)> {
         ("opt_unit", CLType::Option(Box::new(CLType::Unit))),
         ("opt_string", CLType::Option(Box::new(CLType::String))),
         ("opt_key", CLType::Option(Box::new(CLType::Key))),
-        (
-            "opt_account_hash",
-            CLType::Option(Box::new(AccountHash::cl_type())),
-        ),
         ("opt_uref", CLType::Option(Box::new(CLType::URef))),
         (
             "opt_public_key",
@@ -93,7 +86,9 @@ pub(crate) fn supported_cl_types() -> Vec<(&'static str, CLType)> {
 pub mod help {
     use std::convert::TryFrom;
 
-    use casper_types::{account::AccountHash, AccessRights, AsymmetricType, Key, PublicKey, URef};
+    use casper_types::{
+        account::AccountHash, AccessRights, AsymmetricType, Key, PublicKey, SecretKey, URef,
+    };
 
     /// Returns a list of `CLType`s able to be passed as a string for use as payment code or session
     /// code args.
@@ -147,7 +142,7 @@ Prefix the type with "opt_" and use the term "null" without quotes to specify a 
 "name_09:opt_string='null'"     # Some("null".to_string())
 "name_10:opt_string=null"       # None
 "#,
-            Key::Account(AccountHash::new(array)).to_formatted_string(),
+            Key::Account(SecretKey::ed25519(array).into()).to_formatted_string(),
             Key::Hash(array).to_formatted_string(),
             Key::URef(URef::new(array, AccessRights::NONE)).to_formatted_string(),
             AccountHash::new(array).to_formatted_string(),

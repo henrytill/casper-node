@@ -4,19 +4,20 @@ use once_cell::sync::Lazy;
 
 use casper_engine_test_support::{
     internal::{
-        ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_PAYMENT,
-        DEFAULT_RUN_GENESIS_REQUEST,
+        ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_ACCOUNT_PUBLIC_KEY,
+        DEFAULT_PAYMENT, DEFAULT_RUN_GENESIS_REQUEST,
     },
-    DEFAULT_ACCOUNT_ADDR, DEFAULT_ACCOUNT_INITIAL_BALANCE,
+    DEFAULT_ACCOUNT_INITIAL_BALANCE,
 };
 use casper_types::{
-    account::AccountHash, auction::ARG_AMOUNT, mint::ARG_TARGET, runtime_args,
-    system_contract_errors::mint, ApiError, CLValue, RuntimeArgs, U512,
+    auction::ARG_AMOUNT, mint::ARG_TARGET, runtime_args, system_contract_errors::mint, ApiError,
+    CLValue, PublicKey, RuntimeArgs, SecretKey, U512,
 };
 
 const CONTRACT_TRANSFER_PURSE_TO_ACCOUNT: &str = "transfer_purse_to_account.wasm";
-const ACCOUNT_1_ADDR: AccountHash = AccountHash::new([42u8; 32]);
 
+static ACCOUNT_1_PUBLIC_KEY: Lazy<PublicKey> =
+    Lazy::new(|| SecretKey::ed25519([42u8; SecretKey::ED25519_LENGTH]).into());
 static ACCOUNT_1_INITIAL_FUND: Lazy<U512> = Lazy::new(|| *DEFAULT_PAYMENT + 42);
 
 #[ignore]
@@ -25,23 +26,22 @@ fn should_run_purse_to_account_transfer() {
     let mut builder = InMemoryWasmTestBuilder::default();
     builder.run_genesis(&DEFAULT_RUN_GENESIS_REQUEST);
 
-    let account_1_account_hash = ACCOUNT_1_ADDR;
     assert!(
-        builder.get_account(account_1_account_hash).is_none(),
+        builder.get_account(*ACCOUNT_1_PUBLIC_KEY).is_none(),
         "new account shouldn't exist yet"
     );
 
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_PURSE_TO_ACCOUNT,
-        runtime_args! { ARG_TARGET => account_1_account_hash, ARG_AMOUNT => *ACCOUNT_1_INITIAL_FUND },
+        runtime_args! { ARG_TARGET => *ACCOUNT_1_PUBLIC_KEY, ARG_AMOUNT => *ACCOUNT_1_INITIAL_FUND },
     )
     .build();
 
     builder.exec(exec_request_1).expect_success().commit();
 
     let new_account = builder
-        .get_account(account_1_account_hash)
+        .get_account(*ACCOUNT_1_PUBLIC_KEY)
         .expect("new account should exist now");
 
     let balance = builder.get_purse_balance(new_account.main_purse());
@@ -55,12 +55,10 @@ fn should_run_purse_to_account_transfer() {
 #[ignore]
 #[test]
 fn should_fail_when_sending_too_much_from_purse_to_account() {
-    let account_1_key = ACCOUNT_1_ADDR;
-
     let exec_request_1 = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_TRANSFER_PURSE_TO_ACCOUNT,
-        runtime_args! { "target" => account_1_key, "amount" => U512::max_value() },
+        runtime_args! { "target" => *ACCOUNT_1_PUBLIC_KEY, "amount" => U512::max_value() },
     )
     .build();
 
@@ -75,7 +73,7 @@ fn should_fail_when_sending_too_much_from_purse_to_account() {
 
     // Get transforms output for genesis account
     let default_account = builder
-        .get_account(*DEFAULT_ACCOUNT_ADDR)
+        .get_account(*DEFAULT_ACCOUNT_PUBLIC_KEY)
         .expect("should get genesis account");
 
     // Obtain main purse's balance

@@ -1,4 +1,4 @@
-use crate::{account::AccountHash, system_contract_errors::pos::Error, TransferredTo, URef, U512};
+use crate::{system_contract_errors::pos::Error, PublicKey, TransferredTo, URef, U512};
 
 /// Provides an access to mint.
 pub trait MintProvider {
@@ -6,7 +6,7 @@ pub trait MintProvider {
     fn transfer_purse_to_account(
         &mut self,
         source: URef,
-        target: AccountHash,
+        target: PublicKey,
         amount: U512,
     ) -> Result<TransferredTo, Error>;
 

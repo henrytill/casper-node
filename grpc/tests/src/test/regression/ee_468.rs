@@ -1,6 +1,6 @@
 use casper_engine_test_support::{
     internal::{ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_RUN_GENESIS_REQUEST},
-    DEFAULT_ACCOUNT_ADDR,
+    DEFAULT_ACCOUNT_PUBLIC_KEY,
 };
 use casper_types::RuntimeArgs;
 
@@ -10,7 +10,7 @@ const CONTRACT_DESERIALIZE_ERROR: &str = "deserialize_error.wasm";
 #[test]
 fn should_not_fail_deserializing() {
     let exec_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
+        *DEFAULT_ACCOUNT_PUBLIC_KEY,
         CONTRACT_DESERIALIZE_ERROR,
         RuntimeArgs::new(),
     )
