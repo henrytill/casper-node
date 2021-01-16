@@ -1,3 +1,5 @@
+use once_cell::sync::Lazy;
+
 use casper_engine_test_support::{
     internal::{
         utils, DeployItemBuilder, ExecuteRequestBuilder, InMemoryWasmTestBuilder,
@@ -6,13 +8,16 @@ use casper_engine_test_support::{
     DEFAULT_ACCOUNT_INITIAL_BALANCE,
 };
 use casper_execution_engine::{core::engine_state::CONV_RATE, shared::motes::Motes};
-use casper_types::{account::AccountHash, runtime_args, RuntimeArgs, U512};
+use casper_types::{runtime_args, PublicKey, RuntimeArgs, SecretKey, U512};
 
 const CONTRACT_TRANSFER_TO_ACCOUNT_NAME: &str = "transfer_to_account";
-const ACCOUNT_1_ADDR: AccountHash = AccountHash::new([1u8; 32]);
+
 const TRANSFER_ENTRYPOINT: &str = "transfer";
 const ARG_AMOUNT: &str = "amount";
 const ARG_TARGET: &str = "target";
+
+static ACCOUNT_1_PUBLIC_KEY: Lazy<PublicKey> =
+    Lazy::new(|| SecretKey::ed25519([1u8; SecretKey::ED25519_LENGTH]).into());
 
 #[ignore]
 #[test]
@@ -61,7 +66,7 @@ fn should_transfer_to_account_stored() {
             .with_stored_session_hash(
                 contract_hash,
                 TRANSFER_ENTRYPOINT,
-                runtime_args! { ARG_TARGET => ACCOUNT_1_ADDR, ARG_AMOUNT => transferred_amount },
+                runtime_args! { ARG_TARGET => *ACCOUNT_1_PUBLIC_KEY, ARG_AMOUNT => transferred_amount },
             )
             .with_empty_payment_bytes(runtime_args! {
                 ARG_AMOUNT => payment_purse_amount,

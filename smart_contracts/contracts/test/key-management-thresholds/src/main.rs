@@ -32,7 +32,7 @@ pub extern "C" fn call() {
         account::add_associated_key(account_42, Weight::new(100)).unwrap_or_revert();
         // this key will be used to test permission denied when removing keys with low
         // total weight
-        account::add_associated_key(account_42, Weight::new(1)).unwrap_or_revert();
+        account::add_associated_key(account_43, Weight::new(1)).unwrap_or_revert();
         account::add_associated_key(account_1, Weight::new(1)).unwrap_or_revert();
         account::set_action_threshold(ActionType::KeyManagement, Weight::new(101))
             .unwrap_or_revert();

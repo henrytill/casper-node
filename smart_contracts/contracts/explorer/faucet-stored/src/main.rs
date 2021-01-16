@@ -8,7 +8,7 @@ use alloc::{string::ToString, vec};
 use casper_contract::contract_api::{runtime, storage};
 use casper_types::{
     account::AccountHash, CLType, CLTyped, ContractHash, ContractVersion, EntryPoint,
-    EntryPointAccess, EntryPointType, EntryPoints, Parameter,
+    EntryPointAccess, EntryPointType, EntryPoints, Parameter, PublicKey,
 };
 
 const CONTRACT_NAME: &str = "faucet";
@@ -31,7 +31,7 @@ fn store() -> (ContractHash, ContractVersion) {
         let entry_point = EntryPoint::new(
             ENTRY_POINT_NAME,
             vec![
-                Parameter::new(ARG_TARGET, AccountHash::cl_type()),
+                Parameter::new(ARG_TARGET, PublicKey::cl_type()),
                 Parameter::new(ARG_AMOUNT, CLType::U512),
             ],
             CLType::Unit,
