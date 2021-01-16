@@ -1,6 +1,6 @@
 //! Some newtypes.
 mod blake2b256;
-mod macros;
+pub(crate) mod macros;
 use std::fmt::{self, Display, Formatter};
 
 pub use blake2b256::Blake2bHash;

@@ -1,13 +1,13 @@
 use proptest::{arbitrary, array, collection, prop_oneof, strategy::Strategy};
 
-use crate::{make_array_newtype, newtypes::Blake2bHash};
+use crate::{make_array_newtype, shared::newtypes::Blake2bHash};
 use casper_types::{
     bytesrepr::{self, FromBytes, ToBytes, U8_SERIALIZED_LENGTH},
     gens, URef,
 };
 
 use super::{HashedTrie, TestValue};
-use crate::trie::Trie;
+use crate::storage::trie::Trie;
 
 pub const BASIC_LENGTH: usize = 4;
 pub const SIMILAR_LENGTH: usize = 4;
@@ -281,12 +281,14 @@ fn create_0_leaf_trie(
 }
 
 mod empty_tries {
-    use casper_types::newtypes::CorrelationId;
 
     use super::*;
     use crate::{
-        error::in_memory,
-        trie_store::operations::tests::{self, InMemoryTestContext},
+        shared::newtypes::CorrelationId,
+        storage::{
+            error::in_memory,
+            trie_store::operations::{tests, tests::InMemoryTestContext},
+        },
     };
 
     #[test]
@@ -314,9 +316,23 @@ mod empty_tries {
 }
 
 mod proptests {
+
+    use std::ops::RangeInclusive;
+
     use proptest::{collection::vec, proptest};
 
-    use casper_types::newtypes::CorrelationId;
+    use super::*;
+    use crate::{
+        shared::newtypes::CorrelationId,
+        storage::{
+            error,
+            error::in_memory,
+            trie_store::operations::{
+                tests,
+                tests::{InMemoryTestContext, LmdbTestContext},
+            },
+        },
+    };
 
     const DEFAULT_MIN_LENGTH: usize = 0;
     const DEFAULT_MAX_LENGTH: usize = 100;
@@ -330,13 +346,6 @@ mod proptests {
             .unwrap_or(DEFAULT_MAX_LENGTH);
         RangeInclusive::new(start, end)
     }
-
-    use super::*;
-    use crate::{
-        error::{self, in_memory},
-        trie_store::operations::tests::{self, InMemoryTestContext, LmdbTestContext},
-    };
-    use std::ops::RangeInclusive;
 
     fn lmdb_roundtrip_succeeds(pairs: &[(TestKey, TestValue)]) -> bool {
         let correlation_id = CorrelationId::new();

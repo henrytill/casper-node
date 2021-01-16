@@ -1,3 +1,4 @@
+mod ee_699;
 mod keys;
 mod proptests;
 mod read;
