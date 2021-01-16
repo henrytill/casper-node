@@ -317,13 +317,15 @@ mod empty_tries {
 
 mod proptests {
 
-    use std::ops::RangeInclusive;
+    use std::{fmt::Debug, ops::RangeInclusive};
 
     use proptest::{collection::vec, proptest};
 
+    use casper_types::{crypto::gens::public_key_arb, gens::key_arb};
+
     use super::*;
     use crate::{
-        shared::newtypes::CorrelationId,
+        shared::{newtypes::CorrelationId, stored_value::gens::stored_value_arb},
         storage::{
             error,
             error::in_memory,
@@ -335,7 +337,7 @@ mod proptests {
     };
 
     const DEFAULT_MIN_LENGTH: usize = 0;
-    const DEFAULT_MAX_LENGTH: usize = 100;
+    const DEFAULT_MAX_LENGTH: usize = 20;
 
     fn get_range() -> RangeInclusive<usize> {
         let start = option_env!("CL_TRIE_TEST_VECTOR_MIN_LENGTH")
@@ -347,7 +349,11 @@ mod proptests {
         RangeInclusive::new(start, end)
     }
 
-    fn lmdb_roundtrip_succeeds(pairs: &[(TestKey, TestValue)]) -> bool {
+    fn lmdb_roundtrip_succeeds<K, V>(pairs: &[(K, V)]) -> bool
+    where
+        K: ToBytes + FromBytes + Clone + Eq + Debug + Copy + Ord,
+        V: ToBytes + FromBytes + Clone + Eq + Debug,
+    {
         let correlation_id = CorrelationId::new();
         let (root_hash, tries) = create_0_leaf_trie().unwrap();
         let context = LmdbTestContext::new(&tries).unwrap();
@@ -364,7 +370,20 @@ mod proptests {
 
         states_to_check.extend(root_hashes);
 
-        tests::check_pairs::<_, _, _, _, error::Error>(
+        let check_pairs_result = tests::check_pairs::<_, _, _, _, error::Error>(
+            correlation_id,
+            &context.environment,
+            &context.store,
+            &states_to_check,
+            &pairs,
+        )
+        .unwrap();
+
+        if !check_pairs_result {
+            return false;
+        }
+
+        tests::check_pairs_proofs::<_, _, _, _, error::Error>(
             correlation_id,
             &context.environment,
             &context.store,
@@ -374,7 +393,11 @@ mod proptests {
         .unwrap()
     }
 
-    fn in_memory_roundtrip_succeeds(pairs: &[(TestKey, TestValue)]) -> bool {
+    fn in_memory_roundtrip_succeeds<K, V>(pairs: &[(K, V)]) -> bool
+    where
+        K: ToBytes + FromBytes + Clone + Eq + Debug + Copy + Ord,
+        V: ToBytes + FromBytes + Clone + Eq + Debug,
+    {
         let correlation_id = CorrelationId::new();
         let (root_hash, tries) = create_0_leaf_trie().unwrap();
         let context = InMemoryTestContext::new(&tries).unwrap();
@@ -391,7 +414,20 @@ mod proptests {
 
         states_to_check.extend(root_hashes);
 
-        tests::check_pairs::<_, _, _, _, in_memory::Error>(
+        let check_pairs_result = tests::check_pairs::<_, _, _, _, in_memory::Error>(
+            correlation_id,
+            &context.environment,
+            &context.store,
+            &states_to_check,
+            &pairs,
+        )
+        .unwrap();
+
+        if !check_pairs_result {
+            return false;
+        }
+
+        tests::check_pairs_proofs::<_, _, _, _, in_memory::Error>(
             correlation_id,
             &context.environment,
             &context.store,
@@ -407,12 +443,44 @@ mod proptests {
 
     proptest! {
         #[test]
-        fn prop_in_memory_roundtrip_succeeds(inputs in vec((test_key_arb(), test_value_arb()), get_range())) {
+        fn prop_in_memory_roundtrip_succeeds(
+            inputs in vec((test_key_arb(), test_value_arb()), get_range())
+        ) {
             assert!(in_memory_roundtrip_succeeds(&inputs));
         }
 
         #[test]
-        fn prop_lmdb_roundtrip_succeeds(inputs in vec((test_key_arb(), test_value_arb()), get_range())) {
+        fn prop_lmdb_roundtrip_succeeds(
+            inputs in vec((test_key_arb(), test_value_arb()), get_range())
+        ) {
+            assert!(lmdb_roundtrip_succeeds(&inputs));
+        }
+
+        #[test]
+        fn prop_in_memory_roundtrip_succeeds_key_stored_value(
+            inputs in vec((key_arb(), stored_value_arb()), get_range())
+        ) {
+            assert!(in_memory_roundtrip_succeeds(&inputs));
+        }
+
+        #[test]
+        fn prop_lmdb_roundtrip_succeeds_key_stored_value(
+            inputs in vec((key_arb(), stored_value_arb()), get_range())
+        ) {
+            assert!(lmdb_roundtrip_succeeds(&inputs));
+        }
+
+        #[test]
+        fn prop_in_memory_roundtrip_succeeds_public_key_test_value(
+            inputs in vec((public_key_arb(), test_value_arb()), get_range())
+        ) {
+            assert!(in_memory_roundtrip_succeeds(&inputs));
+        }
+
+        #[test]
+        fn prop_lmdb_roundtrip_succeeds_public_key_test_value(
+            inputs in vec((public_key_arb(), test_value_arb()), get_range())
+        ) {
             assert!(lmdb_roundtrip_succeeds(&inputs));
         }
     }
