@@ -3,7 +3,7 @@ mod tests;
 
 use std::{cmp, collections::VecDeque, convert::TryInto, mem};
 
-use tracing::warn;
+use tracing::{error, warn};
 
 use casper_types::bytesrepr::{self, FromBytes, ToBytes};
 
@@ -50,6 +50,7 @@ where
     E: From<S::Error> + From<bytesrepr::Error>,
 {
     let path: Vec<u8> = key.to_bytes()?;
+    let path_len = path.len();
 
     let mut depth: usize = 0;
     let mut current: Trie<K, V> = match store.get(txn, root)? {
@@ -101,6 +102,10 @@ where
                 }
             }
             Trie::Extension { affix, pointer } => {
+                let upper_bound = depth + affix.len();
+                if upper_bound > path_len {
+                    error!(?path, ?depth, ?affix, "error when reading key");
+                }
                 let sub_path = &path[depth..depth + affix.len()];
                 if sub_path == affix.as_slice() {
                     match store.get(txn, pointer.hash())? {

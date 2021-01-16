@@ -5,7 +5,11 @@ mod scan;
 mod synchronize;
 mod write;
 
-use std::{collections::HashMap, convert};
+use std::{
+    collections::{BTreeSet, HashMap},
+    convert,
+    ops::Not,
+};
 
 use lmdb::DatabaseFlags;
 use tempfile::{tempdir, TempDir};
@@ -29,7 +33,6 @@ use crate::storage::{
     },
     DEFAULT_TEST_MAX_DB_SIZE, DEFAULT_TEST_MAX_READERS,
 };
-use std::ops::Not;
 
 const TEST_KEY_LENGTH: usize = 7;
 
@@ -833,8 +836,8 @@ fn check_pairs_proofs<'a, K, V, R, S, E>(
     pairs: &[(K, V)],
 ) -> Result<bool, E>
 where
-    K: ToBytes + FromBytes + Eq + std::fmt::Debug + Copy + Clone + Ord,
-    V: ToBytes + FromBytes + Eq + std::fmt::Debug + Copy,
+    K: ToBytes + FromBytes + Eq + std::fmt::Debug + Clone + Copy + Ord,
+    V: ToBytes + FromBytes + Eq + std::fmt::Debug + Clone,
     R: TransactionSource<'a, Handle = S::Handle>,
     S: TrieStore<K, V>,
     S::Error: From<R::Error>,
@@ -869,7 +872,7 @@ fn check_pairs<'a, K, V, R, S, E>(
 ) -> Result<bool, E>
 where
     K: ToBytes + FromBytes + Eq + std::fmt::Debug + Clone + Ord,
-    V: ToBytes + FromBytes + Eq + std::fmt::Debug + Copy,
+    V: ToBytes + FromBytes + Eq + std::fmt::Debug + Clone,
     R: TransactionSource<'a, Handle = S::Handle>,
     S: TrieStore<K, V>,
     S::Error: From<R::Error>,
@@ -879,26 +882,18 @@ where
     for (index, root_hash) in root_hashes.iter().enumerate() {
         for (key, value) in &pairs[..=index] {
             let result = read::<_, _, _, _, E>(correlation_id, &txn, store, root_hash, key)?;
-            if ReadResult::Found(*value) != result {
+            if ReadResult::Found(value.to_owned()) != result {
                 return Ok(false);
             }
         }
-        let expected = {
-            let mut tmp = pairs[..=index]
-                .iter()
-                .map(|(k, _)| k)
-                .cloned()
-                .collect::<Vec<K>>();
-            tmp.sort();
-            tmp
-        };
-        let actual = {
-            let mut tmp = operations::keys::<_, _, _, _>(correlation_id, &txn, store, root_hash)
-                .filter_map(Result::ok)
-                .collect::<Vec<K>>();
-            tmp.sort();
-            tmp
-        };
+        let expected = pairs[..=index]
+            .iter()
+            .map(|(k, _)| k)
+            .cloned()
+            .collect::<BTreeSet<K>>();
+        let actual = operations::keys::<_, _, _, _>(correlation_id, &txn, store, root_hash)
+            .filter_map(Result::ok)
+            .collect::<BTreeSet<K>>();
         if expected != actual {
             return Ok(false);
         }
