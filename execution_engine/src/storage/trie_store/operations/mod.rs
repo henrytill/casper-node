@@ -18,7 +18,7 @@ use crate::{
         transaction_source::{Readable, Writable},
         trie::{
             merkle_proof::{TrieMerkleProof, TrieMerkleProofStep},
-            Parents, Pointer, Trie, RADIX, USIZE_EXCEEDS_U8,
+            Parents, Pointer, PointerBlock, Trie, RADIX, USIZE_EXCEEDS_U8,
         },
         trie_store::TrieStore,
     },
@@ -392,6 +392,218 @@ where
             }
         }
     }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum DeleteResult {
+    Deleted(Blake2bHash),
+    DoesNotExist,
+    RootNotFound,
+}
+
+#[allow(unused)]
+fn delete<K, V, T, S, E>(
+    correlation_id: CorrelationId,
+    txn: &mut T,
+    store: &S,
+    root: &Blake2bHash,
+    key_to_delete: &K,
+) -> Result<DeleteResult, E>
+where
+    K: ToBytes + FromBytes + Clone + PartialEq + std::fmt::Debug,
+    V: ToBytes + FromBytes + Clone,
+    T: Readable<Handle = S::Handle> + Writable<Handle = S::Handle>,
+    S: TrieStore<K, V>,
+    S::Error: From<T::Error>,
+    E: From<S::Error> + From<bytesrepr::Error>,
+{
+    let root_trie = match store.get(txn, root)? {
+        None => return Ok(DeleteResult::RootNotFound),
+        Some(root_trie) => root_trie,
+    };
+
+    let key_bytes = key_to_delete.to_bytes()?;
+    let TrieScan { tip, mut parents } =
+        scan::<_, _, _, _, E>(correlation_id, txn, store, &key_bytes, &root_trie)?;
+
+    // Check that tip is a leaf
+    match tip {
+        Trie::Leaf { key, .. } if key == *key_to_delete => {}
+        _ => return Ok(DeleteResult::DoesNotExist),
+    }
+
+    let mut new_elements: Vec<(Blake2bHash, Trie<K, V>)> = Vec::new();
+
+    while let Some((idx, parent)) = parents.pop() {
+        match (new_elements.last_mut(), parent) {
+            (_, Trie::Leaf { .. }) => panic!("Should not find leaf"),
+            (None, Trie::Extension { .. }) => panic!("Extension node should never end in leaf"),
+            (Some((_, Trie::Leaf { .. })), _) => panic!("New elements should never contain a leaf"),
+            // The parent is the node which pointed to the leaf we deleted, and that leaf had
+            // multiple siblings.
+            (None, Trie::Node { mut pointer_block }) if pointer_block.child_count() > 2 => {
+                let trie_node: Trie<K, V> = {
+                    pointer_block[idx as usize] = None;
+                    Trie::Node { pointer_block }
+                };
+                let trie_key = Blake2bHash::new(&trie_node.to_bytes()?);
+                new_elements.push((trie_key, trie_node))
+            }
+            // The parent is the node which pointed to the leaf we deleted, and that leaf had one or
+            // zero siblings.
+            (None, Trie::Node { mut pointer_block }) => {
+                let (sibling_idx, sibling_pointer) = match pointer_block
+                    .to_indexed_pointers()
+                    .find(|(jdx, _)| idx != *jdx)
+                {
+                    // There are zero siblings.  Elsewhere we maintain the invariant that only
+                    // the root node can contain a single leaf.  Therefore the parent is the
+                    // root node.  The resulting output is just the empty node and nothing else.
+                    None => {
+                        let trie_node = Trie::Node {
+                            pointer_block: Box::new(PointerBlock::new()),
+                        };
+                        let trie_key = Blake2bHash::new(&trie_node.to_bytes()?);
+                        new_elements.push((trie_key, trie_node));
+                        break;
+                    }
+                    Some((sibling_idx, pointer)) => (sibling_idx, pointer),
+                };
+                // There is one sibling.
+                match sibling_pointer {
+                    // The single sibling is a leaf
+                    Pointer::LeafPointer(..) => match parents.pop() {
+                        Some((_, Trie::Leaf { .. })) => panic!("Should not have leaf in scan"),
+                        // There is no grandparent.  Therefore the parent is the root node. Output
+                        // the root node with a single leaf.
+                        None => {
+                            pointer_block[idx as usize] = None;
+                            let trie_node = Trie::Node { pointer_block };
+                            let trie_key = Blake2bHash::new(&trie_node.to_bytes()?);
+                            new_elements.push((trie_key, trie_node));
+                            break;
+                        }
+                        // The grandparent is a node. Reseat the single leaf sibling into the
+                        // grandparent.
+                        Some((idx, Trie::Node { mut pointer_block })) => {
+                            pointer_block[idx as usize] = Some(sibling_pointer);
+                            let trie_node = Trie::Node { pointer_block };
+                            let trie_key = Blake2bHash::new(&trie_node.to_bytes()?);
+                            new_elements.push((trie_key, trie_node))
+                        }
+                        // The grandparent is an extension.
+                        Some((_, Trie::Extension { .. })) => match parents.pop() {
+                            None => panic!("Root node cannot be an extension node"),
+                            Some((_, Trie::Leaf { .. })) => panic!("Should not find leaf"),
+                            Some((_, Trie::Extension { .. })) => {
+                                panic!("Extension cannot extend to an extension")
+                            }
+                            // The great-grandparent is a node. Reseat the single leaf sibling into
+                            // the position the grandparent was in.
+                            Some((idx, Trie::Node { mut pointer_block })) => {
+                                pointer_block[idx as usize] = Some(sibling_pointer);
+                                let trie_node = Trie::Node { pointer_block };
+                                let trie_key = Blake2bHash::new(&trie_node.to_bytes()?);
+                                new_elements.push((trie_key, trie_node))
+                            }
+                        },
+                    },
+                    // The single sibling is a node or an extension.
+                    Pointer::NodePointer(sibling_trie_key) => {
+                        // Elsewhere we maintain the invariant that all trie keys have corresponding
+                        // trie values.
+                        let sibling_trie = store
+                            .get(txn, &sibling_trie_key)?
+                            .expect("should have sibling");
+                        match sibling_trie {
+                            Trie::Leaf { .. } => panic!("Node pointer should not point to leaf"),
+                            // The single sibling is a node.  We output an extension to replace the
+                            // parent, with a single byte corresponding to the sibling index.  In
+                            // the next loop iteration, we will handle the
+                            // case where this extension might need to be combined with a
+                            // grandparent extension.
+                            Trie::Node { .. } => {
+                                let new_extension: Trie<K, V> = Trie::Extension {
+                                    affix: vec![sibling_idx].into(),
+                                    pointer: sibling_pointer,
+                                };
+                                let trie_key = Blake2bHash::new(&new_extension.to_bytes()?);
+                                new_elements.push((trie_key, new_extension))
+                            }
+                            // The single sibling is a extension.  We output an extension to replace
+                            // the parent, prepending the sibling index
+                            // to the sibling's affix.  In the next loop
+                            // iteration, we will handle the case where this extension might need to
+                            // be combined with a grandparent extension.
+                            Trie::Extension {
+                                affix: extension_affix,
+                                pointer,
+                            } => {
+                                let mut new_affix = vec![sibling_idx];
+                                new_affix.extend(Vec::<u8>::from(extension_affix));
+                                let new_extension: Trie<K, V> = Trie::Extension {
+                                    affix: new_affix.into(),
+                                    pointer,
+                                };
+                                let trie_key = Blake2bHash::new(&new_extension.to_bytes()?);
+                                new_elements.push((trie_key, new_extension))
+                            }
+                        }
+                    }
+                }
+            }
+            // The parent is a pointer block, and we are propagating a node or extension upwards. It
+            // is impossible to propagate a leaf upwards.  Reseat the thing we are propagating into
+            // the parent.
+            (Some((trie_key, _)), Trie::Node { mut pointer_block }) => {
+                let trie_node: Trie<K, V> = {
+                    pointer_block[idx as usize] = Some(Pointer::NodePointer(*trie_key));
+                    Trie::Node { pointer_block }
+                };
+                let trie_key = Blake2bHash::new(&trie_node.to_bytes()?);
+                new_elements.push((trie_key, trie_node))
+            }
+            // The parent is an extension, and we are outputting an extension.  Prepend the
+            // parent affix to affix of the output extension, mutating the output in place.
+            // This is the only mutate-in-place.
+            (
+                Some((
+                    trie_key,
+                    Trie::Extension {
+                        affix: child_affix,
+                        pointer,
+                    },
+                )),
+                Trie::Extension { affix, .. },
+            ) => {
+                let mut new_affix: Vec<u8> = Vec::<u8>::from(affix);
+                new_affix.extend(Vec::<u8>::from(child_affix.to_owned()));
+                *child_affix = new_affix.into();
+                *trie_key = {
+                    let new_extension: Trie<K, V> = Trie::Extension {
+                        affix: child_affix.to_owned(),
+                        pointer: pointer.to_owned(),
+                    };
+                    Blake2bHash::new(&new_extension.to_bytes()?)
+                }
+            }
+            // The parent is an extension and the new element is a pointer block.
+            // The next element we add will be an extension to the pointer block we are going to
+            // add.
+            (Some((trie_key, Trie::Node { .. })), Trie::Extension { affix, mut pointer }) => {
+                pointer = Pointer::NodePointer(*trie_key);
+                let trie_extension = Trie::Extension { affix, pointer };
+                let trie_key = Blake2bHash::new(&trie_extension.to_bytes()?);
+                new_elements.push((trie_key, trie_extension))
+            }
+        }
+    }
+    let mut root_hash: Blake2bHash = root.to_owned();
+    for (hash, element) in new_elements.iter() {
+        store.put(txn, hash, element)?;
+        root_hash = *hash;
+    }
+    Ok(DeleteResult::Deleted(root_hash))
 }
 
 #[allow(clippy::type_complexity)]
