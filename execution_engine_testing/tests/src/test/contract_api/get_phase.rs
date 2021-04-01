@@ -36,8 +36,11 @@ fn should_run_get_phase_contract() {
         ExecuteRequestBuilder::new().push_deploy(deploy).build()
     };
 
-    InMemoryWasmTestBuilder::default()
-        .run_genesis(&DEFAULT_RUN_GENESIS_REQUEST)
+    let mut builder = InMemoryWasmTestBuilder::default();
+
+    builder.run_genesis(&DEFAULT_RUN_GENESIS_REQUEST);
+
+    builder
         .exec(exec_request)
         .commit()
         .expect_success();

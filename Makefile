@@ -17,13 +17,15 @@ CLIENT      = $(shell find ./smart_contracts/contracts/client    -mindepth 1 -ma
 EXPLORER    = $(shell find ./smart_contracts/contracts/explorer  -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)
 PROFILING   = $(shell find ./smart_contracts/contracts/profiling -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)
 SRE         = $(shell find ./smart_contracts/contracts/SRE       -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)
-TEST        = $(shell find ./smart_contracts/contracts/test        -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)
+EXAMPLES    = $(shell find ./smart_contracts/contracts/examples  -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)
+TEST        = $(shell find ./smart_contracts/contracts/test      -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)
 
 BENCH_CONTRACTS     := $(patsubst %, build-contract-rs/%, $(BENCH))
 CLIENT_CONTRACTS    := $(patsubst %, build-contract-rs/%, $(CLIENT))
 EXPLORER_CONTRACTS  := $(patsubst %, build-contract-rs/%, $(EXPLORER))
 PROFILING_CONTRACTS := $(patsubst %, build-contract-rs/%, $(PROFILING))
 SRE_CONTRACTS       := $(patsubst %, build-contract-rs/%, $(SRE))
+EXAMPLE_CONTRACTS   := $(patsubst %, build-contract-rs/%, $(EXAMPLES))
 TEST_CONTRACTS      := $(patsubst %, build-contract-rs/%, $(TEST))
 
 # AssemblyScript Contracts
@@ -64,6 +66,7 @@ build-contracts-rs: \
 	$(EXPLORER_CONTRACTS) \
 	$(PROFILING_CONTRACTS) \
 	$(SRE_CONTRACTS) \
+	$(EXAMPLE_CONTRACTS) \
 	$(TEST_CONTRACTS)
 
 .PHONY: build-client-contracts
