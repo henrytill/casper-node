@@ -1214,6 +1214,40 @@ where
             .map_err(|e| Error::Interpreter(e.into()).into())
     }
 
+    /// Load the uref known by the given name into the Wasm memory
+    fn get_call_stack(
+        &mut self,
+        output_ptr: u32,
+        output_size: u32,
+        bytes_written_ptr: u32,
+    ) -> Result<Result<(), ApiError>, Trap> {
+        let call_stack = self.call_stack();
+
+        let call_stack_bytes = match call_stack.to_bytes() {
+            Ok(bytes) => bytes,
+            Err(error) => return Ok(Err(error.into())),
+        };
+
+        if let Err(error) = self.memory.set(output_ptr, &call_stack_bytes) {
+            return Err(Error::Interpreter(error.into()).into());
+        }
+
+        let bytes_size = call_stack_bytes.len() as u32;
+
+        // `output_size` has to be greater or equal to the actual length of serialized call stack
+        if output_size < bytes_size {
+            return Ok(Err(ApiError::BufferTooSmall));
+        }
+
+        let size_bytes = bytes_size.to_le_bytes();
+
+        if let Err(error) = self.memory.set(bytes_written_ptr, &size_bytes) {
+            return Err(Error::Interpreter(error.into()).into());
+        }
+
+        Ok(Ok(()))
+    }
+
     /// Return some bytes from the memory and terminate the current `sub_call`. Note that the return
     /// type is `Trap`, indicating that this function will always kill the current Wasm instance.
     fn ret(

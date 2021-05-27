@@ -968,6 +968,15 @@ where
                 self.record_era_info(era_id, era_info)?;
                 Ok(Some(RuntimeValue::I32(0)))
             }
+            FunctionIndex::GetCallStack => {
+                // args(0) = pointer to output buffer for serialized call_stack
+                // args(1) = size of output buffer
+                // args(2) = pointer to bytes written
+                let (output_ptr, output_size, bytes_written_ptr): (u32, u32, u32) =
+                    Args::parse(args)?;
+                let ret = self.get_call_stack(output_ptr, output_size, bytes_written_ptr)?;
+                Ok(Some(RuntimeValue::I32(api_error::i32_from(ret))))
+            }
         }
     }
 }

@@ -700,6 +700,13 @@ extern "C" {
         out_ptr: *mut u8,
         out_size: usize,
     ) -> i32;
+    ///
+    ///
+    pub fn casper_get_call_stack(
+        output_ptr: *mut u8,
+        output_size: usize,
+        bytes_written_ptr: *mut usize,
+    ) -> i32;
     /// Prints data directly to standard output on the host.
     ///
     /// # Arguments

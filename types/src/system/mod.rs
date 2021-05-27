@@ -4,7 +4,12 @@ pub mod handle_payment;
 pub mod mint;
 pub mod standard_payment;
 
-use crate::{account::AccountHash, ContractPackageHash, ContractWasmHash};
+use crate::{
+    account::AccountHash,
+    bytesrepr,
+    bytesrepr::{FromBytes, ToBytes},
+    ContractPackageHash, ContractWasmHash,
+};
 pub use error::Error;
 pub use system_contract_type::{
     SystemContractType, AUCTION, HANDLE_PAYMENT, MINT, STANDARD_PAYMENT,
@@ -228,5 +233,21 @@ impl CallStackElement {
             contract_package_hash,
             contract_wasm_hash,
         }
+    }
+}
+
+impl ToBytes for CallStackElement {
+    fn to_bytes(&self) -> Result<Vec<u8>, bytesrepr::Error> {
+        todo!()
+    }
+
+    fn serialized_length(&self) -> usize {
+        todo!()
+    }
+}
+
+impl FromBytes for CallStackElement {
+    fn from_bytes(_bytes: &[u8]) -> Result<(Self, &[u8]), bytesrepr::Error> {
+        todo!()
     }
 }

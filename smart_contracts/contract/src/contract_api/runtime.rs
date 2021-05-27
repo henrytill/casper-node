@@ -16,6 +16,7 @@ use casper_types::{
 };
 
 use crate::{contract_api, ext_ffi, unwrap_or_revert::UnwrapOrRevert};
+use casper_types::system::CallStackElement;
 
 /// Returns the given [`CLValue`] to the host, terminating the currently running module.
 ///
@@ -190,6 +191,28 @@ pub fn get_caller() -> AccountHash {
     };
     let buf = read_host_buffer(output_size).unwrap_or_revert();
     bytesrepr::deserialize(buf).unwrap_or_revert()
+}
+
+/// Returns the requested named [`Key`] from the current context.
+///
+/// The current context is either the caller's account or a stored contract depending on whether the
+/// currently-executing module is a direct call or a sub-call respectively.
+pub fn get_call_stack() -> Vec<CallStackElement> {
+    let mut total_bytes: usize = 0;
+    let mut call_stack_bytes = Vec::new();
+    let ret = unsafe {
+        ext_ffi::casper_get_call_stack(
+            call_stack_bytes.as_mut_ptr(),
+            call_stack_bytes.len(),
+            &mut total_bytes as *mut usize,
+        )
+    };
+    match api_error::result_from(ret) {
+        Ok(_) => {}
+        Err(e) => revert(e),
+    }
+    call_stack_bytes.truncate(total_bytes);
+    bytesrepr::deserialize(call_stack_bytes).unwrap_or_revert()
 }
 
 /// Returns the current [`BlockTime`].
