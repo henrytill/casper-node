@@ -1217,31 +1217,40 @@ where
     /// Load the uref known by the given name into the Wasm memory
     fn get_call_stack(
         &mut self,
-        output_ptr: u32,
-        output_size: u32,
-        bytes_written_ptr: u32,
+        // (Output) Pointer to number of elements in the call stack.
+        call_stack_len_ptr: u32,
+        // (Output) Pointer to size in bytes of the serialized call stack.
+        result_size_ptr: u32,
     ) -> Result<Result<(), ApiError>, Trap> {
+        if !self.can_write_to_host_buffer() {
+            // Exit early if the host buffer is already occupied
+            return Ok(Err(ApiError::HostBufferFull));
+        }
         let call_stack = self.call_stack();
+        let call_stack_len = call_stack.len() as u32;
+        let call_stack_len_bytes = call_stack_len.to_le_bytes();
 
-        let call_stack_bytes = match call_stack.to_bytes() {
-            Ok(bytes) => bytes,
-            Err(error) => return Ok(Err(error.into())),
-        };
-
-        if let Err(error) = self.memory.set(output_ptr, &call_stack_bytes) {
+        if let Err(error) = self.memory.set(call_stack_len_ptr, &call_stack_len_bytes) {
             return Err(Error::Interpreter(error.into()).into());
         }
 
-        let bytes_size = call_stack_bytes.len() as u32;
-
-        // `output_size` has to be greater or equal to the actual length of serialized call stack
-        if output_size < bytes_size {
-            return Ok(Err(ApiError::BufferTooSmall));
+        if call_stack_len == 0 {
+            return Ok(Ok(()));
         }
 
-        let size_bytes = bytes_size.to_le_bytes();
+        let call_stack_cl_value = CLValue::from_t(call_stack.clone()).map_err(Error::CLValue)?;
 
-        if let Err(error) = self.memory.set(bytes_written_ptr, &size_bytes) {
+        let call_stack_cl_value_bytes_len = call_stack_cl_value.inner_bytes().len() as u32;
+        if let Err(error) = self.write_host_buffer(call_stack_cl_value) {
+            return Ok(Err(error));
+        }
+
+        let call_stack_cl_value_bytes_len_bytes = call_stack_cl_value_bytes_len.to_le_bytes();
+
+        if let Err(error) = self
+            .memory
+            .set(result_size_ptr, &call_stack_cl_value_bytes_len_bytes)
+        {
             return Err(Error::Interpreter(error.into()).into());
         }
 

@@ -969,12 +969,10 @@ where
                 Ok(Some(RuntimeValue::I32(0)))
             }
             FunctionIndex::GetCallStack => {
-                // args(0) = pointer to output buffer for serialized call_stack
-                // args(1) = size of output buffer
-                // args(2) = pointer to bytes written
-                let (output_ptr, output_size, bytes_written_ptr): (u32, u32, u32) =
-                    Args::parse(args)?;
-                let ret = self.get_call_stack(output_ptr, output_size, bytes_written_ptr)?;
+                // args(0) (Output) Pointer to number of elements in the call stack.
+                // args(1) (Output) Pointer to size in bytes of the serialized call stack.
+                let (call_stack_len_ptr, result_size_ptr) = Args::parse(args)?;
+                let ret = self.get_call_stack(call_stack_len_ptr, result_size_ptr)?;
                 Ok(Some(RuntimeValue::I32(api_error::i32_from(ret))))
             }
         }

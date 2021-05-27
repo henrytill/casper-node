@@ -8,8 +8,9 @@ use crate::{
     account::AccountHash,
     bytesrepr,
     bytesrepr::{FromBytes, ToBytes},
-    ContractPackageHash, ContractWasmHash,
+    CLType, CLTyped, ContractPackageHash, ContractWasmHash,
 };
+use bytesrepr::U8_SERIALIZED_LENGTH;
 pub use error::Error;
 pub use system_contract_type::{
     SystemContractType, AUCTION, HANDLE_PAYMENT, MINT, STANDARD_PAYMENT,
@@ -201,6 +202,14 @@ mod system_contract_type {
     }
 }
 
+/// Tag representing variants of CallStackElement for purposes of serialization.
+#[repr(u8)]
+pub enum CallStackElementTag {
+    /// Session tag.
+    Session = 0,
+    /// Contract tag.
+    Contract,
+}
 /// Represents the origin of a sub-call.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CallStackElement {
@@ -234,20 +243,77 @@ impl CallStackElement {
             contract_wasm_hash,
         }
     }
+
+    /// Gets the tag from self.
+    pub fn tag(&self) -> CallStackElementTag {
+        match self {
+            CallStackElement::Session { .. } => CallStackElementTag::Session,
+            CallStackElement::Contract { .. } => CallStackElementTag::Contract,
+        }
+    }
 }
 
 impl ToBytes for CallStackElement {
     fn to_bytes(&self) -> Result<Vec<u8>, bytesrepr::Error> {
-        todo!()
+        let mut result = bytesrepr::allocate_buffer(self)?;
+        result.push(self.tag() as u8);
+        match self {
+            CallStackElement::Session { account_hash } => {
+                result.append(&mut account_hash.to_bytes()?)
+            }
+            CallStackElement::Contract {
+                contract_package_hash,
+                contract_wasm_hash,
+            } => {
+                result.append(&mut contract_package_hash.to_bytes()?);
+                result.append(&mut contract_wasm_hash.to_bytes()?);
+            }
+        };
+        Ok(result)
     }
 
     fn serialized_length(&self) -> usize {
-        todo!()
+        U8_SERIALIZED_LENGTH
+            + match self {
+                CallStackElement::Session { account_hash } => account_hash.serialized_length(),
+                CallStackElement::Contract {
+                    contract_package_hash,
+                    contract_wasm_hash,
+                } => {
+                    contract_package_hash.serialized_length()
+                        + contract_wasm_hash.serialized_length()
+                }
+            }
     }
 }
 
 impl FromBytes for CallStackElement {
-    fn from_bytes(_bytes: &[u8]) -> Result<(Self, &[u8]), bytesrepr::Error> {
-        todo!()
+    fn from_bytes(bytes: &[u8]) -> Result<(Self, &[u8]), bytesrepr::Error> {
+        let (tag, remainder): (u8, &[u8]) = FromBytes::from_bytes(bytes)?;
+        match tag {
+            tag if tag == CallStackElementTag::Session as u8 => AccountHash::from_bytes(remainder)
+                .map(|(account_hash, remainder)| {
+                    (CallStackElement::Session { account_hash }, remainder)
+                }),
+            tag if tag == CallStackElementTag::Contract as u8 => {
+                let (contract_package_hash, remainder) =
+                    ContractPackageHash::from_bytes(remainder)?;
+                let (contract_wasm_hash, remainder) = ContractWasmHash::from_bytes(remainder)?;
+                Ok((
+                    CallStackElement::Contract {
+                        contract_package_hash,
+                        contract_wasm_hash,
+                    },
+                    remainder,
+                ))
+            }
+            _ => Err(bytesrepr::Error::Formatting),
+        }
+    }
+}
+
+impl CLTyped for CallStackElement {
+    fn cl_type() -> CLType {
+        CLType::Any
     }
 }
