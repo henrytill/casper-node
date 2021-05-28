@@ -50,7 +50,7 @@ pub enum FunctionIndex {
     Blake2b,
     RecordTransfer,
     RecordEraInfo,
-    GetCallStack,
+    LoadCallStack,
 }
 
 impl Into<usize> for FunctionIndex {

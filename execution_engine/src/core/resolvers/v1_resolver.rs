@@ -210,7 +210,7 @@ impl ModuleImportResolver for RuntimeModuleImportResolver {
             ),
             "casper_get_call_stack" => FuncInstance::alloc_host(
                 Signature::new(&[ValueType::I32; 3][..], Some(ValueType::I32)),
-                FunctionIndex::GetCallStack.into(),
+                FunctionIndex::LoadCallStack.into(),
             ),
             #[cfg(feature = "test-support")]
             "casper_print" => FuncInstance::alloc_host(

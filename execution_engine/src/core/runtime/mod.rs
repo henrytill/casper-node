@@ -1215,7 +1215,7 @@ where
     }
 
     /// Load the uref known by the given name into the Wasm memory
-    fn get_call_stack(
+    fn load_call_stack(
         &mut self,
         // (Output) Pointer to number of elements in the call stack.
         call_stack_len_ptr: u32,

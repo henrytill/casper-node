@@ -193,28 +193,6 @@ pub fn get_caller() -> AccountHash {
     bytesrepr::deserialize(buf).unwrap_or_revert()
 }
 
-/// Returns the requested named [`Key`] from the current context.
-///
-/// The current context is either the caller's account or a stored contract depending on whether the
-/// currently-executing module is a direct call or a sub-call respectively.
-pub fn get_call_stack() -> Vec<CallStackElement> {
-    let mut total_bytes: usize = 0;
-    let mut call_stack_bytes = Vec::new();
-    let ret = unsafe {
-        ext_ffi::casper_get_call_stack(
-            call_stack_bytes.as_mut_ptr(),
-            call_stack_bytes.len(),
-            &mut total_bytes as *mut usize,
-        )
-    };
-    match api_error::result_from(ret) {
-        Ok(_) => {}
-        Err(e) => revert(e),
-    }
-    call_stack_bytes.truncate(total_bytes);
-    bytesrepr::deserialize(call_stack_bytes).unwrap_or_revert()
-}
-
 /// Returns the current [`BlockTime`].
 pub fn get_blocktime() -> BlockTime {
     let dest_non_null_ptr = contract_api::alloc_bytes(BLOCKTIME_SERIALIZED_LENGTH);
@@ -364,6 +342,27 @@ pub(crate) fn read_host_buffer(size: usize) -> Result<Vec<u8>, ApiError> {
     };
     read_host_buffer_into(&mut dest)?;
     Ok(dest)
+}
+
+/// TODO
+pub fn get_call_stack() -> Vec<CallStackElement> {
+    let (call_stack_len, result_size) = {
+        let mut call_stack_len: usize = 0;
+        let mut result_size: usize = 0;
+        let ret = unsafe {
+            ext_ffi::casper_load_named_keys(
+                &mut call_stack_len as *mut usize,
+                &mut result_size as *mut usize,
+            )
+        };
+        api_error::result_from(ret).unwrap_or_revert();
+        (call_stack_len, result_size)
+    };
+    if call_stack_len == 0 {
+        return Vec::new();
+    }
+    let bytes = read_host_buffer(result_size).unwrap_or_revert();
+    bytesrepr::deserialize(bytes).unwrap_or_revert()
 }
 
 #[cfg(feature = "test-support")]

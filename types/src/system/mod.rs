@@ -4,13 +4,16 @@ pub mod handle_payment;
 pub mod mint;
 pub mod standard_payment;
 
+use alloc::vec::Vec;
+
+use bytesrepr::U8_SERIALIZED_LENGTH;
+
 use crate::{
     account::AccountHash,
     bytesrepr,
     bytesrepr::{FromBytes, ToBytes},
     CLType, CLTyped, ContractPackageHash, ContractWasmHash,
 };
-use bytesrepr::U8_SERIALIZED_LENGTH;
 pub use error::Error;
 pub use system_contract_type::{
     SystemContractType, AUCTION, HANDLE_PAYMENT, MINT, STANDARD_PAYMENT,
