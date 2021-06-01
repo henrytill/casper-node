@@ -358,8 +358,6 @@ pub fn get_call_stack() -> Vec<CallStackElement> {
         api_error::result_from(ret).unwrap_or_revert();
         (call_stack_len, result_size)
     };
-    #[cfg(feature = "test-support")]
-    print("here");
     if call_stack_len == 0 {
         return Vec::new();
     }

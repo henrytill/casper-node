@@ -3,7 +3,7 @@
 
 extern crate alloc;
 
-use alloc::{format, string::ToString, vec};
+use alloc::{string::ToString, vec};
 
 // casper_contract is required for it's [global_alloc] as well as handlers (such as panic_handler)
 use casper_contract::contract_api::{runtime, storage, system};
@@ -26,8 +26,6 @@ pub extern "C" fn call_auction() {
         auction::ARG_AMOUNT => U512::one(),
         auction::ARG_DELEGATION_RATE => 42u8,
     };
-    let call_stack = runtime::get_call_stack();
-    runtime::print(format!("call_stack: {:?}", call_stack).as_str());
     runtime::call_contract::<U512>(auction, auction::METHOD_ADD_BID, args);
 }
 
@@ -52,5 +50,4 @@ pub extern "C" fn call() {
         Some(PACKAGE_NAME.to_string()),
         Some(PACKAGE_ACCESS_KEY_NAME.to_string()),
     );
-    runtime::print(format!("_contract_hash: {:?}", _contract_hash).as_str());
 }
