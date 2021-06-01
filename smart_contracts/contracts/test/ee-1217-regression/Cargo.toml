@@ -15,5 +15,5 @@ test = false
 std = ["casper-contract/std", "casper-types/std"]
 
 [dependencies]
-casper-contract = { path = "../../../contract" }
+casper-contract = { path = "../../../contract", features = ["test-support"] }
 casper-types = { path = "../../../../types" }
