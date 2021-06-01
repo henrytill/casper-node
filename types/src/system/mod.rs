@@ -12,7 +12,7 @@ use crate::{
     account::AccountHash,
     bytesrepr,
     bytesrepr::{FromBytes, ToBytes},
-    CLType, CLTyped, ContractPackageHash, ContractWasmHash,
+    CLType, CLTyped, ContractHash, ContractPackageHash,
 };
 pub use error::Error;
 pub use system_contract_type::{
@@ -225,8 +225,8 @@ pub enum CallStackElement {
     Contract {
         /// The contract package hash
         contract_package_hash: ContractPackageHash,
-        /// The contract Wasm hash
-        contract_wasm_hash: ContractWasmHash,
+        /// The contract hash
+        contract_hash: ContractHash,
     },
 }
 
@@ -239,11 +239,11 @@ impl CallStackElement {
     /// Creates a [`'CallStackElement::Contract`]
     pub fn contract(
         contract_package_hash: ContractPackageHash,
-        contract_wasm_hash: ContractWasmHash,
+        contract_hash: ContractHash,
     ) -> Self {
         CallStackElement::Contract {
             contract_package_hash,
-            contract_wasm_hash,
+            contract_hash,
         }
     }
 
@@ -266,10 +266,10 @@ impl ToBytes for CallStackElement {
             }
             CallStackElement::Contract {
                 contract_package_hash,
-                contract_wasm_hash,
+                contract_hash,
             } => {
                 result.append(&mut contract_package_hash.to_bytes()?);
-                result.append(&mut contract_wasm_hash.to_bytes()?);
+                result.append(&mut contract_hash.to_bytes()?);
             }
         };
         Ok(result)
@@ -281,11 +281,8 @@ impl ToBytes for CallStackElement {
                 CallStackElement::Session { account_hash } => account_hash.serialized_length(),
                 CallStackElement::Contract {
                     contract_package_hash,
-                    contract_wasm_hash,
-                } => {
-                    contract_package_hash.serialized_length()
-                        + contract_wasm_hash.serialized_length()
-                }
+                    contract_hash,
+                } => contract_package_hash.serialized_length() + contract_hash.serialized_length(),
             }
     }
 }
@@ -301,11 +298,11 @@ impl FromBytes for CallStackElement {
             tag if tag == CallStackElementTag::Contract as u8 => {
                 let (contract_package_hash, remainder) =
                     ContractPackageHash::from_bytes(remainder)?;
-                let (contract_wasm_hash, remainder) = ContractWasmHash::from_bytes(remainder)?;
+                let (contract_hash, remainder) = ContractHash::from_bytes(remainder)?;
                 Ok((
                     CallStackElement::Contract {
                         contract_package_hash,
-                        contract_wasm_hash,
+                        contract_hash,
                     },
                     remainder,
                 ))

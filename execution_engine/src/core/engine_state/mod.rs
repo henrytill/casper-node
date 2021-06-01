@@ -592,9 +592,11 @@ where
             Err(error) => return Ok(ExecutionResult::precondition_failure(Error::Exec(error))),
         };
 
+        let mint_contract_hash = protocol_data.mint();
+
         let mint_contract = match tracking_copy
             .borrow_mut()
-            .get_contract(correlation_id, protocol_data.mint())
+            .get_contract(correlation_id, mint_contract_hash)
         {
             Ok(contract) => contract,
             Err(error) => {
@@ -604,11 +606,13 @@ where
 
         let mut mint_named_keys = mint_contract.named_keys().to_owned();
         let mut mint_extra_keys: Vec<Key> = vec![];
-        let mint_base_key = Key::from(protocol_data.mint());
+        let mint_base_key = Key::from(mint_contract_hash);
+
+        let handle_payment_contract_hash = protocol_data.handle_payment();
 
         let handle_payment_contract = match tracking_copy
             .borrow_mut()
-            .get_contract(correlation_id, protocol_data.handle_payment())
+            .get_contract(correlation_id, handle_payment_contract_hash)
         {
             Ok(contract) => contract,
             Err(error) => {
@@ -618,7 +622,7 @@ where
 
         let mut handle_payment_named_keys = handle_payment_contract.named_keys().to_owned();
         let handle_payment_extra_keys: Vec<Key> = vec![];
-        let handle_payment_base_key = Key::from(protocol_data.handle_payment());
+        let handle_payment_base_key = Key::from(handle_payment_contract_hash);
 
         let gas_limit = Gas::new(U512::from(std::u64::MAX));
 
@@ -708,7 +712,7 @@ where
                         let system = CallStackElement::session(PublicKey::System.to_account_hash());
                         let mint = CallStackElement::contract(
                             mint_contract.contract_package_hash(),
-                            mint_contract.contract_wasm_hash(),
+                            mint_contract_hash,
                         );
                         vec![system, mint]
                     };
@@ -807,7 +811,7 @@ where
                 let system = CallStackElement::session(PublicKey::System.to_account_hash());
                 let handle_payment = CallStackElement::contract(
                     handle_payment_contract.contract_package_hash(),
-                    handle_payment_contract.contract_wasm_hash(),
+                    handle_payment_contract_hash,
                 );
                 vec![system, handle_payment]
             };
@@ -861,7 +865,7 @@ where
                 let system = CallStackElement::session(PublicKey::System.to_account_hash());
                 let mint = CallStackElement::contract(
                     mint_contract.contract_package_hash(),
-                    mint_contract.contract_wasm_hash(),
+                    mint_contract_hash,
                 );
                 vec![system, mint]
             };
@@ -957,7 +961,7 @@ where
             let deploy_account = CallStackElement::session(deploy_item.address);
             let mint = CallStackElement::contract(
                 mint_contract.contract_package_hash(),
-                mint_contract.contract_wasm_hash(),
+                mint_contract_hash,
             );
             vec![deploy_account, mint]
         };
@@ -1029,7 +1033,7 @@ where
                 let system = CallStackElement::session(PublicKey::System.to_account_hash());
                 let handle_payment = CallStackElement::contract(
                     handle_payment_contract.contract_package_hash(),
-                    handle_payment_contract.contract_wasm_hash(),
+                    handle_payment_contract_hash,
                 );
                 vec![system, handle_payment]
             };
@@ -1040,7 +1044,7 @@ where
                     handle_payment_args,
                     &mut handle_payment_named_keys,
                     Default::default(),
-                    Key::from(protocol_data.handle_payment()),
+                    Key::from(handle_payment_contract_hash),
                     &system_account,
                     authorization_keys,
                     blocktime,
@@ -1571,9 +1575,11 @@ where
 
             // The Handle Payment keys may have changed because of effects during payment and/or
             // session, so we need to look them up again from the tracking copy
+            let handle_payment_contract_hash = protocol_data.handle_payment();
+
             let handle_payment_contract = match finalization_tc
                 .borrow_mut()
-                .get_contract(correlation_id, protocol_data.handle_payment())
+                .get_contract(correlation_id, handle_payment_contract_hash)
             {
                 Ok(info) => info,
                 Err(error) => return Ok(ExecutionResult::precondition_failure(error.into())),
@@ -1588,7 +1594,7 @@ where
                 let deploy_account = CallStackElement::session(deploy_item.address);
                 let handle_payment = CallStackElement::contract(
                     handle_payment_contract.contract_package_hash(),
-                    handle_payment_contract.contract_wasm_hash(),
+                    handle_payment_contract_hash,
                 );
                 vec![deploy_account, handle_payment]
             };
@@ -1707,9 +1713,11 @@ where
 
         let preprocessor = Preprocessor::new(*wasm_config);
 
+        let auction_contract_hash = protocol_data.auction();
+
         let auction_contract: Contract = tracking_copy
             .borrow_mut()
-            .get_contract(correlation_id, protocol_data.auction())
+            .get_contract(correlation_id, auction_contract_hash)
             .map_err(Error::from)?;
 
         let system_module = {
@@ -1722,7 +1730,7 @@ where
         let executor = Executor::new(self.config);
 
         let mut named_keys = auction_contract.named_keys().to_owned();
-        let base_key = Key::from(protocol_data.auction());
+        let base_key = Key::from(auction_contract_hash);
         let gas_limit = Gas::new(U512::from(std::u64::MAX));
         let virtual_system_account = {
             let named_keys = NamedKeys::new();
@@ -1746,7 +1754,7 @@ where
             let system = CallStackElement::session(PublicKey::System.to_account_hash());
             let auction = CallStackElement::contract(
                 auction_contract.contract_package_hash(),
-                auction_contract.contract_wasm_hash(),
+                auction_contract_hash,
             );
             vec![system, auction]
         };
@@ -1837,11 +1845,11 @@ where
             Preprocessor::new(*wasm_config)
         };
 
-        let auction_hash = protocol_data.auction();
+        let auction_contract_hash = protocol_data.auction();
 
         let auction_contract = match tracking_copy
             .borrow_mut()
-            .get_contract(correlation_id, auction_hash)
+            .get_contract(correlation_id, auction_contract_hash)
         {
             Ok(contract) => contract,
             Err(error) => {
@@ -1908,7 +1916,7 @@ where
             let system = CallStackElement::session(PublicKey::System.to_account_hash());
             let auction = CallStackElement::contract(
                 auction_contract.contract_package_hash(),
-                auction_contract.contract_wasm_hash(),
+                auction_contract_hash,
             );
             vec![system, auction]
         };
@@ -1960,7 +1968,7 @@ where
             let system = CallStackElement::session(PublicKey::System.to_account_hash());
             let auction = CallStackElement::contract(
                 auction_contract.contract_package_hash(),
-                auction_contract.contract_wasm_hash(),
+                auction_contract_hash,
             );
             vec![system, auction]
         };
@@ -2017,7 +2025,7 @@ where
                 let system = CallStackElement::session(PublicKey::System.to_account_hash());
                 let auction = CallStackElement::contract(
                     auction_contract.contract_package_hash(),
-                    auction_contract.contract_wasm_hash(),
+                    auction_contract_hash,
                 );
                 vec![system, auction]
             };

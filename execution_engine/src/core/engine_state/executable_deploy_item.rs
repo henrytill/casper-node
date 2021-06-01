@@ -166,10 +166,12 @@ impl ExecutableDeployItem {
                 if module_bytes.is_empty() && phase == Phase::Payment =>
             {
                 let base_key = account.account_hash().into();
+                let contract_hash = protocol_data.standard_payment();
                 let module = wasm::do_nothing_module(preprocessor)?;
                 return Ok(DeployMetadata {
                     kind: DeployKind::System,
                     base_key,
+                    contract_hash,
                     contract: Default::default(),
                     module,
                     contract_package: Default::default(),
@@ -183,6 +185,7 @@ impl ExecutableDeployItem {
                     kind: DeployKind::Session,
                     base_key,
                     module,
+                    contract_hash: Default::default(),
                     contract: Default::default(),
                     contract_package: Default::default(),
                     entry_point: Default::default(),
@@ -257,15 +260,15 @@ impl ExecutableDeployItem {
                 error::Error::Exec(execution::Error::NoSuchMethod(entry_point_name.to_owned()))
             })?;
 
-        if protocol_data
-            .system_contracts()
-            .contains(&contract_hash.into())
-        {
+        let contract_hash = contract_hash.into();
+
+        if protocol_data.system_contracts().contains(&contract_hash) {
             let module = wasm::do_nothing_module(preprocessor)?;
             return Ok(DeployMetadata {
                 kind: DeployKind::System,
                 base_key,
                 module,
+                contract_hash,
                 contract,
                 contract_package,
                 entry_point,
@@ -285,6 +288,7 @@ impl ExecutableDeployItem {
                     kind: DeployKind::Session,
                     base_key,
                     module,
+                    contract_hash,
                     contract: Default::default(),
                     contract_package,
                     entry_point,
@@ -294,6 +298,7 @@ impl ExecutableDeployItem {
                 kind: DeployKind::Contract,
                 base_key,
                 module,
+                contract_hash,
                 contract,
                 contract_package,
                 entry_point,
@@ -679,6 +684,7 @@ pub struct DeployMetadata {
     pub kind: DeployKind,
     pub base_key: Key,
     pub module: Module,
+    pub contract_hash: ContractHash,
     pub contract: Contract,
     pub contract_package: ContractPackage,
     pub entry_point: EntryPoint,
@@ -704,8 +710,8 @@ impl DeployMetadata {
             }
             DeployKind::System | DeployKind::Contract => {
                 let contract_package_hash = self.contract.contract_package_hash();
-                let contract_wasm_hash = self.contract.contract_wasm_hash();
-                CallStackElement::contract(contract_package_hash, contract_wasm_hash)
+                let contract_hash = self.contract_hash;
+                CallStackElement::contract(contract_package_hash, contract_hash)
             }
         }
     }
