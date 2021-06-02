@@ -10,8 +10,8 @@ use alloc::{
 
 use casper_contract::contract_api::{runtime, storage};
 use casper_types::{
-    runtime_args, CLType, CLValue, EntryPoint, EntryPointAccess, EntryPointType, EntryPoints,
-    HashAddr, Key, Parameter, RuntimeArgs, KEY_HASH_LENGTH,
+    runtime_args, ApiError, CLType, CLValue, ContractPackageHash, EntryPoint, EntryPointAccess,
+    EntryPointType, EntryPoints, HashAddr, Key, Parameter, RuntimeArgs, KEY_HASH_LENGTH,
 };
 
 const PACKAGE_NAME: &str = "forwarder";
@@ -41,15 +41,15 @@ pub extern "C" fn forwarder() {
         runtime::ret(CLValue::unit())
     }
 
-    let next_depth: u8 = current_depth + 1;
     let args = runtime_args! {
         ARG_TARGET_CONTRACT_HASH => target_contract_package_hash,
         ARG_TARGET_METHOD => target_method.clone(),
         ARG_LIMIT => limit,
-        ARG_CURRENT_DEPTH => next_depth,
+        ARG_CURRENT_DEPTH => current_depth + 1u8,
     };
+
     runtime::call_versioned_contract::<()>(
-        target_contract_package_hash.into(),
+        ContractPackageHash::new(target_contract_package_hash),
         None,
         &target_method,
         args,

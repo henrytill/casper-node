@@ -3,7 +3,7 @@ use casper_engine_test_support::{
     DEFAULT_ACCOUNT_ADDR,
 };
 use casper_execution_engine::shared::stored_value::StoredValue;
-use casper_types::{runtime_args, system::CallStackElement, CLTyped, CLValue, Key, RuntimeArgs};
+use casper_types::{runtime_args, system::CallStackElement, CLValue, HashAddr, Key, RuntimeArgs};
 
 const CONTRACT_RECURSIVE_SUBCALL: &str = "ee_1217_recursive_subcall.wasm";
 
@@ -37,7 +37,10 @@ fn should_fail_to_call_auction_as_non_session_code() {
 
     {
         let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
-        let contract_package_hash = default_account
+
+        println!("default_account: {:#?}", default_account);
+
+        let contract_package_hash: HashAddr = default_account
             .named_keys()
             .get(PACKAGE_NAME)
             .cloned()
