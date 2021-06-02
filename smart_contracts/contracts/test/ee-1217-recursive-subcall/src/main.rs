@@ -11,7 +11,7 @@ use alloc::{
 use casper_contract::contract_api::{runtime, storage};
 use casper_types::{
     runtime_args, CLType, CLValue, EntryPoint, EntryPointAccess, EntryPointType, EntryPoints,
-    HashAddr, Parameter, RuntimeArgs, KEY_HASH_LENGTH, U512,
+    HashAddr, Key, Parameter, RuntimeArgs, KEY_HASH_LENGTH,
 };
 
 const PACKAGE_NAME: &str = "forwarder";
@@ -26,23 +26,34 @@ const ARG_CURRENT_DEPTH: &str = "current_depth";
 
 #[no_mangle]
 pub extern "C" fn forwarder() {
-    let target_contract_hash: HashAddr = runtime::get_named_arg(ARG_TARGET_CONTRACT_HASH);
+    let target_contract_package_hash: HashAddr = runtime::get_named_arg(ARG_TARGET_CONTRACT_HASH);
     let target_method: String = runtime::get_named_arg(ARG_TARGET_METHOD);
     let limit: u8 = runtime::get_named_arg(ARG_LIMIT);
     let current_depth: u8 = runtime::get_named_arg(ARG_CURRENT_DEPTH);
 
-    let args = runtime_args! {
-        ARG_TARGET_CONTRACT_HASH => target_contract_hash,
-        ARG_TARGET_METHOD => target_method.clone(),
-        ARG_LIMIT => limit,
-        ARG_CURRENT_DEPTH => current_depth,
-    };
+    let call_stack = runtime::get_call_stack();
+    let name = alloc::format!("forwarder-{}", current_depth);
+    let call_stack_at = storage::new_uref(call_stack);
+
+    runtime::put_key(&name, Key::URef(call_stack_at));
 
     if current_depth == limit {
         runtime::ret(CLValue::unit())
     }
 
-    runtime::call_contract::<U512>(target_contract_hash.into(), &target_method, args);
+    let next_depth: u8 = current_depth + 1;
+    let args = runtime_args! {
+        ARG_TARGET_CONTRACT_HASH => target_contract_package_hash,
+        ARG_TARGET_METHOD => target_method.clone(),
+        ARG_LIMIT => limit,
+        ARG_CURRENT_DEPTH => next_depth,
+    };
+    runtime::call_versioned_contract::<()>(
+        target_contract_package_hash.into(),
+        None,
+        &target_method,
+        args,
+    );
 }
 
 #[no_mangle]

@@ -11,6 +11,7 @@ mod ee_1160;
 mod ee_1163;
 mod ee_1174;
 mod ee_1217;
+mod ee_1217_recursive_subcall;
 mod ee_221;
 mod ee_401;
 mod ee_441;
