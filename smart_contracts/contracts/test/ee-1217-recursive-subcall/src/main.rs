@@ -10,7 +10,7 @@ use alloc::{
 
 use casper_contract::contract_api::{runtime, storage};
 use casper_types::{
-    runtime_args, ApiError, CLType, CLValue, ContractPackageHash, EntryPoint, EntryPointAccess,
+    runtime_args, CLType, CLValue, ContractPackageHash, EntryPoint, EntryPointAccess,
     EntryPointType, EntryPoints, HashAddr, Key, Parameter, RuntimeArgs, KEY_HASH_LENGTH,
 };
 
@@ -19,14 +19,15 @@ const PACKAGE_ACCESS_KEY_NAME: &str = "forwarder_access";
 
 const METHOD_FORWARDER_NAME: &str = "forwarder";
 
-const ARG_TARGET_CONTRACT_HASH: &str = "target_contract_hash";
+const ARG_TARGET_CONTRACT_PACKAGE_HASH: &str = "target_contract_package_hash";
 const ARG_TARGET_METHOD: &str = "target_method";
 const ARG_LIMIT: &str = "limit";
 const ARG_CURRENT_DEPTH: &str = "current_depth";
 
 #[no_mangle]
 pub extern "C" fn forwarder() {
-    let target_contract_package_hash: HashAddr = runtime::get_named_arg(ARG_TARGET_CONTRACT_HASH);
+    let target_contract_package_hash: HashAddr =
+        runtime::get_named_arg(ARG_TARGET_CONTRACT_PACKAGE_HASH);
     let target_method: String = runtime::get_named_arg(ARG_TARGET_METHOD);
     let limit: u8 = runtime::get_named_arg(ARG_LIMIT);
     let current_depth: u8 = runtime::get_named_arg(ARG_CURRENT_DEPTH);
@@ -42,7 +43,7 @@ pub extern "C" fn forwarder() {
     }
 
     let args = runtime_args! {
-        ARG_TARGET_CONTRACT_HASH => target_contract_package_hash,
+        ARG_TARGET_CONTRACT_PACKAGE_HASH => target_contract_package_hash,
         ARG_TARGET_METHOD => target_method.clone(),
         ARG_LIMIT => limit,
         ARG_CURRENT_DEPTH => current_depth + 1u8,
@@ -64,7 +65,7 @@ pub extern "C" fn call() {
             METHOD_FORWARDER_NAME.to_string(),
             vec![
                 Parameter::new(
-                    ARG_TARGET_CONTRACT_HASH,
+                    ARG_TARGET_CONTRACT_PACKAGE_HASH,
                     CLType::ByteArray(KEY_HASH_LENGTH as u32),
                 ),
                 Parameter::new(ARG_TARGET_METHOD, CLType::String),

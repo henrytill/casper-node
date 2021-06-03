@@ -99,6 +99,26 @@ impl ExecuteRequestBuilder {
         ExecuteRequestBuilder::new().push_deploy(deploy)
     }
 
+    pub fn contract_call_by_name(
+        sender: AccountHash,
+        contract_name: &str,
+        entry_point: &str,
+        args: RuntimeArgs,
+    ) -> Self {
+        let mut rng = rand::thread_rng();
+        let deploy_hash = rng.gen();
+
+        let deploy = DeployItemBuilder::new()
+            .with_address(sender)
+            .with_stored_session_named_key(contract_name, entry_point, args)
+            .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
+            .with_authorization_keys(&[sender])
+            .with_deploy_hash(deploy_hash)
+            .build();
+
+        ExecuteRequestBuilder::new().push_deploy(deploy)
+    }
+
     /// Calls a versioned contract from contract package hash key_name
     pub fn versioned_contract_call_by_hash_key_name(
         sender: AccountHash,
