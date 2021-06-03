@@ -1941,6 +1941,10 @@ where
 
         let context_key = self.get_context_key_for_contract_call(contract_hash, &entry_point)?;
 
+        let call_stack_element =
+            CallStackElement::contract(contract.contract_package_hash(), contract_hash);
+        self.call_stack.push(call_stack_element);
+
         self.execute_contract(
             context_key,
             context_key,

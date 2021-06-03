@@ -34,15 +34,14 @@ pub extern "C" fn forwarder() {
     let limit: u8 = runtime::get_named_arg(ARG_LIMIT);
     let current_depth: u8 = runtime::get_named_arg(ARG_CURRENT_DEPTH);
 
-    let call_stack = runtime::get_call_stack();
-    let name = alloc::format!("forwarder-{}", current_depth);
-    let call_stack_at = storage::new_uref(call_stack);
-
-    runtime::put_key(&name, Key::URef(call_stack_at));
-
     if current_depth == limit {
         runtime::ret(CLValue::unit())
     }
+
+    let call_stack = runtime::get_call_stack();
+    let name = alloc::format!("forwarder-{}", current_depth);
+    let call_stack_at = storage::new_uref(call_stack);
+    runtime::put_key(&name, Key::URef(call_stack_at));
 
     let args = runtime_args! {
         ARG_TARGET_CONTRACT_PACKAGE_HASH => target_contract_package_hash,
