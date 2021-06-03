@@ -14,8 +14,10 @@ use casper_types::{
     EntryPointType, EntryPoints, HashAddr, Key, Parameter, RuntimeArgs, KEY_HASH_LENGTH,
 };
 
-const PACKAGE_NAME: &str = "forwarder";
+const CONTRACT_PACKAGE_NAME: &str = "forwarder";
 const PACKAGE_ACCESS_KEY_NAME: &str = "forwarder_access";
+
+const CONTRACT_NAME: &str = "our_contract_name";
 
 const METHOD_FORWARDER_NAME: &str = "forwarder";
 
@@ -80,10 +82,11 @@ pub extern "C" fn call() {
         entry_points
     };
 
-    let (_contract_hash, _contract_version) = storage::new_contract(
+    let (contract_hash, _contract_version) = storage::new_contract(
         entry_points,
         None,
-        Some(PACKAGE_NAME.to_string()),
+        Some(CONTRACT_PACKAGE_NAME.to_string()),
         Some(PACKAGE_ACCESS_KEY_NAME.to_string()),
     );
+    runtime::put_key(CONTRACT_NAME, contract_hash.into());
 }

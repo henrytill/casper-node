@@ -12,8 +12,9 @@ use casper_types::{runtime_args, system::CallStackElement, CLValue, HashAddr, Ke
 
 const CONTRACT_RECURSIVE_SUBCALL: &str = "ee_1217_recursive_subcall.wasm";
 
-const PACKAGE_NAME: &str = "forwarder";
+const CONTRACT_PACKAGE_NAME: &str = "forwarder";
 const CONTRACT_FORWARDER_ENTRYPOINT: &str = "forwarder";
+const CONTRACT_NAME: &str = "our_contract_name";
 
 const ARG_TARGET_CONTRACT_PACKAGE_HASH: &str = "target_contract_package_hash";
 const ARG_TARGET_METHOD: &str = "target_method";
@@ -42,18 +43,16 @@ fn should_call_forwarder_versioned_contract_by_name() {
 
     let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
 
-    println!("default_account: {:#?}", default_account);
-
     let contract_package_hash: HashAddr = default_account
         .named_keys()
-        .get(PACKAGE_NAME)
+        .get(CONTRACT_PACKAGE_NAME)
         .cloned()
         .and_then(Key::into_hash)
         .unwrap();
 
     let call_forwarder_request = ExecuteRequestBuilder::versioned_contract_call_by_hash_key_name(
         *DEFAULT_ACCOUNT_ADDR,
-        PACKAGE_NAME,
+        CONTRACT_PACKAGE_NAME,
         None,
         CONTRACT_FORWARDER_ENTRYPOINT,
         runtime_args! {
@@ -103,28 +102,25 @@ fn should_call_forwarder_contract_by_name() {
     let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
 
     println!("default_account: {:#?}", default_account);
-
     let contract_package_hash: HashAddr = default_account
         .named_keys()
-        .get(PACKAGE_NAME)
+        .get(CONTRACT_PACKAGE_NAME)
         .cloned()
         .and_then(Key::into_hash)
         .unwrap();
 
-    let call_forwarder_request =
-            //ExecuteRequestBuilder::versioned_contract_call_by_hash_key_name(
-            ExecuteRequestBuilder::contract_call_by_name(
-                *DEFAULT_ACCOUNT_ADDR,
-                PACKAGE_NAME,
-                CONTRACT_FORWARDER_ENTRYPOINT,
-                runtime_args! {
-                    ARG_TARGET_CONTRACT_PACKAGE_HASH => contract_package_hash,
-                    ARG_TARGET_METHOD => CONTRACT_FORWARDER_ENTRYPOINT.to_string(),
-                    ARG_LIMIT => 3u8,
-                    ARG_CURRENT_DEPTH => 0u8,
-                },
-            )
-            .build();
+    let call_forwarder_request = ExecuteRequestBuilder::contract_call_by_name(
+        *DEFAULT_ACCOUNT_ADDR,
+        CONTRACT_NAME,
+        CONTRACT_FORWARDER_ENTRYPOINT,
+        runtime_args! {
+            ARG_TARGET_CONTRACT_PACKAGE_HASH => contract_package_hash,
+            ARG_TARGET_METHOD => CONTRACT_FORWARDER_ENTRYPOINT.to_string(),
+            ARG_LIMIT => 3u8,
+            ARG_CURRENT_DEPTH => 0u8,
+        },
+    )
+    .build();
 
     builder
         .exec(call_forwarder_request)
