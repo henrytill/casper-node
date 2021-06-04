@@ -1460,7 +1460,13 @@ where
         let session_call_stack = {
             let deploy_account = CallStackElement::session(deploy_item.address);
             let session = session_metadata.call_stack_element();
-            vec![deploy_account, session]
+
+            // Setting up a tent. /\x (0_0) >x_x<
+            if matches!(session, CallStackElement::Session { .. }) {
+                vec![deploy_account]
+            } else {
+                vec![deploy_account, session]
+            }
         };
 
         let session_base_key = session_metadata.base_key;

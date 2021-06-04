@@ -6,7 +6,8 @@ use casper_execution_engine::core::engine_state::{
     deploy_item::DeployItem, execute_request::ExecuteRequest,
 };
 use casper_types::{
-    account::AccountHash, runtime_args, ContractHash, ContractVersion, ProtocolVersion, RuntimeArgs,
+    account::AccountHash, runtime_args, ContractHash, ContractPackageHash, ContractVersion,
+    ProtocolVersion, RuntimeArgs,
 };
 
 use crate::internal::{
@@ -119,10 +120,9 @@ impl ExecuteRequestBuilder {
         ExecuteRequestBuilder::new().push_deploy(deploy)
     }
 
-    /// Calls a versioned contract from contract package hash key_name
-    pub fn versioned_contract_call_by_hash_key_name(
+    pub fn versioned_contract_call_by_hash(
         sender: AccountHash,
-        hash_key_name: &str,
+        contract_package_hash: ContractPackageHash,
         version: Option<ContractVersion>,
         entry_point_name: &str,
         args: RuntimeArgs,
@@ -132,7 +132,34 @@ impl ExecuteRequestBuilder {
 
         let deploy = DeployItemBuilder::new()
             .with_address(sender)
-            .with_stored_versioned_contract_by_name(hash_key_name, version, entry_point_name, args)
+            .with_stored_versioned_contract_by_hash(
+                contract_package_hash.value(),
+                version,
+                entry_point_name,
+                args,
+            )
+            .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
+            .with_authorization_keys(&[sender])
+            .with_deploy_hash(deploy_hash)
+            .build();
+
+        ExecuteRequestBuilder::new().push_deploy(deploy)
+    }
+
+    /// Calls a versioned contract from contract package hash key_name
+    pub fn versioned_contract_call_by_name(
+        sender: AccountHash,
+        contract_name: &str,
+        version: Option<ContractVersion>,
+        entry_point_name: &str,
+        args: RuntimeArgs,
+    ) -> Self {
+        let mut rng = rand::thread_rng();
+        let deploy_hash = rng.gen();
+
+        let deploy = DeployItemBuilder::new()
+            .with_address(sender)
+            .with_stored_versioned_contract_by_name(contract_name, version, entry_point_name, args)
             .with_empty_payment_bytes(runtime_args! { ARG_AMOUNT => *DEFAULT_PAYMENT, })
             .with_authorization_keys(&[sender])
             .with_deploy_hash(deploy_hash)

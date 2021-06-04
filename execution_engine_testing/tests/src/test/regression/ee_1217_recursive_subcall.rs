@@ -16,9 +16,11 @@ use casper_types::{
 };
 
 const CONTRACT_RECURSIVE_SUBCALL: &str = "ee_1217_recursive_subcall.wasm";
+const CONTRACT_CALL_RECURSIVE_SUBCALL: &str = "ee_1217_call_recursive_subcall.wasm";
 
 const CONTRACT_PACKAGE_NAME: &str = "forwarder";
 const CONTRACT_FORWARDER_ENTRYPOINT: &str = "forwarder";
+
 const CONTRACT_NAME: &str = "our_contract_name";
 
 const ARG_TARGET_CONTRACT_PACKAGE_HASH: &str = "target_contract_package_hash";
@@ -49,7 +51,14 @@ fn assert_expected(
         .unwrap()
         .unwrap();
 
-    assert_eq!(call_stack.len(), expected_call_stack_len);
+    assert_eq!(
+        call_stack.len(),
+        expected_call_stack_len,
+        "call stack len was an unexpected size {}, should be {} {:#?}",
+        call_stack.len(),
+        expected_call_stack_len,
+        call_stack,
+    );
 
     let (head, rest) = call_stack.split_at(usize::one());
 
@@ -75,25 +84,20 @@ fn assert_expected(
     }));
 }
 
-fn store_recursive_subcall_contract(builder: &mut WasmTestBuilder<InMemoryGlobalState>) {
-    let store_contract_request = ExecuteRequestBuilder::standard(
-        *DEFAULT_ACCOUNT_ADDR,
-        CONTRACT_RECURSIVE_SUBCALL,
-        runtime_args! {},
-    )
-    .build();
+fn store_contract(builder: &mut WasmTestBuilder<InMemoryGlobalState>, session_filename: &str) {
+    let store_contract_request =
+        ExecuteRequestBuilder::standard(*DEFAULT_ACCOUNT_ADDR, session_filename, runtime_args! {})
+            .build();
     builder
         .exec(store_contract_request)
         .commit()
         .expect_success();
 }
 
-#[ignore]
-#[test]
-fn should_call_forwarder_versioned_contract_by_name() {
+fn run_forwarder_versioned_contract_by_name(depth_limit: usize) {
     let mut builder = InMemoryWasmTestBuilder::default();
     builder.run_genesis(&DEFAULT_RUN_GENESIS_REQUEST);
-    store_recursive_subcall_contract(&mut builder);
+    store_contract(&mut builder, CONTRACT_RECURSIVE_SUBCALL);
 
     let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
 
@@ -104,7 +108,7 @@ fn should_call_forwarder_versioned_contract_by_name() {
         .and_then(Key::into_hash)
         .unwrap();
 
-    let call_forwarder_request = ExecuteRequestBuilder::versioned_contract_call_by_hash_key_name(
+    let call_forwarder_request = ExecuteRequestBuilder::versioned_contract_call_by_name(
         *DEFAULT_ACCOUNT_ADDR,
         CONTRACT_PACKAGE_NAME,
         None,
@@ -112,7 +116,7 @@ fn should_call_forwarder_versioned_contract_by_name() {
         runtime_args! {
             ARG_TARGET_CONTRACT_PACKAGE_HASH => contract_package_hash,
             ARG_TARGET_METHOD => CONTRACT_FORWARDER_ENTRYPOINT.to_string(),
-            ARG_LIMIT => 3u8,
+            ARG_LIMIT => depth_limit as u8,
             ARG_CURRENT_DEPTH => 0u8,
         },
     )
@@ -133,26 +137,25 @@ fn should_call_forwarder_versioned_contract_by_name() {
     };
 
     let current_contract_hash = contract_package.current_contract_hash().unwrap();
-    assert_expected(
-        &mut builder,
-        "forwarder-0",
-        *DEFAULT_ACCOUNT_ADDR,
-        contract_package_hash.into(),
-        2,
-        current_contract_hash,
-    );
+    for i in 0..depth_limit {
+        assert_expected(
+            &mut builder,
+            &format!("forwarder-{}", i),
+            *DEFAULT_ACCOUNT_ADDR,
+            contract_package_hash.into(),
+            i + 2,
+            current_contract_hash,
+        );
+    }
 }
 
-#[ignore]
-#[test]
-fn should_call_forwarder_contract_by_name() {
+fn run_forwarder_contract_by_name(depth_limit: usize) {
     let mut builder = InMemoryWasmTestBuilder::default();
     builder.run_genesis(&DEFAULT_RUN_GENESIS_REQUEST);
-    store_recursive_subcall_contract(&mut builder);
+    store_contract(&mut builder, CONTRACT_RECURSIVE_SUBCALL);
 
     let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
 
-    println!("default_account: {:#?}", default_account);
     let contract_package_hash: HashAddr = default_account
         .named_keys()
         .get(CONTRACT_PACKAGE_NAME)
@@ -167,7 +170,7 @@ fn should_call_forwarder_contract_by_name() {
         runtime_args! {
             ARG_TARGET_CONTRACT_PACKAGE_HASH => contract_package_hash,
             ARG_TARGET_METHOD => CONTRACT_FORWARDER_ENTRYPOINT.to_string(),
-            ARG_LIMIT => 3u8,
+            ARG_LIMIT => depth_limit as u8,
             ARG_CURRENT_DEPTH => 0u8,
         },
     )
@@ -187,16 +190,201 @@ fn should_call_forwarder_contract_by_name() {
         _ => panic!("unreachable"),
     };
 
-    let piqage = contract_package.current_contract_hash().unwrap();
+    let current_contract_hash = contract_package.current_contract_hash().unwrap();
+    for i in 0..depth_limit {
+        assert_expected(
+            &mut builder,
+            &format!("forwarder-{}", i),
+            *DEFAULT_ACCOUNT_ADDR,
+            contract_package_hash.into(),
+            i + 2,
+            current_contract_hash,
+        );
+    }
+}
 
-    let cl_value = builder
-        .query(None, piqage.into(), &["forwarder-0".to_string()])
+fn run_forwarder_versioned_contract_by_hash(depth_limit: usize) {
+    let mut builder = InMemoryWasmTestBuilder::default();
+    builder.run_genesis(&DEFAULT_RUN_GENESIS_REQUEST);
+    store_contract(&mut builder, CONTRACT_RECURSIVE_SUBCALL);
+
+    let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+
+    let contract_package_hash: HashAddr = default_account
+        .named_keys()
+        .get(CONTRACT_PACKAGE_NAME)
+        .cloned()
+        .and_then(Key::into_hash)
         .unwrap();
 
-    let call_stack = cl_value
-        .as_cl_value()
-        .cloned()
-        .map(CLValue::into_t::<Vec<CallStackElement>>);
+    let call_forwarder_request = ExecuteRequestBuilder::versioned_contract_call_by_hash(
+        *DEFAULT_ACCOUNT_ADDR,
+        contract_package_hash.into(),
+        None,
+        CONTRACT_FORWARDER_ENTRYPOINT,
+        runtime_args! {
+            ARG_TARGET_CONTRACT_PACKAGE_HASH => contract_package_hash,
+            ARG_TARGET_METHOD => CONTRACT_FORWARDER_ENTRYPOINT.to_string(),
+            ARG_LIMIT => depth_limit as u8,
+            ARG_CURRENT_DEPTH => 0u8,
+        },
+    )
+    .build();
 
-    println!("value {:?}", call_stack);
+    builder
+        .exec(call_forwarder_request)
+        .commit()
+        .expect_success();
+
+    let value = builder
+        .query(None, Key::Hash(contract_package_hash), &[])
+        .unwrap();
+
+    let contract_package = match value {
+        StoredValue::ContractPackage(package) => package,
+        _ => panic!("unreachable"),
+    };
+
+    let current_contract_hash = contract_package.current_contract_hash().unwrap();
+    for i in 0..depth_limit {
+        assert_expected(
+            &mut builder,
+            &format!("forwarder-{}", i),
+            *DEFAULT_ACCOUNT_ADDR,
+            contract_package_hash.into(),
+            i + 2,
+            current_contract_hash,
+        );
+    }
+}
+
+fn run_forwarder_contract_by_hash(depth_limit: usize) {
+    let mut builder = InMemoryWasmTestBuilder::default();
+    builder.run_genesis(&DEFAULT_RUN_GENESIS_REQUEST);
+    store_contract(&mut builder, CONTRACT_RECURSIVE_SUBCALL);
+
+    let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+
+    let contract_package_hash: HashAddr = default_account
+        .named_keys()
+        .get(CONTRACT_PACKAGE_NAME)
+        .cloned()
+        .and_then(Key::into_hash)
+        .unwrap();
+
+    // Pull out the contract hash from named keys manually rather than rely on the contract-by-name
+    // feature.
+    let stored_contract_hash: ContractHash = default_account
+        .named_keys()
+        .get(CONTRACT_NAME)
+        .cloned()
+        .and_then(Key::into_hash)
+        .unwrap()
+        .into();
+
+    let call_forwarder_request = ExecuteRequestBuilder::contract_call_by_hash(
+        *DEFAULT_ACCOUNT_ADDR,
+        stored_contract_hash,
+        CONTRACT_FORWARDER_ENTRYPOINT,
+        runtime_args! {
+            ARG_TARGET_CONTRACT_PACKAGE_HASH => contract_package_hash,
+            ARG_TARGET_METHOD => CONTRACT_FORWARDER_ENTRYPOINT.to_string(),
+            ARG_LIMIT => depth_limit as u8,
+            ARG_CURRENT_DEPTH => 0u8,
+        },
+    )
+    .build();
+
+    builder
+        .exec(call_forwarder_request)
+        .commit()
+        .expect_success();
+
+    let value = builder
+        .query(None, Key::Hash(contract_package_hash), &[])
+        .unwrap();
+
+    let contract_package = match value {
+        StoredValue::ContractPackage(package) => package,
+        _ => panic!("unreachable"),
+    };
+
+    let current_contract_hash = contract_package.current_contract_hash().unwrap();
+    for i in 0..depth_limit {
+        assert_expected(
+            &mut builder,
+            &format!("forwarder-{}", i),
+            *DEFAULT_ACCOUNT_ADDR,
+            contract_package_hash.into(),
+            i + 2,
+            current_contract_hash,
+        );
+    }
+}
+
+fn run_forwarder_call_recursive_from_session_code(depth_limit: usize) {
+    let mut builder = InMemoryWasmTestBuilder::default();
+    builder.run_genesis(&DEFAULT_RUN_GENESIS_REQUEST);
+    store_contract(&mut builder, CONTRACT_RECURSIVE_SUBCALL);
+
+    let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+
+    let contract_package_hash: HashAddr = default_account
+        .named_keys()
+        .get(CONTRACT_PACKAGE_NAME)
+        .cloned()
+        .and_then(Key::into_hash)
+        .unwrap();
+
+    let call_forwarder_request = ExecuteRequestBuilder::standard(
+        *DEFAULT_ACCOUNT_ADDR,
+        CONTRACT_CALL_RECURSIVE_SUBCALL,
+        runtime_args! {
+            ARG_TARGET_CONTRACT_PACKAGE_HASH => contract_package_hash,
+            ARG_TARGET_METHOD => CONTRACT_FORWARDER_ENTRYPOINT.to_string(),
+            ARG_LIMIT => depth_limit as u8,
+            ARG_CURRENT_DEPTH => 0u8,
+        },
+    )
+    .build();
+
+    builder
+        .exec(call_forwarder_request)
+        .commit()
+        .expect_success();
+
+    let value = builder
+        .query(None, Key::Hash(contract_package_hash), &[])
+        .unwrap();
+
+    let contract_package = match value {
+        StoredValue::ContractPackage(package) => package,
+        _ => panic!("unreachable"),
+    };
+
+    let current_contract_hash = contract_package.current_contract_hash().unwrap();
+    for i in 0..depth_limit {
+        assert_expected(
+            &mut builder,
+            &format!("forwarder-{}", i),
+            *DEFAULT_ACCOUNT_ADDR,
+            contract_package_hash.into(),
+            i + 2,
+            current_contract_hash,
+        );
+    }
+}
+
+#[ignore]
+#[test]
+fn should_run_subcalls_with_callstack() {
+    for depth_limit in &[1, 5, 10usize] {
+        run_forwarder_contract_by_hash(*depth_limit);
+        run_forwarder_contract_by_name(*depth_limit);
+        run_forwarder_versioned_contract_by_hash(*depth_limit);
+        run_forwarder_versioned_contract_by_name(*depth_limit);
+
+        // TODO: fix this ->
+        run_forwarder_call_recursive_from_session_code(*depth_limit);
+    }
 }
