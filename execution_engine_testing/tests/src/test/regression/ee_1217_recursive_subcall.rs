@@ -70,10 +70,10 @@ fn assert_expected(
     );
 
     assert!(rest.windows(2).all(|w| match w {
-        &[CallStackElement::Contract {
+        &[CallStackElement::StoredContract {
             contract_package_hash: left_package_hash,
             contract_hash: left_hash,
-        }, CallStackElement::Contract {
+        }, CallStackElement::StoredContract {
             contract_package_hash: right_package_hash,
             contract_hash: right_hash,
         }] if left_package_hash == right_package_hash
@@ -377,14 +377,39 @@ fn run_forwarder_call_recursive_from_session_code(depth_limit: usize) {
 
 #[ignore]
 #[test]
-fn should_run_subcalls_with_callstack() {
+fn should_run_forwarder_call_recursive_from_session_code() {
+    for depth_limit in &[1, 5, 10usize] {
+        run_forwarder_call_recursive_from_session_code(*depth_limit);
+    }
+}
+
+#[ignore]
+#[test]
+fn should_run_forwarder_contract_by_hash() {
     for depth_limit in &[1, 5, 10usize] {
         run_forwarder_contract_by_hash(*depth_limit);
-        run_forwarder_contract_by_name(*depth_limit);
-        run_forwarder_versioned_contract_by_hash(*depth_limit);
-        run_forwarder_versioned_contract_by_name(*depth_limit);
+    }
+}
 
-        // TODO: fix this ->
-        run_forwarder_call_recursive_from_session_code(*depth_limit);
+#[ignore]
+#[test]
+fn should_run_forwarder_contract_by_name() {
+    for depth_limit in &[1, 5, 10usize] {
+        run_forwarder_contract_by_name(*depth_limit);
+    }
+}
+
+#[ignore]
+#[test]
+fn should_run_forwarder_versioned_contract_by_hash() {
+    for depth_limit in &[1, 5, 10usize] {
+        run_forwarder_versioned_contract_by_hash(*depth_limit);
+    }
+}
+#[ignore]
+#[test]
+fn should_run_forwarder_versioned_contract_by_name() {
+    for depth_limit in &[1, 5, 10usize] {
+        run_forwarder_versioned_contract_by_name(*depth_limit);
     }
 }

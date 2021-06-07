@@ -757,16 +757,42 @@ impl DeployMetadata {
         self.module
     }
 
-    pub fn call_stack_element(&self) -> CallStackElement {
-        match self.kind {
-            DeployKind::Session => {
-                let account = self.base_key.into_account().unwrap();
-                CallStackElement::session(account)
+    pub fn call_stack_element(&self) -> Result<CallStackElement, Error> {
+        match (self.entry_point.entry_point_type(), self.kind) {
+            (EntryPointType::Session, DeployKind::Session) => {
+                let account = self
+                    .base_key
+                    .into_account()
+                    .ok_or(Error::InvalidKeyVariant)?;
+                Ok(CallStackElement::session(account))
             }
-            DeployKind::System | DeployKind::Contract => {
+            (EntryPointType::Session, DeployKind::Contract)
+            | (EntryPointType::Session, DeployKind::System) => {
+                let account = self
+                    .base_key
+                    .into_account()
+                    .ok_or(Error::InvalidKeyVariant)?;
                 let contract_package_hash = self.contract.contract_package_hash();
                 let contract_hash = self.contract_hash;
-                CallStackElement::contract(contract_package_hash, contract_hash)
+                Ok(CallStackElement::stored_session(
+                    account,
+                    contract_package_hash,
+                    contract_hash,
+                ))
+            }
+            (EntryPointType::Contract, DeployKind::Contract)
+            | (EntryPointType::Contract, DeployKind::System) => {
+                let contract_package_hash = self.contract.contract_package_hash();
+                let contract_hash = self.contract_hash;
+                Ok(CallStackElement::stored_contract(
+                    contract_package_hash,
+                    contract_hash,
+                ))
+            }
+            (EntryPointType::Contract, DeployKind::Session) => {
+                Err(Error::InvalidDeployItemVariant(
+                    "Contract deploy item has invalid 'Session' kind".to_string(),
+                ))
             }
         }
     }

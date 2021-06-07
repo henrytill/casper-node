@@ -710,7 +710,7 @@ where
                 TransferTargetMode::CreateAccount(public_key) => {
                     let create_purse_call_stack = {
                         let system = CallStackElement::session(PublicKey::System.to_account_hash());
-                        let mint = CallStackElement::contract(
+                        let mint = CallStackElement::stored_contract(
                             mint_contract.contract_package_hash(),
                             mint_contract_hash,
                         );
@@ -809,7 +809,7 @@ where
 
             let get_payment_purse_call_stack = {
                 let system = CallStackElement::session(PublicKey::System.to_account_hash());
-                let handle_payment = CallStackElement::contract(
+                let handle_payment = CallStackElement::stored_contract(
                     handle_payment_contract.contract_package_hash(),
                     handle_payment_contract_hash,
                 );
@@ -863,7 +863,7 @@ where
 
             let transfer_to_payment_purse_call_stack = {
                 let system = CallStackElement::session(PublicKey::System.to_account_hash());
-                let mint = CallStackElement::contract(
+                let mint = CallStackElement::stored_contract(
                     mint_contract.contract_package_hash(),
                     mint_contract_hash,
                 );
@@ -959,7 +959,7 @@ where
 
         let transfer_call_stack = {
             let deploy_account = CallStackElement::session(deploy_item.address);
-            let mint = CallStackElement::contract(
+            let mint = CallStackElement::stored_contract(
                 mint_contract.contract_package_hash(),
                 mint_contract_hash,
             );
@@ -1031,7 +1031,7 @@ where
 
             let finalize_payment_call_stack = {
                 let system = CallStackElement::session(PublicKey::System.to_account_hash());
-                let handle_payment = CallStackElement::contract(
+                let handle_payment = CallStackElement::stored_contract(
                     handle_payment_contract.contract_package_hash(),
                     handle_payment_contract_hash,
                 );
@@ -1273,7 +1273,7 @@ where
 
             let payment_call_stack = {
                 let deploy_account = CallStackElement::session(deploy_item.address);
-                let payment = payment_metadata.call_stack_element();
+                let payment = payment_metadata.call_stack_element()?;
                 vec![deploy_account, payment]
             };
 
@@ -1459,14 +1459,14 @@ where
 
         let session_call_stack = {
             let deploy_account = CallStackElement::session(deploy_item.address);
-            let session = session_metadata.call_stack_element();
+            let element = session_metadata.call_stack_element()?;
 
-            // Setting up a tent. /\x (0_0) >x_x<
-            if matches!(session, CallStackElement::Session { .. }) {
-                vec![deploy_account]
-            } else {
-                vec![deploy_account, session]
-            }
+            // // Setting up a tent. /\x (0_0) >x_x<
+            //if matches!(element, CallStackElement::Session { .. }) {
+            //     vec![deploy_account]
+            // } else {
+            vec![deploy_account, element]
+            //  }
         };
 
         let session_base_key = session_metadata.base_key;
@@ -1598,7 +1598,7 @@ where
 
             let handle_payment_call_stack = {
                 let deploy_account = CallStackElement::session(deploy_item.address);
-                let handle_payment = CallStackElement::contract(
+                let handle_payment = CallStackElement::stored_contract(
                     handle_payment_contract.contract_package_hash(),
                     handle_payment_contract_hash,
                 );
@@ -1758,7 +1758,7 @@ where
 
         let get_era_validators_call_stack = {
             let system = CallStackElement::session(PublicKey::System.to_account_hash());
-            let auction = CallStackElement::contract(
+            let auction = CallStackElement::stored_contract(
                 auction_contract.contract_package_hash(),
                 auction_contract_hash,
             );
@@ -1920,7 +1920,7 @@ where
 
         let distribute_rewards_call_stack = {
             let system = CallStackElement::session(PublicKey::System.to_account_hash());
-            let auction = CallStackElement::contract(
+            let auction = CallStackElement::stored_contract(
                 auction_contract.contract_package_hash(),
                 auction_contract_hash,
             );
@@ -1972,7 +1972,7 @@ where
 
         let slash_call_stack = {
             let system = CallStackElement::session(PublicKey::System.to_account_hash());
-            let auction = CallStackElement::contract(
+            let auction = CallStackElement::stored_contract(
                 auction_contract.contract_package_hash(),
                 auction_contract_hash,
             );
@@ -2029,7 +2029,7 @@ where
 
             let run_auction_call_stack = {
                 let system = CallStackElement::session(PublicKey::System.to_account_hash());
-                let auction = CallStackElement::contract(
+                let auction = CallStackElement::stored_contract(
                     auction_contract.contract_package_hash(),
                     auction_contract_hash,
                 );
