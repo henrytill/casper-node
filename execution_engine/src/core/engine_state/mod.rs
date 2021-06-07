@@ -1271,11 +1271,7 @@ where
                 }
             };
 
-            let payment_call_stack = {
-                let deploy_account = CallStackElement::session(deploy_item.address);
-                let payment = payment_metadata.call_stack_element()?;
-                vec![deploy_account, payment]
-            };
+            let payment_call_stack = payment_metadata.initial_call_stack()?;
 
             // payment_code_spec_2: execute payment code
             let payment_base_key = payment_metadata.base_key;
@@ -1457,17 +1453,7 @@ where
         let post_payment_tracking_copy = tracking_copy.borrow();
         let session_tracking_copy = Rc::new(RefCell::new(post_payment_tracking_copy.fork()));
 
-        let session_call_stack = {
-            let deploy_account = CallStackElement::session(deploy_item.address);
-            let element = session_metadata.call_stack_element()?;
-
-            // // Setting up a tent. /\x (0_0) >x_x<
-            //if matches!(element, CallStackElement::Session { .. }) {
-            //     vec![deploy_account]
-            // } else {
-            vec![deploy_account, element]
-            //  }
-        };
+        let session_call_stack = session_metadata.initial_call_stack()?;
 
         let session_base_key = session_metadata.base_key;
         let session_module = session_metadata.module;

@@ -39,6 +39,7 @@ use crate::{
     },
     storage::{global_state::StateReader, protocol_data::ProtocolData},
 };
+use casper_types::account::AccountHash;
 
 const TAG_LENGTH: usize = U8_SERIALIZED_LENGTH;
 const MODULE_BYTES_TAG: u8 = 0;
@@ -139,6 +140,8 @@ impl ExecutableDeployItem {
         let contract: Contract;
         let base_key: Key;
 
+        let account_hash = account.account_hash();
+
         match self {
             ExecutableDeployItem::Transfer { .. } => {
                 return Err(error::Error::InvalidDeployItemVariant("Transfer".into()))
@@ -146,11 +149,12 @@ impl ExecutableDeployItem {
             ExecutableDeployItem::ModuleBytes { module_bytes, .. }
                 if module_bytes.is_empty() && phase == Phase::Payment =>
             {
-                let base_key = account.account_hash().into();
+                let base_key = account_hash.into();
                 let contract_hash = protocol_data.standard_payment();
                 let module = wasm::do_nothing_module(preprocessor)?;
                 return Ok(DeployMetadata {
                     kind: DeployKind::System,
+                    account_hash,
                     base_key,
                     contract_hash,
                     contract: Default::default(),
@@ -160,10 +164,11 @@ impl ExecutableDeployItem {
                 });
             }
             ExecutableDeployItem::ModuleBytes { module_bytes, .. } => {
-                let base_key = account.account_hash().into();
+                let base_key = account_hash.into();
                 let module = preprocessor.preprocess(&module_bytes.as_ref())?;
                 return Ok(DeployMetadata {
                     kind: DeployKind::Session,
+                    account_hash,
                     base_key,
                     module,
                     contract_hash: Default::default(),
@@ -321,6 +326,7 @@ impl ExecutableDeployItem {
             let module = wasm::do_nothing_module(preprocessor)?;
             return Ok(DeployMetadata {
                 kind: DeployKind::System,
+                account_hash,
                 base_key,
                 module,
                 contract_hash,
@@ -341,6 +347,7 @@ impl ExecutableDeployItem {
                 let base_key = account.account_hash().into();
                 Ok(DeployMetadata {
                     kind: DeployKind::Session,
+                    account_hash,
                     base_key,
                     module,
                     contract_hash,
@@ -351,6 +358,7 @@ impl ExecutableDeployItem {
             }
             EntryPointType::Contract => Ok(DeployMetadata {
                 kind: DeployKind::Contract,
+                account_hash,
                 base_key,
                 module,
                 contract_hash,
@@ -737,6 +745,7 @@ impl Distribution<ExecutableDeployItem> for Standard {
 #[derive(Clone, Debug)]
 pub struct DeployMetadata {
     pub kind: DeployKind,
+    pub account_hash: AccountHash,
     pub base_key: Key,
     pub module: Module,
     pub contract_hash: ContractHash,
@@ -757,42 +766,37 @@ impl DeployMetadata {
         self.module
     }
 
-    pub fn call_stack_element(&self) -> Result<CallStackElement, Error> {
-        match (self.entry_point.entry_point_type(), self.kind) {
-            (EntryPointType::Session, DeployKind::Session) => {
-                let account = self
-                    .base_key
-                    .into_account()
-                    .ok_or(Error::InvalidKeyVariant)?;
-                Ok(CallStackElement::session(account))
-            }
-            (EntryPointType::Session, DeployKind::Contract)
-            | (EntryPointType::Session, DeployKind::System) => {
-                let account = self
-                    .base_key
-                    .into_account()
-                    .ok_or(Error::InvalidKeyVariant)?;
-                let contract_package_hash = self.contract.contract_package_hash();
-                let contract_hash = self.contract_hash;
-                Ok(CallStackElement::stored_session(
-                    account,
-                    contract_package_hash,
-                    contract_hash,
-                ))
-            }
-            (EntryPointType::Contract, DeployKind::Contract)
-            | (EntryPointType::Contract, DeployKind::System) => {
-                let contract_package_hash = self.contract.contract_package_hash();
-                let contract_hash = self.contract_hash;
-                Ok(CallStackElement::stored_contract(
-                    contract_package_hash,
-                    contract_hash,
-                ))
-            }
-            (EntryPointType::Contract, DeployKind::Session) => {
+    pub fn initial_call_stack(&self) -> Result<Vec<CallStackElement>, Error> {
+        match (self.kind, self.entry_point.entry_point_type()) {
+            (DeployKind::Session, EntryPointType::Contract) => {
                 Err(Error::InvalidDeployItemVariant(
                     "Contract deploy item has invalid 'Session' kind".to_string(),
                 ))
+            }
+            (DeployKind::Session, EntryPointType::Session) => {
+                Ok(vec![CallStackElement::session(self.account_hash)])
+            }
+            (DeployKind::Contract, EntryPointType::Session)
+            | (DeployKind::System, EntryPointType::Session) => {
+                let account = self
+                    .base_key
+                    .into_account()
+                    .ok_or(Error::InvalidKeyVariant)?;
+                let contract_package_hash = self.contract.contract_package_hash();
+                let contract_hash = self.contract_hash;
+                Ok(vec![
+                    CallStackElement::session(self.account_hash),
+                    CallStackElement::stored_session(account, contract_package_hash, contract_hash),
+                ])
+            }
+            (DeployKind::Contract, EntryPointType::Contract)
+            | (DeployKind::System, EntryPointType::Contract) => {
+                let contract_package_hash = self.contract.contract_package_hash();
+                let contract_hash = self.contract_hash;
+                Ok(vec![
+                    CallStackElement::session(self.account_hash),
+                    CallStackElement::stored_contract(contract_package_hash, contract_hash),
+                ])
             }
         }
     }

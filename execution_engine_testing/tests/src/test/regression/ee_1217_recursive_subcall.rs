@@ -377,14 +377,6 @@ fn run_forwarder_call_recursive_from_session_code(depth_limit: usize) {
 
 #[ignore]
 #[test]
-fn should_run_forwarder_call_recursive_from_session_code() {
-    for depth_limit in &[1, 5, 10usize] {
-        run_forwarder_call_recursive_from_session_code(*depth_limit);
-    }
-}
-
-#[ignore]
-#[test]
 fn should_run_forwarder_contract_by_hash() {
     for depth_limit in &[1, 5, 10usize] {
         run_forwarder_contract_by_hash(*depth_limit);
@@ -411,5 +403,13 @@ fn should_run_forwarder_versioned_contract_by_hash() {
 fn should_run_forwarder_versioned_contract_by_name() {
     for depth_limit in &[1, 5, 10usize] {
         run_forwarder_versioned_contract_by_name(*depth_limit);
+    }
+}
+
+#[ignore]
+#[test]
+fn should_run_forwarder_call_recursive_from_session_code() {
+    for depth_limit in &[3usize] {
+        run_forwarder_call_recursive_from_session_code(*depth_limit);
     }
 }

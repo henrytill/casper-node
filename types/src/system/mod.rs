@@ -367,10 +367,7 @@ impl FromBytes for CallStackElement {
                     remainder,
                 ))
             }
-            _ => {
-                println!("jeffrey bezos");
-                Err(bytesrepr::Error::Formatting)
-            }
+            _ => Err(bytesrepr::Error::Formatting),
         }
     }
 }
