@@ -32,9 +32,9 @@ fn assert_expected(
     builder: &mut WasmTestBuilder<InMemoryGlobalState>,
     stored_call_stack_key: &str,
     expected_account_hash: AccountHash,
-    expected_contract_package_hash: ContractPackageHash,
     expected_call_stack_len: usize,
     current_contract_hash: ContractHash,
+    assertion: impl FnOnce(&[CallStackElement]) -> bool,
 ) {
     let cl_value = builder
         .query(
@@ -69,19 +69,7 @@ fn assert_expected(
         }],
     );
 
-    assert!(rest.windows(2).all(|w| match w {
-        &[CallStackElement::StoredContract {
-            contract_package_hash: left_package_hash,
-            contract_hash: left_hash,
-        }, CallStackElement::StoredContract {
-            contract_package_hash: right_package_hash,
-            contract_hash: right_hash,
-        }] if left_package_hash == right_package_hash
-            && left_package_hash == expected_contract_package_hash
-            && left_hash == right_hash =>
-            true,
-        _ => false,
-    }));
+    assert!(assertion(rest));
 }
 
 fn store_contract(builder: &mut WasmTestBuilder<InMemoryGlobalState>, session_filename: &str) {
@@ -92,6 +80,28 @@ fn store_contract(builder: &mut WasmTestBuilder<InMemoryGlobalState>, session_fi
         .exec(store_contract_request)
         .commit()
         .expect_success();
+}
+
+fn assert_all_contract_packages(
+    expected_contract_package_hash: ContractPackageHash,
+) -> impl FnOnce(&[CallStackElement]) -> bool {
+    move |rest| {
+        rest.windows(2).all(|w| match w {
+            &[CallStackElement::StoredContract {
+                contract_package_hash: left_package_hash,
+                contract_hash: left_hash,
+            }, CallStackElement::StoredContract {
+                contract_package_hash: right_package_hash,
+                contract_hash: right_hash,
+            }] if left_package_hash == right_package_hash
+                && left_package_hash == expected_contract_package_hash
+                && left_hash == right_hash =>
+            {
+                true
+            }
+            _ => false,
+        })
+    }
 }
 
 fn run_forwarder_versioned_contract_by_name(depth_limit: usize) {
@@ -148,9 +158,9 @@ fn run_forwarder_versioned_contract_by_name(depth_limit: usize) {
             &mut builder,
             &format!("forwarder-{}", i),
             *DEFAULT_ACCOUNT_ADDR,
-            contract_package_hash.into(),
             i + 2,
             current_contract_hash,
+            assert_all_contract_packages(contract_package_hash.into()),
         );
     }
 }
@@ -208,9 +218,9 @@ fn run_forwarder_contract_by_name(depth_limit: usize) {
             &mut builder,
             &format!("forwarder-{}", i),
             *DEFAULT_ACCOUNT_ADDR,
-            contract_package_hash.into(),
             i + 2,
             current_contract_hash,
+            assert_all_contract_packages(contract_package_hash.into()),
         );
     }
 }
@@ -269,9 +279,9 @@ fn run_forwarder_versioned_contract_by_hash(depth_limit: usize) {
             &mut builder,
             &format!("forwarder-{}", i),
             *DEFAULT_ACCOUNT_ADDR,
-            contract_package_hash.into(),
             i + 2,
             current_contract_hash,
+            assert_all_contract_packages(contract_package_hash.into()),
         );
     }
 }
@@ -339,9 +349,9 @@ fn run_forwarder_contract_by_hash(depth_limit: usize) {
             &mut builder,
             &format!("forwarder-{}", i),
             *DEFAULT_ACCOUNT_ADDR,
-            contract_package_hash.into(),
             i + 2,
             current_contract_hash,
+            assert_all_contract_packages(contract_package_hash.into()),
         );
     }
 }
@@ -398,9 +408,9 @@ fn run_forwarder_call_recursive_from_session_code(depth_limit: usize) {
             &mut builder,
             &format!("forwarder-{}", i),
             *DEFAULT_ACCOUNT_ADDR,
-            contract_package_hash.into(),
             i + 2,
             current_contract_hash,
+            assert_all_contract_packages(contract_package_hash.into()),
         );
     }
 }
