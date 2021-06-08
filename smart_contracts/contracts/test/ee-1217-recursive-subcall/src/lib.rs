@@ -4,16 +4,37 @@ extern crate alloc;
 
 use alloc::{string::String, vec::Vec};
 
-use casper_contract::contract_api::{runtime, storage};
+use casper_contract::{
+    contract_api::{account, runtime, storage, system},
+    unwrap_or_revert::UnwrapOrRevert,
+};
 use casper_types::{
     bytesrepr,
     bytesrepr::{Error, FromBytes, ToBytes, U8_SERIALIZED_LENGTH},
     runtime_args, ApiError, CLType, CLTyped, CLValue, ContractHash, ContractPackageHash, Key,
-    RuntimeArgs, Tagged,
+    Phase, RuntimeArgs, Tagged, URef, U512,
 };
+
+const DEFAULT_PAYMENT: u64 = 1_500_000_000_000;
 
 const ARG_CALLS: &str = "calls";
 const ARG_CURRENT_DEPTH: &str = "current_depth";
+
+fn standard_payment(amount: U512) {
+    const METHOD_GET_PAYMENT_PURSE: &str = "get_payment_purse";
+
+    let main_purse = account::get_main_purse();
+
+    let handle_payment_pointer = system::get_handle_payment();
+
+    let payment_purse: URef = runtime::call_contract(
+        handle_payment_pointer,
+        METHOD_GET_PAYMENT_PURSE,
+        RuntimeArgs::default(),
+    );
+
+    system::transfer_from_purse_to_purse(main_purse, payment_purse, amount, None).unwrap_or_revert()
+}
 
 #[repr(u8)]
 enum ContractAddressTag {
@@ -130,6 +151,10 @@ pub fn stuff() {
 
     if current_depth == calls.len() as u8 {
         runtime::ret(CLValue::unit())
+    }
+
+    if current_depth == 0 && runtime::get_phase() == Phase::Payment {
+        standard_payment(U512::from(DEFAULT_PAYMENT))
     }
 
     let call_stack = runtime::get_call_stack();
