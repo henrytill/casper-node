@@ -17,3 +17,4 @@ std = ["casper-contract/std", "casper-types/std"]
 [dependencies]
 casper-contract = { path = "../../../contract", features = ["test-support"] }
 casper-types = { path = "../../../../types" }
+ee-1217-recursive-subcall = { path = "../ee-1217-recursive-subcall" }

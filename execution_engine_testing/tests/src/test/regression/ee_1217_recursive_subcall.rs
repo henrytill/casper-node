@@ -15,17 +15,17 @@ use casper_types::{
     Key, RuntimeArgs,
 };
 
+use ee_1217_recursive_subcall::{Call, ContractAddress};
+
 const CONTRACT_RECURSIVE_SUBCALL: &str = "ee_1217_recursive_subcall.wasm";
 const CONTRACT_CALL_RECURSIVE_SUBCALL: &str = "ee_1217_call_recursive_subcall.wasm";
 
 const CONTRACT_PACKAGE_NAME: &str = "forwarder";
-const CONTRACT_FORWARDER_ENTRYPOINT: &str = "forwarder";
+const CONTRACT_FORWARDER_ENTRYPOINT_CONTRACT: &str = "forwarder_contract";
 
 const CONTRACT_NAME: &str = "our_contract_name";
 
-const ARG_TARGET_CONTRACT_PACKAGE_HASH: &str = "target_contract_package_hash";
-const ARG_TARGET_METHOD: &str = "target_method";
-const ARG_LIMIT: &str = "limit";
+const ARG_CALLS: &str = "calls";
 const ARG_CURRENT_DEPTH: &str = "current_depth";
 
 fn assert_expected(
@@ -108,15 +108,21 @@ fn run_forwarder_versioned_contract_by_name(depth_limit: usize) {
         .and_then(Key::into_hash)
         .unwrap();
 
+    let calls = vec![
+        Call {
+            contract_address: ContractAddress::ContractPackageHash(contract_package_hash.into()),
+            target_method: "forwarder_contract".to_string()
+        };
+        depth_limit
+    ];
+
     let call_forwarder_request = ExecuteRequestBuilder::versioned_contract_call_by_name(
         *DEFAULT_ACCOUNT_ADDR,
         CONTRACT_PACKAGE_NAME,
         None,
-        CONTRACT_FORWARDER_ENTRYPOINT,
+        CONTRACT_FORWARDER_ENTRYPOINT_CONTRACT,
         runtime_args! {
-            ARG_TARGET_CONTRACT_PACKAGE_HASH => contract_package_hash,
-            ARG_TARGET_METHOD => CONTRACT_FORWARDER_ENTRYPOINT.to_string(),
-            ARG_LIMIT => depth_limit as u8,
+            ARG_CALLS => calls,
             ARG_CURRENT_DEPTH => 0u8,
         },
     )
@@ -163,14 +169,20 @@ fn run_forwarder_contract_by_name(depth_limit: usize) {
         .and_then(Key::into_hash)
         .unwrap();
 
+    let calls = vec![
+        Call {
+            contract_address: ContractAddress::ContractPackageHash(contract_package_hash.into()),
+            target_method: "forwarder_contract".to_string()
+        };
+        depth_limit
+    ];
+
     let call_forwarder_request = ExecuteRequestBuilder::contract_call_by_name(
         *DEFAULT_ACCOUNT_ADDR,
         CONTRACT_NAME,
-        CONTRACT_FORWARDER_ENTRYPOINT,
+        CONTRACT_FORWARDER_ENTRYPOINT_CONTRACT,
         runtime_args! {
-            ARG_TARGET_CONTRACT_PACKAGE_HASH => contract_package_hash,
-            ARG_TARGET_METHOD => CONTRACT_FORWARDER_ENTRYPOINT.to_string(),
-            ARG_LIMIT => depth_limit as u8,
+            ARG_CALLS => calls,
             ARG_CURRENT_DEPTH => 0u8,
         },
     )
@@ -217,15 +229,21 @@ fn run_forwarder_versioned_contract_by_hash(depth_limit: usize) {
         .and_then(Key::into_hash)
         .unwrap();
 
+    let calls = vec![
+        Call {
+            contract_address: ContractAddress::ContractPackageHash(contract_package_hash.into()),
+            target_method: "forwarder_contract".to_string()
+        };
+        depth_limit
+    ];
+
     let call_forwarder_request = ExecuteRequestBuilder::versioned_contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
         contract_package_hash.into(),
         None,
-        CONTRACT_FORWARDER_ENTRYPOINT,
+        CONTRACT_FORWARDER_ENTRYPOINT_CONTRACT,
         runtime_args! {
-            ARG_TARGET_CONTRACT_PACKAGE_HASH => contract_package_hash,
-            ARG_TARGET_METHOD => CONTRACT_FORWARDER_ENTRYPOINT.to_string(),
-            ARG_LIMIT => depth_limit as u8,
+            ARG_CALLS => calls,
             ARG_CURRENT_DEPTH => 0u8,
         },
     )
@@ -272,6 +290,14 @@ fn run_forwarder_contract_by_hash(depth_limit: usize) {
         .and_then(Key::into_hash)
         .unwrap();
 
+    let calls = vec![
+        Call {
+            contract_address: ContractAddress::ContractPackageHash(contract_package_hash.into()),
+            target_method: "forwarder_contract".to_string()
+        };
+        depth_limit
+    ];
+
     // Pull out the contract hash from named keys manually rather than rely on the contract-by-name
     // feature.
     let stored_contract_hash: ContractHash = default_account
@@ -285,11 +311,9 @@ fn run_forwarder_contract_by_hash(depth_limit: usize) {
     let call_forwarder_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
         stored_contract_hash,
-        CONTRACT_FORWARDER_ENTRYPOINT,
+        CONTRACT_FORWARDER_ENTRYPOINT_CONTRACT,
         runtime_args! {
-            ARG_TARGET_CONTRACT_PACKAGE_HASH => contract_package_hash,
-            ARG_TARGET_METHOD => CONTRACT_FORWARDER_ENTRYPOINT.to_string(),
-            ARG_LIMIT => depth_limit as u8,
+            ARG_CALLS => calls,
             ARG_CURRENT_DEPTH => 0u8,
         },
     )
@@ -336,13 +360,19 @@ fn run_forwarder_call_recursive_from_session_code(depth_limit: usize) {
         .and_then(Key::into_hash)
         .unwrap();
 
+    let calls = vec![
+        Call {
+            contract_address: ContractAddress::ContractPackageHash(contract_package_hash.into()),
+            target_method: "forwarder_contract".to_string()
+        };
+        depth_limit
+    ];
+
     let call_forwarder_request = ExecuteRequestBuilder::standard(
         *DEFAULT_ACCOUNT_ADDR,
         CONTRACT_CALL_RECURSIVE_SUBCALL,
         runtime_args! {
-            ARG_TARGET_CONTRACT_PACKAGE_HASH => contract_package_hash,
-            ARG_TARGET_METHOD => CONTRACT_FORWARDER_ENTRYPOINT.to_string(),
-            ARG_LIMIT => depth_limit as u8,
+            ARG_CALLS => calls,
             ARG_CURRENT_DEPTH => 0u8,
         },
     )
@@ -409,7 +439,7 @@ fn should_run_forwarder_versioned_contract_by_name() {
 #[ignore]
 #[test]
 fn should_run_forwarder_call_recursive_from_session_code() {
-    for depth_limit in &[3usize] {
+    for depth_limit in &[1, 5, 10usize] {
         run_forwarder_call_recursive_from_session_code(*depth_limit);
     }
 }

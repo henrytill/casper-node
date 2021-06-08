@@ -732,6 +732,7 @@ dependencies = [
  "clap",
  "criterion",
  "crossbeam-channel 0.5.1",
+ "ee-1217-recursive-subcall",
  "env_logger",
  "log 0.4.14",
  "num-rational 0.4.0",
@@ -1693,6 +1694,7 @@ version = "0.1.0"
 dependencies = [
  "casper-contract",
  "casper-types",
+ "ee-1217-recursive-subcall",
 ]
 
 [[package]]
