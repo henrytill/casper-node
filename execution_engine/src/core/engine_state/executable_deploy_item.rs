@@ -207,7 +207,7 @@ impl ExecutableDeployItem {
 
                 contract = tracking_copy
                     .borrow_mut()
-                    .get_contract(correlation_id, contract_hash.into())?;
+                    .get_contract(correlation_id, contract_hash)?;
 
                 if !contract.is_compatible_protocol_version(*protocol_version) {
                     let exec_error = execution::Error::IncompatibleProtocolMajorVersion {
@@ -245,11 +245,9 @@ impl ExecutableDeployItem {
 
                 let contract_version_key = maybe_version_key
                     .or_else(|| contract_package.current_contract_version())
-                    .ok_or_else(|| {
-                        error::Error::Exec(execution::Error::NoActiveContractVersions(
-                            contract_package_hash,
-                        ))
-                    })?;
+                    .ok_or(error::Error::Exec(
+                        execution::Error::NoActiveContractVersions(contract_package_hash),
+                    ))?;
 
                 if !contract_package.is_version_enabled(contract_version_key) {
                     return Err(error::Error::Exec(
