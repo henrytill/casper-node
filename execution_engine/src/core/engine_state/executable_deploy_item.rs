@@ -156,11 +156,12 @@ impl ExecutableDeployItem {
                     kind: DeployKind::System,
                     account_hash,
                     base_key,
+                    module,
                     contract_hash,
                     contract: Default::default(),
-                    module,
                     contract_package: Default::default(),
                     entry_point: Default::default(),
+                    is_stored: true,
                 });
             }
             ExecutableDeployItem::ModuleBytes { module_bytes, .. } => {
@@ -175,6 +176,7 @@ impl ExecutableDeployItem {
                     contract: Default::default(),
                     contract_package: Default::default(),
                     entry_point: Default::default(),
+                    is_stored: false,
                 });
             }
             ExecutableDeployItem::StoredContractByHash { hash, .. } => {
@@ -331,6 +333,7 @@ impl ExecutableDeployItem {
                 contract,
                 contract_package,
                 entry_point,
+                is_stored: true,
             });
         }
 
@@ -349,9 +352,10 @@ impl ExecutableDeployItem {
                     base_key,
                     module,
                     contract_hash,
-                    contract: Default::default(),
+                    contract,
                     contract_package,
                     entry_point,
+                    is_stored: true,
                 })
             }
             EntryPointType::Contract => Ok(DeployMetadata {
@@ -363,6 +367,7 @@ impl ExecutableDeployItem {
                 contract,
                 contract_package,
                 entry_point,
+                is_stored: true,
             }),
         }
     }
@@ -750,6 +755,7 @@ pub struct DeployMetadata {
     pub contract: Contract,
     pub contract_package: ContractPackage,
     pub entry_point: EntryPoint,
+    pub is_stored: bool,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -765,17 +771,23 @@ impl DeployMetadata {
     }
 
     pub fn initial_call_stack(&self) -> Result<Vec<CallStackElement>, Error> {
-        match (self.kind, self.entry_point.entry_point_type()) {
-            (DeployKind::Session, EntryPointType::Contract) => {
+        match (
+            self.kind,
+            self.entry_point.entry_point_type(),
+            self.is_stored,
+        ) {
+            (DeployKind::Session, EntryPointType::Contract, _) => {
                 Err(Error::InvalidDeployItemVariant(
                     "Contract deploy item has invalid 'Session' kind".to_string(),
                 ))
             }
-            (DeployKind::Session, EntryPointType::Session) => {
+            (DeployKind::Session, EntryPointType::Session, false) => {
+                println!("looks like we are hitting here");
                 Ok(vec![CallStackElement::session(self.account_hash)])
             }
-            (DeployKind::Contract, EntryPointType::Session)
-            | (DeployKind::System, EntryPointType::Session) => {
+            (DeployKind::Session, EntryPointType::Session, true)
+            | (DeployKind::Contract, EntryPointType::Session, true)
+            | (DeployKind::System, EntryPointType::Session, true) => {
                 let account = self
                     .base_key
                     .into_account()
@@ -787,8 +799,8 @@ impl DeployMetadata {
                     CallStackElement::stored_session(account, contract_package_hash, contract_hash),
                 ])
             }
-            (DeployKind::Contract, EntryPointType::Contract)
-            | (DeployKind::System, EntryPointType::Contract) => {
+            (DeployKind::Contract, EntryPointType::Contract, true)
+            | (DeployKind::System, EntryPointType::Contract, true) => {
                 let contract_package_hash = self.contract.contract_package_hash();
                 let contract_hash = self.contract_hash;
                 Ok(vec![
@@ -796,6 +808,7 @@ impl DeployMetadata {
                     CallStackElement::stored_contract(contract_package_hash, contract_hash),
                 ])
             }
+            (_, _, _) => Err(Error::Deploy),
         }
     }
 }

@@ -1007,6 +1007,7 @@ where
     /// Gets main purse id
     pub fn get_main_purse(&self) -> Result<URef, Error> {
         if !self.is_valid_context() {
+            println!("get_main_purse");
             return Err(Error::InvalidContext);
         }
         Ok(self.account().main_purse())
