@@ -552,7 +552,6 @@ fn run_forwarder_versioned_contract_by_name_as_payment(depth_limit: usize) {
 
     let _current_contract_hash = contract_package.current_contract_hash().unwrap();
     for i in 0..depth_limit {
-        println!("i: {}", i);
         assert_expected(
             &mut builder,
             &format!("forwarder-{}", i),
@@ -570,7 +569,8 @@ fn run_forwarder_versioned_contract_by_name_as_payment(depth_limit: usize) {
 #[ignore]
 #[test]
 fn should_run_forwarder_versioned_contract_by_name_as_payment() {
-    for depth_limit in &[1, 5, 10usize] {
+    // above a depth_limit of 5, we hit the gas limit
+    for depth_limit in &[1, 5] {
         run_forwarder_versioned_contract_by_name_as_payment(*depth_limit);
     }
 }
