@@ -782,7 +782,6 @@ impl DeployMetadata {
                 ))
             }
             (DeployKind::Session, EntryPointType::Session, false) => {
-                println!("looks like we are hitting here");
                 Ok(vec![CallStackElement::session(self.account_hash)])
             }
             (DeployKind::Session, EntryPointType::Session, true)

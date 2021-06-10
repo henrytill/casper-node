@@ -83,7 +83,7 @@ fn store_contract(builder: &mut WasmTestBuilder<InMemoryGlobalState>, session_fi
         .expect_success();
 }
 
-fn assert_all_contract_packages(
+fn assert_all_elements_are_the_same_stored_contract(
     expected_contract_package_hash: ContractPackageHash,
 ) -> impl FnOnce(&[CallStackElement]) -> bool {
     move |rest| {
@@ -95,6 +95,33 @@ fn assert_all_contract_packages(
                 contract_package_hash: right_package_hash,
                 contract_hash: right_hash,
             }] if left_package_hash == right_package_hash
+                && left_package_hash == expected_contract_package_hash
+                && left_hash == right_hash =>
+            {
+                true
+            }
+            _ => false,
+        })
+    }
+}
+
+fn assert_all_elements_are_the_same_stored_session(
+    expected_account_hash: AccountHash,
+    expected_contract_package_hash: ContractPackageHash,
+) -> impl FnOnce(&[CallStackElement]) -> bool {
+    move |rest| {
+        rest.windows(2).all(|w| match w {
+            &[CallStackElement::StoredSession {
+                account_hash: left_account_hash,
+                contract_package_hash: left_package_hash,
+                contract_hash: left_hash,
+            }, CallStackElement::StoredSession {
+                account_hash: right_account_hash,
+                contract_package_hash: right_package_hash,
+                contract_hash: right_hash,
+            }] if left_account_hash == right_account_hash
+                && left_account_hash == expected_account_hash
+                && left_package_hash == right_package_hash
                 && left_package_hash == expected_contract_package_hash
                 && left_hash == right_hash =>
             {
@@ -161,7 +188,7 @@ fn run_forwarder_versioned_contract_by_name(depth_limit: usize) {
             *DEFAULT_ACCOUNT_ADDR,
             i + 2,
             current_contract_hash.into(),
-            assert_all_contract_packages(contract_package_hash.into()),
+            assert_all_elements_are_the_same_stored_contract(contract_package_hash.into()),
         );
     }
 }
@@ -222,7 +249,7 @@ fn run_forwarder_versioned_contract_by_hash(depth_limit: usize) {
             *DEFAULT_ACCOUNT_ADDR,
             i + 2,
             current_contract_hash.into(),
-            assert_all_contract_packages(contract_package_hash.into()),
+            assert_all_elements_are_the_same_stored_contract(contract_package_hash.into()),
         );
     }
 }
@@ -282,7 +309,7 @@ fn run_forwarder_contract_by_name(depth_limit: usize) {
             *DEFAULT_ACCOUNT_ADDR,
             i + 2,
             current_contract_hash.into(),
-            assert_all_contract_packages(contract_package_hash.into()),
+            assert_all_elements_are_the_same_stored_contract(contract_package_hash.into()),
         );
     }
 }
@@ -352,7 +379,7 @@ fn run_forwarder_contract_by_hash(depth_limit: usize) {
             *DEFAULT_ACCOUNT_ADDR,
             i + 2,
             current_contract_hash.into(),
-            assert_all_contract_packages(contract_package_hash.into()),
+            assert_all_elements_are_the_same_stored_contract(contract_package_hash.into()),
         );
     }
 }
@@ -411,7 +438,7 @@ fn run_forwarder_versioned_contract_by_hash_from_session_code(depth_limit: usize
             *DEFAULT_ACCOUNT_ADDR,
             i + 2,
             current_contract_hash.into(),
-            assert_all_contract_packages(contract_package_hash.into()),
+            assert_all_elements_are_the_same_stored_contract(contract_package_hash.into()),
         );
     }
 }
@@ -525,7 +552,7 @@ fn run_forwarder_versioned_contract_by_name_as_payment(depth_limit: usize) {
             *DEFAULT_ACCOUNT_ADDR,
             i + 2,
             (*DEFAULT_ACCOUNT_ADDR).into(),
-            assert_all_contract_packages(contract_package_hash.into()),
+            assert_all_elements_are_the_same_stored_contract(contract_package_hash.into()),
         );
     }
 }
@@ -597,7 +624,10 @@ fn run_forwarder_versioned_contract_by_name_as_session(depth_limit: usize) {
             *DEFAULT_ACCOUNT_ADDR,
             i + 2,
             (*DEFAULT_ACCOUNT_ADDR).into(),
-            assert_all_contract_packages(contract_package_hash.into()),
+            assert_all_elements_are_the_same_stored_session(
+                *DEFAULT_ACCOUNT_ADDR,
+                contract_package_hash.into(),
+            ),
         );
     }
 }
@@ -605,7 +635,7 @@ fn run_forwarder_versioned_contract_by_name_as_session(depth_limit: usize) {
 #[ignore]
 #[test]
 fn should_run_forwarder_versioned_contract_by_name_as_session() {
-    for depth_limit in &[5] {
+    for depth_limit in &[1, 5, 10] {
         run_forwarder_versioned_contract_by_name_as_session(*depth_limit);
     }
 }

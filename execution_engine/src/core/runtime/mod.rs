@@ -1848,15 +1848,25 @@ where
             None => return Err(Error::KeyNotFound(key)),
         };
 
-        let entry_point = contract
+        let contract_entry_point = contract
             .entry_point(entry_point_name)
             .cloned()
             .ok_or_else(|| Error::NoSuchMethod(entry_point_name.to_owned()))?;
 
-        let context_key = self.get_context_key_for_contract_call(contract_hash, &entry_point)?;
+        let context_key =
+            self.get_context_key_for_contract_call(contract_hash, &contract_entry_point)?;
 
-        let call_stack_element =
-            CallStackElement::stored_contract(contract.contract_package_hash(), contract_hash);
+        let call_stack_element = match contract_entry_point.entry_point_type() {
+            EntryPointType::Session => CallStackElement::stored_session(
+                self.context.account().account_hash(),
+                contract.contract_package_hash(),
+                contract_hash,
+            ),
+            EntryPointType::Contract => {
+                CallStackElement::stored_contract(contract.contract_package_hash(), contract_hash)
+            }
+        };
+
         self.call_stack.push(call_stack_element);
 
         self.execute_contract(
@@ -1864,7 +1874,7 @@ where
             context_key,
             contract,
             args,
-            entry_point,
+            contract_entry_point,
             self.context.protocol_version(),
         )
     }
@@ -1920,14 +1930,14 @@ where
             None => return Err(Error::KeyNotFound(key)),
         };
 
-        let entry_point = contract
+        let contract_entry_point = contract
             .entry_point(&entry_point_name)
             .cloned()
             .ok_or_else(|| Error::NoSuchMethod(entry_point_name.to_owned()))?;
 
-        self.validate_entry_point_access(&contract_package, entry_point.access())?;
+        self.validate_entry_point_access(&contract_package, contract_entry_point.access())?;
 
-        for (expected, found) in entry_point
+        for (expected, found) in contract_entry_point
             .args()
             .iter()
             .map(|a| a.cl_type())
@@ -1939,10 +1949,19 @@ where
             }
         }
 
-        let context_key = self.get_context_key_for_contract_call(contract_hash, &entry_point)?;
+        let context_key =
+            self.get_context_key_for_contract_call(contract_hash, &contract_entry_point)?;
 
-        let call_stack_element =
-            CallStackElement::stored_contract(contract.contract_package_hash(), contract_hash);
+        let call_stack_element = match contract_entry_point.entry_point_type() {
+            EntryPointType::Session => CallStackElement::stored_session(
+                self.context.account().account_hash(),
+                contract.contract_package_hash(),
+                contract_hash,
+            ),
+            EntryPointType::Contract => {
+                CallStackElement::stored_contract(contract.contract_package_hash(), contract_hash)
+            }
+        };
         self.call_stack.push(call_stack_element);
 
         self.execute_contract(
@@ -1950,7 +1969,7 @@ where
             context_key,
             contract,
             args,
-            entry_point,
+            contract_entry_point,
             self.context.protocol_version(),
         )
     }
