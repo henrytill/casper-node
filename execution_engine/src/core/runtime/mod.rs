@@ -1856,22 +1856,10 @@ where
         let context_key =
             self.get_context_key_for_contract_call(contract_hash, &contract_entry_point)?;
 
-        let call_stack_element = match contract_entry_point.entry_point_type() {
-            EntryPointType::Session => CallStackElement::stored_session(
-                self.context.account().account_hash(),
-                contract.contract_package_hash(),
-                contract_hash,
-            ),
-            EntryPointType::Contract => {
-                CallStackElement::stored_contract(contract.contract_package_hash(), contract_hash)
-            }
-        };
-
-        self.call_stack.push(call_stack_element);
-
         self.execute_contract(
             key,
             context_key,
+            contract_hash,
             contract,
             args,
             contract_entry_point,
@@ -1952,21 +1940,10 @@ where
         let context_key =
             self.get_context_key_for_contract_call(contract_hash, &contract_entry_point)?;
 
-        let call_stack_element = match contract_entry_point.entry_point_type() {
-            EntryPointType::Session => CallStackElement::stored_session(
-                self.context.account().account_hash(),
-                contract.contract_package_hash(),
-                contract_hash,
-            ),
-            EntryPointType::Contract => {
-                CallStackElement::stored_contract(contract.contract_package_hash(), contract_hash)
-            }
-        };
-        self.call_stack.push(call_stack_element);
-
         self.execute_contract(
             context_key,
             context_key,
+            contract_hash,
             contract,
             args,
             contract_entry_point,
@@ -1999,6 +1976,7 @@ where
         &mut self,
         key: Key,
         base_key: Key,
+        contract_hash: ContractHash,
         contract: Contract,
         args: RuntimeArgs,
         entry_point: EntryPoint,
@@ -2134,7 +2112,20 @@ where
             self.context.transfers().to_owned(),
         );
 
-        let call_stack = self.call_stack.to_owned();
+        let mut call_stack = self.call_stack.to_owned();
+
+        let call_stack_element = match entry_point.entry_point_type() {
+            EntryPointType::Session => CallStackElement::stored_session(
+                self.context.account().account_hash(),
+                contract.contract_package_hash(),
+                contract_hash,
+            ),
+            EntryPointType::Contract => {
+                CallStackElement::stored_contract(contract.contract_package_hash(), contract_hash)
+            }
+        };
+
+        call_stack.push(call_stack_element);
 
         let mut runtime = Runtime {
             system_contract_cache,

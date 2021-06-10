@@ -506,7 +506,7 @@ fn run_forwarder_versioned_contract_by_name_as_payment(depth_limit: usize) {
     let calls = vec![
         Call {
             contract_address: ContractAddress::ContractPackageHash(contract_package_hash.into()),
-            target_method: "forwarder_session".to_string(),
+            target_method: CONTRACT_FORWARDER_ENTRYPOINT_SESSION.to_string(),
             entry_point_type: EntryPointType::Contract,
         };
         depth_limit
@@ -552,24 +552,28 @@ fn run_forwarder_versioned_contract_by_name_as_payment(depth_limit: usize) {
 
     let _current_contract_hash = contract_package.current_contract_hash().unwrap();
     for i in 0..depth_limit {
+        println!("i: {}", i);
         assert_expected(
             &mut builder,
             &format!("forwarder-{}", i),
             *DEFAULT_ACCOUNT_ADDR,
             i + 2,
             (*DEFAULT_ACCOUNT_ADDR).into(),
-            assert_all_elements_are_the_same_stored_contract(contract_package_hash.into()),
+            assert_all_elements_are_the_same_stored_session(
+                *DEFAULT_ACCOUNT_ADDR,
+                contract_package_hash.into(),
+            ),
         );
     }
 }
 
-// #[ignore]
-// #[test]
-// fn should_run_forwarder_versioned_contract_by_name_as_payment() {
-//     for depth_limit in &[1] {
-//         run_forwarder_versioned_contract_by_name_as_payment(*depth_limit);
-//     }
-// }
+#[ignore]
+#[test]
+fn should_run_forwarder_versioned_contract_by_name_as_payment() {
+    for depth_limit in &[1, 5, 10usize] {
+        run_forwarder_versioned_contract_by_name_as_payment(*depth_limit);
+    }
+}
 
 #[allow(dead_code)]
 fn run_forwarder_versioned_contract_by_name_as_session(depth_limit: usize) {
