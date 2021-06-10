@@ -15,8 +15,8 @@ use casper_execution_engine::{
     storage::global_state::in_memory::InMemoryGlobalState,
 };
 use casper_types::{
-    runtime_args, system::CallStackElement, CLValue, ContractHash, ContractPackageHash, HashAddr,
-    Key, RuntimeArgs,
+    runtime_args, system::CallStackElement, CLValue, ContractHash, ContractPackageHash,
+    EntryPointType, HashAddr, Key, RuntimeArgs,
 };
 
 const CONTRACT_RECURSIVE_SUBCALL: &str = "ee_1217_recursive_subcall.wasm";
@@ -149,7 +149,8 @@ fn run_forwarder_versioned_contract_by_name(depth_limit: usize) {
     let calls = vec![
         Call {
             contract_address: ContractAddress::ContractPackageHash(contract_package_hash.into()),
-            target_method: "forwarder_contract".to_string()
+            target_method: "forwarder_contract".to_string(),
+            entry_point_type: EntryPointType::Contract
         };
         depth_limit
     ];
@@ -210,7 +211,8 @@ fn run_forwarder_versioned_contract_by_hash(depth_limit: usize) {
     let calls = vec![
         Call {
             contract_address: ContractAddress::ContractPackageHash(contract_package_hash.into()),
-            target_method: "forwarder_contract".to_string()
+            target_method: "forwarder_contract".to_string(),
+            entry_point_type: EntryPointType::Contract
         };
         depth_limit
     ];
@@ -271,7 +273,8 @@ fn run_forwarder_contract_by_name(depth_limit: usize) {
     let calls = vec![
         Call {
             contract_address: ContractAddress::ContractPackageHash(contract_package_hash.into()),
-            target_method: CONTRACT_FORWARDER_ENTRYPOINT_CONTRACT.to_string()
+            target_method: CONTRACT_FORWARDER_ENTRYPOINT_CONTRACT.to_string(),
+            entry_point_type: EntryPointType::Contract,
         };
         depth_limit
     ];
@@ -331,7 +334,8 @@ fn run_forwarder_contract_by_hash(depth_limit: usize) {
     let calls = vec![
         Call {
             contract_address: ContractAddress::ContractPackageHash(contract_package_hash.into()),
-            target_method: "forwarder_contract".to_string()
+            target_method: "forwarder_contract".to_string(),
+            entry_point_type: EntryPointType::Contract,
         };
         depth_limit
     ];
@@ -401,7 +405,8 @@ fn run_forwarder_versioned_contract_by_hash_from_session_code(depth_limit: usize
     let calls = vec![
         Call {
             contract_address: ContractAddress::ContractPackageHash(contract_package_hash.into()),
-            target_method: "forwarder_contract".to_string()
+            target_method: "forwarder_contract".to_string(),
+            entry_point_type: EntryPointType::Contract,
         };
         depth_limit
     ];
@@ -501,7 +506,8 @@ fn run_forwarder_versioned_contract_by_name_as_payment(depth_limit: usize) {
     let calls = vec![
         Call {
             contract_address: ContractAddress::ContractPackageHash(contract_package_hash.into()),
-            target_method: "forwarder_session".to_string()
+            target_method: "forwarder_session".to_string(),
+            entry_point_type: EntryPointType::Contract,
         };
         depth_limit
     ];
@@ -557,7 +563,6 @@ fn run_forwarder_versioned_contract_by_name_as_payment(depth_limit: usize) {
     }
 }
 
-//
 // #[ignore]
 // #[test]
 // fn should_run_forwarder_versioned_contract_by_name_as_payment() {
@@ -565,7 +570,6 @@ fn run_forwarder_versioned_contract_by_name_as_payment(depth_limit: usize) {
 //         run_forwarder_versioned_contract_by_name_as_payment(*depth_limit);
 //     }
 // }
-//
 
 #[allow(dead_code)]
 fn run_forwarder_versioned_contract_by_name_as_session(depth_limit: usize) {
@@ -585,7 +589,8 @@ fn run_forwarder_versioned_contract_by_name_as_session(depth_limit: usize) {
     let calls = vec![
         Call {
             contract_address: ContractAddress::ContractPackageHash(contract_package_hash.into()),
-            target_method: CONTRACT_FORWARDER_ENTRYPOINT_SESSION.to_string()
+            target_method: CONTRACT_FORWARDER_ENTRYPOINT_SESSION.to_string(),
+            entry_point_type: EntryPointType::Contract,
         };
         depth_limit
     ];

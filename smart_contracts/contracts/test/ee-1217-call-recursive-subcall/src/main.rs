@@ -27,6 +27,7 @@ pub extern "C" fn call() {
         Some(Call {
             contract_address: ContractAddress::ContractPackageHash(contract_package_hash),
             target_method,
+            ..
         }) => {
             runtime::call_versioned_contract::<()>(
                 *contract_package_hash,
@@ -38,6 +39,7 @@ pub extern "C" fn call() {
         Some(Call {
             contract_address: ContractAddress::ContractHash(contract_hash),
             target_method,
+            ..
         }) => {
             runtime::call_contract::<()>(*contract_hash, &target_method, args);
         }

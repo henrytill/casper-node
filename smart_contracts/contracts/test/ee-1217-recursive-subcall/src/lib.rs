@@ -11,8 +11,8 @@ use casper_contract::{
 use casper_types::{
     bytesrepr,
     bytesrepr::{Error, FromBytes, ToBytes, U8_SERIALIZED_LENGTH},
-    runtime_args, ApiError, CLType, CLTyped, CLValue, ContractHash, ContractPackageHash, Key,
-    Phase, RuntimeArgs, Tagged, URef, U512,
+    runtime_args, ApiError, CLType, CLTyped, CLValue, ContractHash, ContractPackageHash,
+    EntryPointType, Key, Phase, RuntimeArgs, Tagged, URef, U512,
 };
 
 const DEFAULT_PAYMENT: u64 = 1_500_000_000_000;
@@ -110,6 +110,7 @@ impl FromBytes for ContractAddress {
 pub struct Call {
     pub contract_address: ContractAddress,
     pub target_method: String,
+    pub entry_point_type: EntryPointType,
 }
 
 impl ToBytes for Call {
@@ -117,11 +118,14 @@ impl ToBytes for Call {
         let mut result = bytesrepr::allocate_buffer(self)?;
         result.append(&mut self.contract_address.to_bytes()?);
         result.append(&mut self.target_method.to_bytes()?);
+        result.append(&mut self.entry_point_type.to_bytes()?);
         Ok(result)
     }
 
     fn serialized_length(&self) -> usize {
-        self.contract_address.serialized_length() + self.target_method.serialized_length()
+        self.contract_address.serialized_length()
+            + self.target_method.serialized_length()
+            + self.entry_point_type.serialized_length()
     }
 }
 
@@ -129,10 +133,12 @@ impl FromBytes for Call {
     fn from_bytes(bytes: &[u8]) -> Result<(Self, &[u8]), Error> {
         let (contract_address, remainder) = ContractAddress::from_bytes(bytes)?;
         let (target_method, remainder) = String::from_bytes(remainder)?;
+        let (entry_point_type, remainder) = EntryPointType::from_bytes(remainder)?;
         Ok((
             Call {
                 contract_address,
                 target_method,
+                entry_point_type,
             },
             remainder,
         ))
@@ -171,6 +177,7 @@ pub fn stuff() {
         Some(Call {
             contract_address: ContractAddress::ContractPackageHash(contract_package_hash),
             target_method,
+            ..
         }) => {
             runtime::call_versioned_contract::<()>(
                 *contract_package_hash,
@@ -182,6 +189,7 @@ pub fn stuff() {
         Some(Call {
             contract_address: ContractAddress::ContractHash(contract_hash),
             target_method,
+            ..
         }) => {
             runtime::call_contract::<()>(*contract_hash, &target_method, args);
         }
