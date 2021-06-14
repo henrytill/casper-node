@@ -1353,6 +1353,7 @@ where
         named_keys: &mut NamedKeys,
         runtime_args: &RuntimeArgs,
         extra_keys: &[Key],
+        call_stack: Vec<CallStackElement>,
     ) -> Result<CLValue, Error> {
         let access_rights = {
             let mut keys: Vec<Key> = named_keys.values().cloned().collect();
@@ -1405,7 +1406,7 @@ where
             self.memory.clone(),
             self.module.clone(),
             mint_context,
-            self.call_stack().to_owned(),
+            call_stack,
         );
 
         let system_config = protocol_data.system_config();
@@ -1499,6 +1500,7 @@ where
         named_keys: &mut NamedKeys,
         runtime_args: &RuntimeArgs,
         extra_keys: &[Key],
+        call_stack: Vec<CallStackElement>,
     ) -> Result<CLValue, Error> {
         let access_rights = {
             let mut keys: Vec<Key> = named_keys.values().cloned().collect();
@@ -1551,7 +1553,7 @@ where
             self.memory.clone(),
             self.module.clone(),
             runtime_context,
-            self.call_stack().to_owned(),
+            call_stack,
         );
 
         let system_config = protocol_data.system_config();
@@ -1627,6 +1629,7 @@ where
         named_keys: &mut NamedKeys,
         runtime_args: &RuntimeArgs,
         extra_keys: &[Key],
+        call_stack: Vec<CallStackElement>,
     ) -> Result<CLValue, Error> {
         let access_rights = {
             let mut keys: Vec<Key> = named_keys.values().cloned().collect();
@@ -1679,7 +1682,7 @@ where
             self.memory.clone(),
             self.module.clone(),
             runtime_context,
-            self.call_stack().to_owned(),
+            call_stack,
         );
 
         let system_config = protocol_data.system_config();
@@ -2017,28 +2020,52 @@ where
             }
 
             if self.is_mint(key) {
+                let mut call_stack = self.call_stack.to_owned();
+                let call_stack_element = CallStackElement::stored_contract(
+                    contract.contract_package_hash(),
+                    contract_hash,
+                );
+                call_stack.push(call_stack_element);
+
                 return self.call_host_mint(
                     self.context.protocol_version(),
                     entry_point.name(),
                     &mut named_keys,
                     &args,
                     &extra_keys,
+                    call_stack,
                 );
             } else if self.is_handle_payment(key) {
+                let mut call_stack = self.call_stack.to_owned();
+                let call_stack_element = CallStackElement::stored_contract(
+                    contract.contract_package_hash(),
+                    contract_hash,
+                );
+                call_stack.push(call_stack_element);
+
                 return self.call_host_handle_payment(
                     self.context.protocol_version(),
                     entry_point.name(),
                     &mut named_keys,
                     &args,
                     &extra_keys,
+                    call_stack,
                 );
             } else if self.is_auction(key) {
+                let mut call_stack = self.call_stack.to_owned();
+                let call_stack_element = CallStackElement::stored_contract(
+                    contract.contract_package_hash(),
+                    contract_hash,
+                );
+                call_stack.push(call_stack_element);
+
                 return self.call_host_auction(
                     self.context.protocol_version(),
                     entry_point.name(),
                     &mut named_keys,
                     &args,
                     &extra_keys,
+                    call_stack,
                 );
             }
 

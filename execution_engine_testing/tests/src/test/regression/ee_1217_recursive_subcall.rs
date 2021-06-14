@@ -132,7 +132,7 @@ fn assert_all_elements_are_the_same_stored_session(
     }
 }
 
-fn run_forwarder_versioned_contract_by_name(depth_limit: usize) {
+fn run_forwarder_versioned_contract_by_name_as_contract(depth_limit: usize) {
     let mut builder = InMemoryWasmTestBuilder::default();
     builder.run_genesis(&DEFAULT_RUN_GENESIS_REQUEST);
     store_contract(&mut builder, CONTRACT_RECURSIVE_SUBCALL);
@@ -194,7 +194,7 @@ fn run_forwarder_versioned_contract_by_name(depth_limit: usize) {
     }
 }
 
-fn run_forwarder_versioned_contract_by_hash(depth_limit: usize) {
+fn run_forwarder_versioned_contract_by_hash_as_contract(depth_limit: usize) {
     let mut builder = InMemoryWasmTestBuilder::default();
     builder.run_genesis(&DEFAULT_RUN_GENESIS_REQUEST);
     store_contract(&mut builder, CONTRACT_RECURSIVE_SUBCALL);
@@ -256,7 +256,7 @@ fn run_forwarder_versioned_contract_by_hash(depth_limit: usize) {
     }
 }
 
-fn run_forwarder_contract_by_name(depth_limit: usize) {
+fn run_forwarder_contract_by_name_as_contract(depth_limit: usize) {
     let mut builder = InMemoryWasmTestBuilder::default();
     builder.run_genesis(&DEFAULT_RUN_GENESIS_REQUEST);
     store_contract(&mut builder, CONTRACT_RECURSIVE_SUBCALL);
@@ -317,7 +317,7 @@ fn run_forwarder_contract_by_name(depth_limit: usize) {
     }
 }
 
-fn run_forwarder_contract_by_hash(depth_limit: usize) {
+fn run_forwarder_contract_by_hash_as_contract(depth_limit: usize) {
     let mut builder = InMemoryWasmTestBuilder::default();
     builder.run_genesis(&DEFAULT_RUN_GENESIS_REQUEST);
     store_contract(&mut builder, CONTRACT_RECURSIVE_SUBCALL);
@@ -388,7 +388,7 @@ fn run_forwarder_contract_by_hash(depth_limit: usize) {
     }
 }
 
-fn run_forwarder_versioned_contract_by_hash_from_session_code(depth_limit: usize) {
+fn run_forwarder_versioned_contract_by_hash_as_contract_from_session_code(depth_limit: usize) {
     let mut builder = InMemoryWasmTestBuilder::default();
     builder.run_genesis(&DEFAULT_RUN_GENESIS_REQUEST);
     store_contract(&mut builder, CONTRACT_RECURSIVE_SUBCALL);
@@ -450,41 +450,41 @@ fn run_forwarder_versioned_contract_by_hash_from_session_code(depth_limit: usize
 
 #[ignore]
 #[test]
-fn should_run_forwarder_versioned_contract_by_name() {
+fn should_run_forwarder_versioned_contract_by_name_as_contract() {
     for depth_limit in &[1, 5, 10usize] {
-        run_forwarder_versioned_contract_by_name(*depth_limit);
+        run_forwarder_versioned_contract_by_name_as_contract(*depth_limit);
     }
 }
 
 #[ignore]
 #[test]
-fn should_run_forwarder_versioned_contract_by_hash() {
+fn should_run_forwarder_versioned_contract_by_hash_as_contract() {
     for depth_limit in &[1, 5, 10usize] {
-        run_forwarder_versioned_contract_by_hash(*depth_limit);
+        run_forwarder_versioned_contract_by_hash_as_contract(*depth_limit);
     }
 }
 
 #[ignore]
 #[test]
-fn should_run_forwarder_contract_by_name() {
+fn should_run_forwarder_contract_by_name_as_contract() {
     for depth_limit in &[1, 5, 10usize] {
-        run_forwarder_contract_by_name(*depth_limit);
+        run_forwarder_contract_by_name_as_contract(*depth_limit);
     }
 }
 
 #[ignore]
 #[test]
-fn should_run_forwarder_contract_by_hash() {
+fn should_run_forwarder_contract_by_hash_as_contract() {
     for depth_limit in &[1, 5, 10usize] {
-        run_forwarder_contract_by_hash(*depth_limit);
+        run_forwarder_contract_by_hash_as_contract(*depth_limit);
     }
 }
 
 #[ignore]
 #[test]
-fn should_run_forwarder_versioned_contract_by_hash_from_session_code() {
+fn should_run_forwarder_versioned_contract_by_hash_as_contract_from_session_code() {
     for depth_limit in &[1, 5, 10usize] {
-        run_forwarder_versioned_contract_by_hash_from_session_code(*depth_limit);
+        run_forwarder_versioned_contract_by_hash_as_contract_from_session_code(*depth_limit);
     }
 }
 
