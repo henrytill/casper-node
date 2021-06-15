@@ -648,3 +648,77 @@ fn should_run_forwarder_versioned_contract_by_name_as_session() {
         run_forwarder_versioned_contract_by_name_as_session(*depth_limit);
     }
 }
+
+#[allow(dead_code)]
+fn run_forwarder_versioned_contract_by_hash_as_session(depth_limit: usize) {
+    let mut builder = InMemoryWasmTestBuilder::default();
+    builder.run_genesis(&DEFAULT_RUN_GENESIS_REQUEST);
+    store_contract(&mut builder, CONTRACT_RECURSIVE_SUBCALL);
+
+    let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+
+    let contract_package_hash: HashAddr = default_account
+        .named_keys()
+        .get(CONTRACT_PACKAGE_NAME)
+        .cloned()
+        .and_then(Key::into_hash)
+        .unwrap();
+
+    let calls = vec![
+        Call {
+            contract_address: ContractAddress::ContractPackageHash(contract_package_hash.into()),
+            target_method: CONTRACT_FORWARDER_ENTRYPOINT_SESSION.to_string(),
+            entry_point_type: EntryPointType::Contract,
+        };
+        depth_limit
+    ];
+
+    let call_forwarder_request = ExecuteRequestBuilder::versioned_contract_call_by_hash(
+        *DEFAULT_ACCOUNT_ADDR,
+        contract_package_hash.into(),
+        None,
+        CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+        runtime_args! {
+            ARG_CALLS => calls,
+            ARG_CURRENT_DEPTH => 0u8,
+        },
+    )
+    .build();
+
+    builder
+        .exec(call_forwarder_request)
+        .commit()
+        .expect_success();
+
+    let value = builder
+        .query(None, Key::Hash(contract_package_hash), &[])
+        .unwrap();
+
+    let contract_package = match value {
+        StoredValue::ContractPackage(package) => package,
+        _ => panic!("unreachable"),
+    };
+
+    let _current_contract_hash = contract_package.current_contract_hash().unwrap();
+    for i in 0..depth_limit {
+        assert_expected(
+            &mut builder,
+            &format!("forwarder-{}", i),
+            *DEFAULT_ACCOUNT_ADDR,
+            i + 2,
+            (*DEFAULT_ACCOUNT_ADDR).into(),
+            assert_all_elements_are_the_same_stored_session(
+                *DEFAULT_ACCOUNT_ADDR,
+                contract_package_hash.into(),
+            ),
+        );
+    }
+}
+
+#[ignore]
+#[test]
+fn should_run_forwarder_versioned_contract_by_hash_as_session() {
+    for depth_limit in &[1, 5, 10] {
+        run_forwarder_versioned_contract_by_hash_as_session(*depth_limit);
+    }
+}
