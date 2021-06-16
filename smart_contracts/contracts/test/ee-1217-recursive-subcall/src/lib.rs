@@ -20,7 +20,7 @@ const DEFAULT_PAYMENT: u64 = 1_500_000_000_000;
 const ARG_CALLS: &str = "calls";
 const ARG_CURRENT_DEPTH: &str = "current_depth";
 
-fn standard_payment(amount: U512) {
+pub fn standard_payment(amount: U512) {
     const METHOD_GET_PAYMENT_PURSE: &str = "get_payment_purse";
 
     let main_purse = account::get_main_purse();

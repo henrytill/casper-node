@@ -5,11 +5,12 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 
-use casper_contract::contract_api::runtime;
-use casper_types::{runtime_args, ApiError, RuntimeArgs};
+use casper_contract::contract_api::{runtime, storage};
+use casper_types::{runtime_args, ApiError, CLValue, Key, Phase, RuntimeArgs, U512};
 
-use ee_1217_recursive_subcall::{Call, ContractAddress};
+use ee_1217_recursive_subcall::{standard_payment, Call, ContractAddress};
 
+const DEFAULT_PAYMENT: u64 = 1_500_000_000_000;
 const ARG_CALLS: &str = "calls";
 const ARG_CURRENT_DEPTH: &str = "current_depth";
 
@@ -18,9 +19,22 @@ pub extern "C" fn call() {
     let calls: Vec<Call> = runtime::get_named_arg(ARG_CALLS);
     let current_depth: u8 = runtime::get_named_arg(ARG_CURRENT_DEPTH);
 
+    if current_depth == calls.len() as u8 {
+        runtime::ret(CLValue::unit())
+    }
+
+    if current_depth == 0 && runtime::get_phase() == Phase::Payment {
+        standard_payment(U512::from(DEFAULT_PAYMENT))
+    }
+
+    let call_stack = runtime::get_call_stack();
+    let name = alloc::format!("forwarder-{}", current_depth);
+    let call_stack_at = storage::new_uref(call_stack);
+    runtime::put_key(&name, Key::URef(call_stack_at));
+
     let args = runtime_args! {
         ARG_CALLS => calls.clone(),
-        ARG_CURRENT_DEPTH => current_depth,
+        ARG_CURRENT_DEPTH => current_depth + 1,
     };
 
     match calls.get(current_depth as usize) {
