@@ -201,6 +201,44 @@ fn assert_each_context_has_correct_call_stack_info(
     }
 }
 
+fn assert_each_context_has_correct_call_stack_info_module_bytes(
+    builder: &mut InMemoryWasmTestBuilder,
+    subcalls: Vec<Call>,
+    current_contract_package_hash: HashAddr,
+) {
+    let stored_call_stack_key = format!("call_stack-{}", 0);
+    let call_stack = builder.get_call_stack_from_session_context(&stored_call_stack_key);
+    let (head, _) = call_stack.split_at(usize::one());
+    assert_eq!(
+        head,
+        [CallStackElement::Session {
+            account_hash: *DEFAULT_ACCOUNT_ADDR,
+        }],
+    );
+
+    for (i, call) in (1..=subcalls.len()).zip(subcalls.iter()) {
+        let stored_call_stack_key = format!("call_stack-{}", i);
+        // we need to know where to look for the call stack information
+        let call_stack = match call.entry_point_type {
+            EntryPointType::Contract => builder.get_call_stack_from_contract_context(
+                &stored_call_stack_key,
+                current_contract_package_hash,
+            ),
+            EntryPointType::Session => {
+                builder.get_call_stack_from_session_context(&stored_call_stack_key)
+            }
+        };
+        let (head, rest) = call_stack.split_at(usize::one());
+        assert_eq!(
+            head,
+            [CallStackElement::Session {
+                account_hash: *DEFAULT_ACCOUNT_ADDR,
+            }],
+        );
+        assert_call_stack_matches_calls(rest.to_vec(), &subcalls);
+    }
+}
+
 fn assert_call_stack_matches_calls(call_stack: Vec<CallStackElement>, calls: &[Call]) {
     for (index, expected_call_stack_element) in call_stack.iter().enumerate() {
         let maybe_call = calls.get(index);
@@ -283,7 +321,6 @@ mod session {
         CONTRACT_NAME, CONTRACT_PACKAGE_NAME,
     };
 
-    /*
     #[ignore]
     #[test]
     fn session_bytes_to_stored_versioned_contract() {
@@ -306,20 +343,18 @@ mod session {
 
             builder.exec(execute_request).commit().expect_success();
 
-            super::assert_each_context_has_correct_call_stack_info(
+            super::assert_each_context_has_correct_call_stack_info_module_bytes(
                 &mut builder,
-                module_bytes(),
                 subcalls,
                 current_contract_package_hash,
             );
         }
     }
-    */
 
     #[ignore]
     #[test]
     fn stored_versioned_contract_by_name_to_stored_versioned_contract() {
-        for len in &[1, 5, 10] {
+        for len in &[0, 1, 5, 10] {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
@@ -352,7 +387,7 @@ mod session {
     #[ignore]
     #[test]
     fn stored_versioned_contract_by_hash_to_stored_versioned_contract() {
-        for len in &[0, 5, 10] {
+        for len in &[0, 1, 5, 10] {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
@@ -385,7 +420,7 @@ mod session {
     #[ignore]
     #[test]
     fn stored_contract_by_name_to_stored_versioned_contract() {
-        for len in &[1, 5, 10] {
+        for len in &[0, 1, 5, 10] {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
@@ -418,7 +453,7 @@ mod session {
     #[ignore]
     #[test]
     fn stored_contract_by_hash_to_stored_versioned_contract() {
-        for len in &[1, 5, 10] {
+        for len in &[0, 1, 5, 10] {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
@@ -450,7 +485,7 @@ mod session {
     #[ignore]
     #[test]
     fn stored_versioned_session_by_name_to_stored_versioned_session() {
-        for len in &[1, 5, 10] {
+        for len in &[0, 1, 5, 10] {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
@@ -483,7 +518,7 @@ mod session {
     #[ignore]
     #[test]
     fn stored_versioned_session_by_hash_to_stored_versioned_session() {
-        for len in &[1, 5, 10] {
+        for len in &[0, 1, 5, 10] {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
@@ -534,7 +569,7 @@ mod payment {
     #[test]
     fn stored_versioned_session_by_name_to_stored_versioned_session() {
         // going further than 5 will git the gas limit
-        for len in &[1, 5] {
+        for len in &[0, 1, 5] {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
@@ -583,7 +618,7 @@ mod payment {
     #[test]
     fn stored_versioned_session_by_hash_to_stored_versioned_session() {
         // going further than 5 will git the gas limit
-        for len in &[1, 5] {
+        for len in &[0, 1, 5] {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
@@ -628,7 +663,7 @@ mod payment {
     #[test]
     fn stored_versioned_session_by_name_to_stored_session() {
         // going further than 5 will git the gas limit
-        for len in &[1, 5] {
+        for len in &[0, 1, 5] {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
@@ -677,7 +712,7 @@ mod payment {
     #[test]
     fn stored_versioned_session_by_hash_to_stored_session() {
         // going further than 5 will git the gas limit
-        for len in &[1, 5] {
+        for len in &[0, 1, 5] {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
@@ -729,7 +764,7 @@ mod payment {
     #[test]
     fn stored_session_by_name_to_stored_versioned_session() {
         // going further than 5 will git the gas limit
-        for len in &[1, 5] {
+        for len in &[0, 1, 5] {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
@@ -778,7 +813,7 @@ mod payment {
     #[test]
     fn stored_session_by_hash_to_stored_versioned_session() {
         // going further than 5 will git the gas limit
-        for len in &[1, 5] {
+        for len in &[0, 1, 5] {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
@@ -823,7 +858,7 @@ mod payment {
     #[test]
     fn stored_session_by_name_to_stored_session() {
         // going further than 5 will git the gas limit
-        for len in &[1, 5] {
+        for len in &[0, 1, 5] {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
