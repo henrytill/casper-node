@@ -355,6 +355,531 @@ mod session {
 
     #[ignore]
     #[test]
+    fn session_bytes_to_stored_versioned_contract_to_stored_contract() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![
+                    super::stored_versioned_contract(current_contract_package_hash.into());
+                    len.saturating_sub(1)
+                ];
+            if *len > 0 {
+                subcalls.push(super::stored_contract(current_contract_hash.into()));
+            }
+            let execute_request = ExecuteRequestBuilder::standard(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_CALL_RECURSIVE_SUBCALL,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info_module_bytes(
+                &mut builder,
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn session_bytes_to_stored_contract_to_stored_versioned_contract() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![super::stored_contract(current_contract_hash.into()); len.saturating_sub(1)];
+            if *len > 0 {
+                subcalls.push(super::stored_versioned_contract(
+                    current_contract_package_hash.into(),
+                ));
+            }
+            let execute_request = ExecuteRequestBuilder::standard(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_CALL_RECURSIVE_SUBCALL,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info_module_bytes(
+                &mut builder,
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn session_bytes_to_stored_contract() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let subcalls = vec![super::stored_contract(current_contract_hash.into()); *len];
+            let execute_request = ExecuteRequestBuilder::standard(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_CALL_RECURSIVE_SUBCALL,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info_module_bytes(
+                &mut builder,
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn session_bytes_to_stored_versioned_session_to_stored_versioned_contract() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+
+            let mut subcalls =
+                vec![
+                    super::stored_versioned_session(current_contract_package_hash.into());
+                    len.saturating_sub(1)
+                ];
+            if *len > 0 {
+                subcalls.push(super::stored_versioned_contract(
+                    current_contract_package_hash.into(),
+                ));
+            }
+            let execute_request = ExecuteRequestBuilder::standard(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_CALL_RECURSIVE_SUBCALL,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info_module_bytes(
+                &mut builder,
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn session_bytes_to_stored_versioned_session_to_stored_contract() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![
+                    super::stored_versioned_session(current_contract_package_hash.into());
+                    len.saturating_sub(1)
+                ];
+            if *len > 0 {
+                subcalls.push(super::stored_contract(current_contract_hash.into()));
+            }
+            let execute_request = ExecuteRequestBuilder::standard(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_CALL_RECURSIVE_SUBCALL,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info_module_bytes(
+                &mut builder,
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn session_bytes_to_stored_session_to_stored_versioned_contract() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![super::stored_session(current_contract_hash.into()); len.saturating_sub(1)];
+            if *len > 0 {
+                subcalls.push(super::stored_versioned_contract(
+                    current_contract_package_hash.into(),
+                ));
+            }
+            let execute_request = ExecuteRequestBuilder::standard(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_CALL_RECURSIVE_SUBCALL,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info_module_bytes(
+                &mut builder,
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn session_bytes_to_stored_session_to_stored_contract() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![super::stored_session(current_contract_hash.into()); len.saturating_sub(1)];
+            if *len > 0 {
+                subcalls.push(super::stored_contract(current_contract_hash.into()));
+            }
+            let execute_request = ExecuteRequestBuilder::standard(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_CALL_RECURSIVE_SUBCALL,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info_module_bytes(
+                &mut builder,
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn session_bytes_to_stored_versioned_session() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+
+            let subcalls =
+                vec![super::stored_versioned_session(current_contract_package_hash.into()); *len];
+            let execute_request = ExecuteRequestBuilder::standard(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_CALL_RECURSIVE_SUBCALL,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info_module_bytes(
+                &mut builder,
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn session_bytes_to_stored_versioned_session_to_stored_session() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![super::stored_session(current_contract_hash.into()); len.saturating_sub(1)];
+            if *len > 0 {
+                subcalls.push(super::stored_versioned_session(
+                    current_contract_package_hash.into(),
+                ));
+            }
+            let execute_request = ExecuteRequestBuilder::standard(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_CALL_RECURSIVE_SUBCALL,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info_module_bytes(
+                &mut builder,
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+    #[ignore]
+    #[test]
+    fn session_bytes_to_stored_session_to_stored_versioned_session() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![super::stored_session(current_contract_hash.into()); len.saturating_sub(1)];
+            if *len > 0 {
+                subcalls.push(super::stored_versioned_session(
+                    current_contract_package_hash.into(),
+                ));
+            }
+            let execute_request = ExecuteRequestBuilder::standard(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_CALL_RECURSIVE_SUBCALL,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info_module_bytes(
+                &mut builder,
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn session_bytes_to_stored_session() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let subcalls = vec![super::stored_session(current_contract_hash.into()); *len];
+            let execute_request = ExecuteRequestBuilder::standard(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_CALL_RECURSIVE_SUBCALL,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info_module_bytes(
+                &mut builder,
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn session_bytes_to_stored_versioned_contract_to_stored_versioned_session_SHOULD_FAIL() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+
+            let mut subcalls =
+                vec![
+                    super::stored_versioned_contract(current_contract_package_hash.into());
+                    len.saturating_sub(1)
+                ];
+            if *len > 0 {
+                subcalls.push(super::stored_versioned_session(
+                    current_contract_package_hash.into(),
+                ));
+            }
+            let execute_request = ExecuteRequestBuilder::standard(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_CALL_RECURSIVE_SUBCALL,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info_module_bytes(
+                &mut builder,
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn session_bytes_to_stored_versioned_contract_to_stored_session_SHOULD_FAIL() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![
+                    super::stored_versioned_contract(current_contract_package_hash.into());
+                    len.saturating_sub(1)
+                ];
+            if *len > 0 {
+                subcalls.push(super::stored_session(current_contract_hash.into()));
+            }
+            let execute_request = ExecuteRequestBuilder::standard(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_CALL_RECURSIVE_SUBCALL,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info_module_bytes(
+                &mut builder,
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn session_bytes_to_stored_contract_to_stored_versioned_session_SHOULD_FAIL() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![super::stored_contract(current_contract_hash.into()); len.saturating_sub(1)];
+            if *len > 0 {
+                subcalls.push(super::stored_versioned_session(
+                    current_contract_package_hash.into(),
+                ));
+            }
+            let execute_request = ExecuteRequestBuilder::standard(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_CALL_RECURSIVE_SUBCALL,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info_module_bytes(
+                &mut builder,
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn session_bytes_to_stored_contract_to_stored_session_SHOULD_FAIL() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![super::stored_contract(current_contract_hash.into()); len.saturating_sub(1)];
+            if *len > 0 {
+                subcalls.push(super::stored_session(current_contract_hash.into()));
+            }
+            let execute_request = ExecuteRequestBuilder::standard(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_CALL_RECURSIVE_SUBCALL,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info_module_bytes(
+                &mut builder,
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+    // -----
+
+    #[ignore]
+    #[test]
     fn stored_versioned_contract_by_name_to_stored_versioned_contract() {
         for len in DEPTHS {
             let mut builder = super::setup();
@@ -421,6 +946,71 @@ mod session {
 
     #[ignore]
     #[test]
+    fn stored_versioned_contract_by_name_to_stored_contract() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let subcalls = vec![super::stored_contract(current_contract_hash.into()); *len];
+            let execute_request = ExecuteRequestBuilder::versioned_contract_call_by_name(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_PACKAGE_NAME,
+                None,
+                CONTRACT_FORWARDER_ENTRYPOINT_CONTRACT,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_contract(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+    #[ignore]
+    #[test]
+    fn stored_versioned_contract_by_hash_to_stored_contract() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let subcalls = vec![super::stored_contract(current_contract_hash.into()); *len];
+            let execute_request = ExecuteRequestBuilder::versioned_contract_call_by_hash(
+                *DEFAULT_ACCOUNT_ADDR,
+                current_contract_package_hash.into(),
+                None,
+                CONTRACT_FORWARDER_ENTRYPOINT_CONTRACT,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_contract(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
     fn stored_contract_by_name_to_stored_versioned_contract() {
         for len in DEPTHS {
             let mut builder = super::setup();
@@ -461,6 +1051,71 @@ mod session {
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
             let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
 
+            let subcalls =
+                vec![super::stored_versioned_contract(current_contract_package_hash.into()); *len];
+            let execute_request = ExecuteRequestBuilder::contract_call_by_hash(
+                *DEFAULT_ACCOUNT_ADDR,
+                current_contract_hash.into(),
+                CONTRACT_FORWARDER_ENTRYPOINT_CONTRACT,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_contract(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_contract_by_name_to_stored_contract() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let subcalls = vec![super::stored_contract(current_contract_hash.into()); *len];
+            let execute_request = ExecuteRequestBuilder::contract_call_by_name(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_PACKAGE_NAME,
+                CONTRACT_FORWARDER_ENTRYPOINT_CONTRACT,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_contract(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_contract_by_hash_to_stored_contract() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
             let subcalls = vec![super::stored_contract(current_contract_hash.into()); *len];
             let execute_request = ExecuteRequestBuilder::contract_call_by_hash(
                 *DEFAULT_ACCOUNT_ADDR,
@@ -484,6 +1139,586 @@ mod session {
         }
     }
 
+    // SHOULD FAIL cases
+
+    #[ignore]
+    #[test]
+    fn stored_versioned_contract_by_name_to_stored_versioned_session_SHOULD_FAIL() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+
+            let subcalls =
+                vec![super::stored_versioned_session(current_contract_package_hash.into()); *len];
+            let execute_request = ExecuteRequestBuilder::versioned_contract_call_by_name(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_PACKAGE_NAME,
+                None,
+                CONTRACT_FORWARDER_ENTRYPOINT_CONTRACT,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_contract(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_versioned_contract_by_hash_to_stored_versioned_session_SHOULD_FAIL() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+
+            let subcalls =
+                vec![super::stored_versioned_session(current_contract_package_hash.into()); *len];
+            let execute_request = ExecuteRequestBuilder::versioned_contract_call_by_hash(
+                *DEFAULT_ACCOUNT_ADDR,
+                current_contract_package_hash.into(),
+                None,
+                CONTRACT_FORWARDER_ENTRYPOINT_CONTRACT,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_contract(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_versioned_contract_by_name_to_stored_session_SHOULD_FAIL() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let subcalls = vec![super::stored_session(current_contract_hash.into()); *len];
+            let execute_request = ExecuteRequestBuilder::versioned_contract_call_by_name(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_PACKAGE_NAME,
+                None,
+                CONTRACT_FORWARDER_ENTRYPOINT_CONTRACT,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_contract(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+    #[ignore]
+    #[test]
+    fn stored_versioned_contract_by_hash_to_stored_session_SHOULD_FAIL() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let subcalls = vec![super::stored_session(current_contract_hash.into()); *len];
+            let execute_request = ExecuteRequestBuilder::versioned_contract_call_by_hash(
+                *DEFAULT_ACCOUNT_ADDR,
+                current_contract_package_hash.into(),
+                None,
+                CONTRACT_FORWARDER_ENTRYPOINT_CONTRACT,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_contract(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_contract_by_name_to_stored_versioned_session_SHOULD_FAIL() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let subcalls =
+                vec![super::stored_versioned_session(current_contract_package_hash.into()); *len];
+            let execute_request = ExecuteRequestBuilder::contract_call_by_name(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_NAME,
+                CONTRACT_FORWARDER_ENTRYPOINT_CONTRACT,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_contract(current_contract_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_contract_by_hash_to_stored_versioned_session_SHOULD_FAIL() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let subcalls =
+                vec![super::stored_versioned_session(current_contract_package_hash.into()); *len];
+            let execute_request = ExecuteRequestBuilder::contract_call_by_hash(
+                *DEFAULT_ACCOUNT_ADDR,
+                current_contract_hash.into(),
+                CONTRACT_FORWARDER_ENTRYPOINT_CONTRACT,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_contract(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_contract_by_name_to_stored_session_SHOULD_FAIL() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let subcalls = vec![super::stored_session(current_contract_hash.into()); *len];
+            let execute_request = ExecuteRequestBuilder::contract_call_by_name(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_PACKAGE_NAME,
+                CONTRACT_FORWARDER_ENTRYPOINT_CONTRACT,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_contract(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_contract_by_hash_to_stored_session_SHOULD_FAIL() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let subcalls = vec![super::stored_session(current_contract_hash.into()); *len];
+            let execute_request = ExecuteRequestBuilder::contract_call_by_hash(
+                *DEFAULT_ACCOUNT_ADDR,
+                current_contract_hash.into(),
+                CONTRACT_FORWARDER_ENTRYPOINT_CONTRACT,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_contract(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_versioned_contract_by_name_to_stored_versioned_contract_to_stored_versioned_session_SHOULD_FAIL(
+    ) {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![
+                    super::stored_versioned_contract(current_contract_package_hash.into());
+                    len.saturating_sub(1)
+                ];
+            if *len > 0 {
+                subcalls.push(super::stored_versioned_session(
+                    current_contract_package_hash.into(),
+                ))
+            }
+            let execute_request = ExecuteRequestBuilder::versioned_contract_call_by_name(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_PACKAGE_NAME,
+                None,
+                CONTRACT_FORWARDER_ENTRYPOINT_CONTRACT,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_contract(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_versioned_contract_by_hash_to_stored_versioned_contract_to_stored_session_SHOULD_FAIL(
+    ) {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![
+                    super::stored_versioned_contract(current_contract_package_hash.into());
+                    len.saturating_sub(1)
+                ];
+            if *len > 0 {
+                subcalls.push(super::stored_session(current_contract_hash.into()))
+            }
+            let execute_request = ExecuteRequestBuilder::versioned_contract_call_by_hash(
+                *DEFAULT_ACCOUNT_ADDR,
+                current_contract_package_hash.into(),
+                None,
+                CONTRACT_FORWARDER_ENTRYPOINT_CONTRACT,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_contract(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_versioned_contract_by_name_to_stored_contract_to_stored_versioned_session_SHOULD_FAIL(
+    ) {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![super::stored_contract(current_contract_hash.into()); len.saturating_sub(1)];
+            if *len > 0 {
+                subcalls.push(super::stored_versioned_session(
+                    current_contract_package_hash.into(),
+                ))
+            }
+            let execute_request = ExecuteRequestBuilder::versioned_contract_call_by_name(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_PACKAGE_NAME,
+                None,
+                CONTRACT_FORWARDER_ENTRYPOINT_CONTRACT,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_contract(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_versioned_contract_by_hash_to_stored_contract_to_stored_session_SHOULD_FAIL() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![super::stored_contract(current_contract_hash.into()); len.saturating_sub(1)];
+            if *len > 0 {
+                subcalls.push(super::stored_session(current_contract_hash.into()))
+            }
+            let execute_request = ExecuteRequestBuilder::versioned_contract_call_by_hash(
+                *DEFAULT_ACCOUNT_ADDR,
+                current_contract_package_hash.into(),
+                None,
+                CONTRACT_FORWARDER_ENTRYPOINT_CONTRACT,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_contract(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_contract_by_name_to_stored_versioned_contract_to_stored_versioned_session_SHOULD_FAIL(
+    ) {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+
+            let mut subcalls =
+                vec![
+                    super::stored_versioned_contract(current_contract_package_hash.into());
+                    len.saturating_sub(1)
+                ];
+            if *len > 0 {
+                subcalls.push(super::stored_versioned_session(
+                    current_contract_package_hash.into(),
+                ))
+            }
+            let execute_request = ExecuteRequestBuilder::contract_call_by_name(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_PACKAGE_NAME,
+                CONTRACT_FORWARDER_ENTRYPOINT_CONTRACT,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_contract(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_contract_by_hash_to_stored_versioned_contract_to_stored_session_SHOULD_FAIL() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![
+                    super::stored_versioned_contract(current_contract_package_hash.into());
+                    len.saturating_sub(1)
+                ];
+            if *len > 0 {
+                subcalls.push(super::stored_session(current_contract_hash.into()))
+            }
+            let execute_request = ExecuteRequestBuilder::contract_call_by_hash(
+                *DEFAULT_ACCOUNT_ADDR,
+                current_contract_package_hash.into(),
+                CONTRACT_FORWARDER_ENTRYPOINT_CONTRACT,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_contract(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_contract_by_name_to_stored_contract_to_stored_versioned_session_SHOULD_FAIL() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![super::stored_contract(current_contract_hash.into()); len.saturating_sub(1)];
+            if *len > 0 {
+                subcalls.push(super::stored_versioned_session(
+                    current_contract_package_hash.into(),
+                ))
+            }
+            let execute_request = ExecuteRequestBuilder::contract_call_by_name(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_PACKAGE_NAME,
+                CONTRACT_FORWARDER_ENTRYPOINT_CONTRACT,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_contract(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_contract_by_hash_to_stored_contract_to_stored_session_SHOULD_FAIL() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![super::stored_contract(current_contract_hash.into()); len.saturating_sub(1)];
+            if *len > 0 {
+                subcalls.push(super::stored_session(current_contract_hash.into()))
+            }
+            let execute_request = ExecuteRequestBuilder::contract_call_by_hash(
+                *DEFAULT_ACCOUNT_ADDR,
+                current_contract_package_hash.into(),
+                CONTRACT_FORWARDER_ENTRYPOINT_CONTRACT,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_contract(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    // Stored session
+    // session -> session
     #[ignore]
     #[test]
     fn stored_versioned_session_by_name_to_stored_versioned_session() {
@@ -531,6 +1766,780 @@ mod session {
                 *DEFAULT_ACCOUNT_ADDR,
                 current_contract_package_hash.into(),
                 None,
+                CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_session(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_versioned_session_by_name_to_stored_session() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+
+            let subcalls = vec![super::stored_contract(current_contract_package_hash.into()); *len];
+            let execute_request = ExecuteRequestBuilder::versioned_contract_call_by_name(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_PACKAGE_NAME,
+                None,
+                CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_session(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_versioned_session_by_hash_to_stored_session() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let subcalls = vec![super::stored_session(current_contract_hash.into()); *len];
+            let execute_request = ExecuteRequestBuilder::versioned_contract_call_by_hash(
+                *DEFAULT_ACCOUNT_ADDR,
+                current_contract_package_hash.into(),
+                None,
+                CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_session(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_session_by_name_to_stored_versioned_session() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let subcalls =
+                vec![super::stored_versioned_session(current_contract_package_hash.into()); *len];
+            let execute_request = ExecuteRequestBuilder::contract_call_by_name(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_NAME,
+                CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_session(current_contract_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_session_by_hash_to_stored_versioned_session() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let subcalls =
+                vec![super::stored_versioned_session(current_contract_package_hash.into()); *len];
+            let execute_request = ExecuteRequestBuilder::contract_call_by_hash(
+                *DEFAULT_ACCOUNT_ADDR,
+                current_contract_hash.into(),
+                CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_session(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_session_by_name_to_stored_session() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let subcalls = vec![super::stored_session(current_contract_hash.into()); *len];
+            let execute_request = ExecuteRequestBuilder::contract_call_by_name(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_PACKAGE_NAME,
+                CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_session(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_session_by_hash_to_stored_session() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let subcalls = vec![super::stored_session(current_contract_hash.into()); *len];
+            let execute_request = ExecuteRequestBuilder::contract_call_by_hash(
+                *DEFAULT_ACCOUNT_ADDR,
+                current_contract_hash.into(),
+                CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_contract(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    // session to contract ---
+    #[ignore]
+    #[test]
+    fn stored_versioned_session_by_name_to_stored_versioned_contract() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+
+            let subcalls =
+                vec![super::stored_versioned_contract(current_contract_package_hash.into()); *len];
+            let execute_request = ExecuteRequestBuilder::versioned_contract_call_by_name(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_PACKAGE_NAME,
+                None,
+                CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_session(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_versioned_session_by_hash_to_stored_versioned_contract() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+
+            let subcalls =
+                vec![super::stored_versioned_contract(current_contract_package_hash.into()); *len];
+            let execute_request = ExecuteRequestBuilder::versioned_contract_call_by_hash(
+                *DEFAULT_ACCOUNT_ADDR,
+                current_contract_package_hash.into(),
+                None,
+                CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_contract(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_versioned_session_by_name_to_stored_contract() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let subcalls = vec![super::stored_contract(current_contract_hash.into()); *len];
+            let execute_request = ExecuteRequestBuilder::versioned_contract_call_by_name(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_PACKAGE_NAME,
+                None,
+                CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_session(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+    #[ignore]
+    #[test]
+    fn stored_versioned_session_by_hash_to_stored_contract() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let subcalls = vec![super::stored_contract(current_contract_hash.into()); *len];
+            let execute_request = ExecuteRequestBuilder::versioned_contract_call_by_hash(
+                *DEFAULT_ACCOUNT_ADDR,
+                current_contract_package_hash.into(),
+                None,
+                CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_session(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_session_by_name_to_stored_versioned_contract() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let subcalls =
+                vec![super::stored_versioned_contract(current_contract_package_hash.into()); *len];
+            let execute_request = ExecuteRequestBuilder::contract_call_by_name(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_NAME,
+                CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_session(current_contract_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_session_by_hash_to_stored_versioned_contract() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let subcalls =
+                vec![super::stored_versioned_contract(current_contract_package_hash.into()); *len];
+            let execute_request = ExecuteRequestBuilder::contract_call_by_hash(
+                *DEFAULT_ACCOUNT_ADDR,
+                current_contract_hash.into(),
+                CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_session(current_contract_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_session_by_name_to_stored_contract() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let subcalls = vec![super::stored_contract(current_contract_hash.into()); *len];
+            let execute_request = ExecuteRequestBuilder::contract_call_by_name(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_PACKAGE_NAME,
+                CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_session(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_session_by_hash_to_stored_contract() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let subcalls = vec![super::stored_contract(current_contract_hash.into()); *len];
+            let execute_request = ExecuteRequestBuilder::contract_call_by_hash(
+                *DEFAULT_ACCOUNT_ADDR,
+                current_contract_hash.into(),
+                CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_session(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    // session to contract to session FAIL CASES
+
+    #[ignore]
+    #[test]
+    fn stored_versioned_session_by_name_to_stored_versioned_contract_to_stored_versioned_session_SHOULD_FAIL(
+    ) {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![
+                    super::stored_versioned_contract(current_contract_package_hash.into());
+                    len.saturating_sub(1)
+                ];
+            if *len > 0 {
+                subcalls.push(super::stored_versioned_session(
+                    current_contract_package_hash.into(),
+                ))
+            }
+            let execute_request = ExecuteRequestBuilder::versioned_contract_call_by_name(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_PACKAGE_NAME,
+                None,
+                CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_session(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_versioned_session_by_hash_to_stored_versioned_contract_to_stored_session_SHOULD_FAIL()
+    {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![
+                    super::stored_versioned_contract(current_contract_package_hash.into());
+                    len.saturating_sub(1)
+                ];
+            if *len > 0 {
+                subcalls.push(super::stored_session(current_contract_hash.into()))
+            }
+            let execute_request = ExecuteRequestBuilder::versioned_contract_call_by_hash(
+                *DEFAULT_ACCOUNT_ADDR,
+                current_contract_package_hash.into(),
+                None,
+                CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_session(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_versioned_session_by_name_to_stored_contract_to_stored_versioned_session_SHOULD_FAIL()
+    {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![super::stored_contract(current_contract_hash.into()); len.saturating_sub(1)];
+            if *len > 0 {
+                subcalls.push(super::stored_versioned_session(
+                    current_contract_package_hash.into(),
+                ))
+            }
+            let execute_request = ExecuteRequestBuilder::versioned_contract_call_by_name(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_PACKAGE_NAME,
+                None,
+                CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_session(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_versioned_session_by_hash_to_stored_contract_to_stored_session_SHOULD_FAIL() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![super::stored_contract(current_contract_hash.into()); len.saturating_sub(1)];
+            if *len > 0 {
+                subcalls.push(super::stored_session(current_contract_hash.into()))
+            }
+            let execute_request = ExecuteRequestBuilder::versioned_contract_call_by_hash(
+                *DEFAULT_ACCOUNT_ADDR,
+                current_contract_package_hash.into(),
+                None,
+                CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_session(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_session_by_name_to_stored_versioned_contract_to_stored_versioned_session_SHOULD_FAIL()
+    {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+
+            let mut subcalls =
+                vec![
+                    super::stored_versioned_contract(current_contract_package_hash.into());
+                    len.saturating_sub(1)
+                ];
+            if *len > 0 {
+                subcalls.push(super::stored_versioned_session(
+                    current_contract_package_hash.into(),
+                ))
+            }
+            let execute_request = ExecuteRequestBuilder::contract_call_by_name(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_PACKAGE_NAME,
+                CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_session(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_session_by_hash_to_stored_versioned_contract_to_stored_session_SHOULD_FAIL() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![
+                    super::stored_versioned_contract(current_contract_package_hash.into());
+                    len.saturating_sub(1)
+                ];
+            if *len > 0 {
+                subcalls.push(super::stored_session(current_contract_hash.into()))
+            }
+            let execute_request = ExecuteRequestBuilder::contract_call_by_hash(
+                *DEFAULT_ACCOUNT_ADDR,
+                current_contract_package_hash.into(),
+                CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_session(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_session_by_name_to_stored_contract_to_stored_versioned_session_SHOULD_FAIL() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![super::stored_contract(current_contract_hash.into()); len.saturating_sub(1)];
+            if *len > 0 {
+                subcalls.push(super::stored_versioned_session(
+                    current_contract_package_hash.into(),
+                ))
+            }
+            let execute_request = ExecuteRequestBuilder::contract_call_by_name(
+                *DEFAULT_ACCOUNT_ADDR,
+                CONTRACT_PACKAGE_NAME,
+                CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                },
+            )
+            .build();
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_session(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_session_by_hash_to_stored_contract_to_stored_session_SHOULD_FAIL() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![super::stored_contract(current_contract_hash.into()); len.saturating_sub(1)];
+            if *len > 0 {
+                subcalls.push(super::stored_session(current_contract_hash.into()))
+            }
+            let execute_request = ExecuteRequestBuilder::contract_call_by_hash(
+                *DEFAULT_ACCOUNT_ADDR,
+                current_contract_package_hash.into(),
                 CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
                 runtime_args! {
                     ARG_CALLS => subcalls.clone(),
