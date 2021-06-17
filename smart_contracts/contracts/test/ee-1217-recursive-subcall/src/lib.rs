@@ -163,12 +163,12 @@ pub fn stuff() {
         runtime::put_key(&name, Key::URef(call_stack_at));
     }
 
-    if current_depth == calls.len() as u8 {
-        return;
-    }
-
     if current_depth == 0 && runtime::get_phase() == Phase::Payment {
         standard_payment(U512::from(DEFAULT_PAYMENT))
+    }
+
+    if current_depth == calls.len() as u8 {
+        return;
     }
 
     let args = runtime_args! {

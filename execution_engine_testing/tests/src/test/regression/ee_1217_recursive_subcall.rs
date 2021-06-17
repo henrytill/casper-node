@@ -986,12 +986,12 @@ mod payment {
     #[test]
     fn stored_session_by_name_to_stored_versioned_contract() {
         // going further than 5 will git the gas limit
-        for len in &[1, 5] {
+        for len in &[0, 1, 5] {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
 
-            let calls = vec![
+            let mut subcalls = vec![
                 Call {
                     contract_address: ContractAddress::ContractPackageHash(
                         current_contract_package_hash.into()
@@ -1009,7 +1009,7 @@ mod payment {
                 let sender = *DEFAULT_ACCOUNT_ADDR;
 
                 let args = runtime_args! {
-                    ARG_CALLS => calls.clone(),
+                    ARG_CALLS => subcalls.clone(),
                     ARG_CURRENT_DEPTH => 0u8,
                 };
 
@@ -1029,6 +1029,15 @@ mod payment {
             };
             builder.exec(execute_request).commit().expect_success();
 
+            let mut calls = vec![Call {
+                contract_address: ContractAddress::ContractPackageHash(
+                    current_contract_package_hash.into(),
+                ),
+                target_method: CONTRACT_FORWARDER_ENTRYPOINT_SESSION.to_string(),
+                entry_point_type: EntryPointType::Session,
+            }];
+            calls.append(&mut subcalls);
+
             super::assert_each_context_has_correct_call_stack_info(
                 &mut builder,
                 &calls,
@@ -1036,6 +1045,7 @@ mod payment {
             );
         }
     }
+
     /*
     #[ignore]
     #[test]
