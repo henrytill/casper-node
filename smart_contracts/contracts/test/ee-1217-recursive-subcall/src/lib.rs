@@ -155,18 +155,21 @@ pub fn stuff() {
     let calls: Vec<Call> = runtime::get_named_arg(ARG_CALLS);
     let current_depth: u8 = runtime::get_named_arg(ARG_CURRENT_DEPTH);
 
+    // The important bit
+    {
+        let call_stack = runtime::get_call_stack();
+        let name = alloc::format!("call_stack-{}", current_depth);
+        let call_stack_at = storage::new_uref(call_stack);
+        runtime::put_key(&name, Key::URef(call_stack_at));
+    }
+
     if current_depth == calls.len() as u8 {
-        runtime::ret(CLValue::unit())
+        return;
     }
 
     if current_depth == 0 && runtime::get_phase() == Phase::Payment {
         standard_payment(U512::from(DEFAULT_PAYMENT))
     }
-
-    let call_stack = runtime::get_call_stack();
-    let name = alloc::format!("forwarder-{}", current_depth);
-    let call_stack_at = storage::new_uref(call_stack);
-    runtime::put_key(&name, Key::URef(call_stack_at));
 
     let args = runtime_args! {
         ARG_CALLS => calls.clone(),

@@ -133,7 +133,7 @@ fn assert_each_context_has_correct_call_stack_info(
     // query for and verify that all the elements in the call stack match their
     // pre-defined Call element
     for (i, call) in calls.iter().enumerate() {
-        let stored_call_stack_key = format!("forwarder-{}", i);
+        let stored_call_stack_key = format!("call_stack-{}", i);
         // we need to know where to look for the call stack information
         let call_stack = match call.entry_point_type {
             EntryPointType::Contract => builder.get_call_stack_from_contract_context(
@@ -249,7 +249,7 @@ mod session {
 
     #[ignore]
     #[test]
-    fn should_run_session_bytes_to_stored_versioned_contract() {
+    fn session_bytes_to_stored_versioned_contract() {
         for len in &[1, 5, 10] {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
@@ -287,7 +287,7 @@ mod session {
 
     #[ignore]
     #[test]
-    fn should_run_stored_versioned_contract_by_name_to_stored_versioned_contract() {
+    fn stored_versioned_contract_by_name_to_stored_versioned_contract() {
         for len in &[1, 5, 10] {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
@@ -327,8 +327,8 @@ mod session {
 
     #[ignore]
     #[test]
-    fn should_run_stored_versioned_contract_by_hash_to_stored_versioned_contract() {
-        for len in &[1, 5, 10] {
+    fn stored_versioned_contract_by_hash_to_stored_versioned_contract() {
+        for len in &[0, 5, 10] {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
@@ -367,7 +367,7 @@ mod session {
 
     #[ignore]
     #[test]
-    fn should_run_stored_contract_by_name_to_stored_versioned_contract() {
+    fn stored_contract_by_name_to_stored_versioned_contract() {
         for len in &[1, 5, 10] {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
@@ -406,7 +406,7 @@ mod session {
 
     #[ignore]
     #[test]
-    fn should_run_stored_contract_by_hash_to_stored_versioned_contract() {
+    fn stored_contract_by_hash_to_stored_versioned_contract() {
         for len in &[1, 5, 10] {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
@@ -446,7 +446,7 @@ mod session {
 
     #[ignore]
     #[test]
-    fn should_run_stored_versioned_session_by_name_to_stored_versioned_session() {
+    fn stored_versioned_session_by_name_to_stored_versioned_session() {
         for len in &[1, 5, 10] {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
@@ -486,7 +486,7 @@ mod session {
 
     #[ignore]
     #[test]
-    fn should_run_stored_versioned_session_by_hash_to_stored_versioned_session() {
+    fn stored_versioned_session_by_hash_to_stored_versioned_session() {
         for len in &[1, 5, 10] {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
