@@ -321,10 +321,12 @@ mod session {
         CONTRACT_NAME, CONTRACT_PACKAGE_NAME,
     };
 
+    const DEPTHS: &[usize] = &[0, 1, 5, 10];
+
     #[ignore]
     #[test]
     fn session_bytes_to_stored_versioned_contract() {
-        for len in &[0, 1, 5, 10] {
+        for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
@@ -354,7 +356,7 @@ mod session {
     #[ignore]
     #[test]
     fn stored_versioned_contract_by_name_to_stored_versioned_contract() {
-        for len in &[0, 1, 5, 10] {
+        for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
@@ -387,7 +389,7 @@ mod session {
     #[ignore]
     #[test]
     fn stored_versioned_contract_by_hash_to_stored_versioned_contract() {
-        for len in &[0, 1, 5, 10] {
+        for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
@@ -420,7 +422,7 @@ mod session {
     #[ignore]
     #[test]
     fn stored_contract_by_name_to_stored_versioned_contract() {
-        for len in &[0, 1, 5, 10] {
+        for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
@@ -453,7 +455,7 @@ mod session {
     #[ignore]
     #[test]
     fn stored_contract_by_hash_to_stored_versioned_contract() {
-        for len in &[0, 1, 5, 10] {
+        for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
@@ -485,7 +487,7 @@ mod session {
     #[ignore]
     #[test]
     fn stored_versioned_session_by_name_to_stored_versioned_session() {
-        for len in &[0, 1, 5, 10] {
+        for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
@@ -518,7 +520,7 @@ mod session {
     #[ignore]
     #[test]
     fn stored_versioned_session_by_hash_to_stored_versioned_session() {
-        for len in &[0, 1, 5, 10] {
+        for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
@@ -561,15 +563,355 @@ mod payment {
     use ee_1217_recursive_subcall::{Call, ContractAddress};
 
     use super::{
-        AccountExt, ARG_CALLS, ARG_CURRENT_DEPTH, CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
-        CONTRACT_NAME, CONTRACT_PACKAGE_NAME,
+        AccountExt, ARG_CALLS, ARG_CURRENT_DEPTH, CONTRACT_CALL_RECURSIVE_SUBCALL,
+        CONTRACT_FORWARDER_ENTRYPOINT_SESSION, CONTRACT_NAME, CONTRACT_PACKAGE_NAME,
     };
+
+    const DEPTHS: &[usize] = &[0, 1, 5];
+
+    #[ignore]
+    #[test]
+    fn session_bytes_to_stored_versioned_session_to_stored_versioned_contract() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+
+            let mut subcalls =
+                vec![
+                    super::stored_versioned_session(current_contract_package_hash.into());
+                    len.saturating_sub(1)
+                ];
+            if *len > 0 {
+                subcalls.push(super::stored_versioned_contract(
+                    current_contract_package_hash.into(),
+                ));
+            }
+
+            let execute_request = {
+                let mut rng = rand::thread_rng();
+                let deploy_hash = rng.gen();
+                let sender = *DEFAULT_ACCOUNT_ADDR;
+                let args = runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                };
+                let deploy = DeployItemBuilder::new()
+                    .with_address(sender)
+                    .with_payment_code(CONTRACT_CALL_RECURSIVE_SUBCALL, args)
+                    .with_session_bytes(wasm::do_nothing_bytes(), RuntimeArgs::default())
+                    .with_authorization_keys(&[sender])
+                    .with_deploy_hash(deploy_hash)
+                    .build();
+                ExecuteRequestBuilder::new().push_deploy(deploy).build()
+            };
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info_module_bytes(
+                &mut builder,
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[test]
+    fn session_bytes_to_stored_versioned_session_to_stored_contract() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![
+                    super::stored_versioned_session(current_contract_package_hash.into());
+                    len.saturating_sub(1)
+                ];
+            if *len > 0 {
+                subcalls.push(super::stored_contract(current_contract_hash.into()));
+            }
+
+            let execute_request = {
+                let mut rng = rand::thread_rng();
+                let deploy_hash = rng.gen();
+                let sender = *DEFAULT_ACCOUNT_ADDR;
+                let args = runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                };
+                let deploy = DeployItemBuilder::new()
+                    .with_address(sender)
+                    .with_payment_code(CONTRACT_CALL_RECURSIVE_SUBCALL, args)
+                    .with_session_bytes(wasm::do_nothing_bytes(), RuntimeArgs::default())
+                    .with_authorization_keys(&[sender])
+                    .with_deploy_hash(deploy_hash)
+                    .build();
+                ExecuteRequestBuilder::new().push_deploy(deploy).build()
+            };
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info_module_bytes(
+                &mut builder,
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[test]
+    fn session_bytes_to_stored_session_to_stored_versioned_contract() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![super::stored_session(current_contract_hash.into()); len.saturating_sub(1)];
+            if *len > 0 {
+                subcalls.push(super::stored_versioned_contract(
+                    current_contract_package_hash.into(),
+                ));
+            }
+
+            let execute_request = {
+                let mut rng = rand::thread_rng();
+                let deploy_hash = rng.gen();
+                let sender = *DEFAULT_ACCOUNT_ADDR;
+                let args = runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                };
+                let deploy = DeployItemBuilder::new()
+                    .with_address(sender)
+                    .with_payment_code(CONTRACT_CALL_RECURSIVE_SUBCALL, args)
+                    .with_session_bytes(wasm::do_nothing_bytes(), RuntimeArgs::default())
+                    .with_authorization_keys(&[sender])
+                    .with_deploy_hash(deploy_hash)
+                    .build();
+                ExecuteRequestBuilder::new().push_deploy(deploy).build()
+            };
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info_module_bytes(
+                &mut builder,
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[test]
+    fn session_bytes_to_stored_contract_to_stored_session() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![super::stored_session(current_contract_hash.into()); len.saturating_sub(1)];
+            if *len > 0 {
+                subcalls.push(super::stored_contract(current_contract_hash.into()));
+            }
+
+            let execute_request = {
+                let mut rng = rand::thread_rng();
+                let deploy_hash = rng.gen();
+                let sender = *DEFAULT_ACCOUNT_ADDR;
+                let args = runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                };
+                let deploy = DeployItemBuilder::new()
+                    .with_address(sender)
+                    .with_payment_code(CONTRACT_CALL_RECURSIVE_SUBCALL, args)
+                    .with_session_bytes(wasm::do_nothing_bytes(), RuntimeArgs::default())
+                    .with_authorization_keys(&[sender])
+                    .with_deploy_hash(deploy_hash)
+                    .build();
+                ExecuteRequestBuilder::new().push_deploy(deploy).build()
+            };
+
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info_module_bytes(
+                &mut builder,
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn session_bytes_to_stored_versioned_contract_to_stored_versioned_session_SHOULD_FAIL() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+
+            let mut subcalls =
+                vec![
+                    super::stored_versioned_contract(current_contract_package_hash.into());
+                    len.saturating_sub(1)
+                ];
+            if *len > 0 {
+                subcalls.push(super::stored_versioned_session(
+                    current_contract_package_hash.into(),
+                ));
+            }
+
+            let execute_request = {
+                let mut rng = rand::thread_rng();
+                let deploy_hash = rng.gen();
+                let sender = *DEFAULT_ACCOUNT_ADDR;
+                let args = runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                };
+                let deploy = DeployItemBuilder::new()
+                    .with_address(sender)
+                    .with_payment_code(CONTRACT_CALL_RECURSIVE_SUBCALL, args)
+                    .with_session_bytes(wasm::do_nothing_bytes(), RuntimeArgs::default())
+                    .with_authorization_keys(&[sender])
+                    .with_deploy_hash(deploy_hash)
+                    .build();
+                ExecuteRequestBuilder::new().push_deploy(deploy).build()
+            };
+
+            builder.exec(execute_request).commit().expect_success();
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn session_bytes_to_stored_versioned_contract_to_stored_session_SHOULD_FAIL() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![
+                    super::stored_versioned_contract(current_contract_package_hash.into());
+                    len.saturating_sub(1)
+                ];
+            if *len > 0 {
+                subcalls.push(super::stored_session(current_contract_hash.into()));
+            }
+
+            let execute_request = {
+                let mut rng = rand::thread_rng();
+                let deploy_hash = rng.gen();
+                let sender = *DEFAULT_ACCOUNT_ADDR;
+                let args = runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                };
+                let deploy = DeployItemBuilder::new()
+                    .with_address(sender)
+                    .with_payment_code(CONTRACT_CALL_RECURSIVE_SUBCALL, args)
+                    .with_session_bytes(wasm::do_nothing_bytes(), RuntimeArgs::default())
+                    .with_authorization_keys(&[sender])
+                    .with_deploy_hash(deploy_hash)
+                    .build();
+                ExecuteRequestBuilder::new().push_deploy(deploy).build()
+            };
+
+            builder.exec(execute_request).commit().expect_success();
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn session_bytes_to_stored_contract_to_stored_versioned_session_SHOULD_FAIL() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![super::stored_contract(current_contract_hash.into()); len.saturating_sub(1)];
+            if *len > 0 {
+                subcalls.push(super::stored_versioned_session(
+                    current_contract_package_hash.into(),
+                ));
+            }
+
+            let execute_request = {
+                let mut rng = rand::thread_rng();
+                let deploy_hash = rng.gen();
+                let sender = *DEFAULT_ACCOUNT_ADDR;
+                let args = runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                };
+                let deploy = DeployItemBuilder::new()
+                    .with_address(sender)
+                    .with_payment_code(CONTRACT_CALL_RECURSIVE_SUBCALL, args)
+                    .with_session_bytes(wasm::do_nothing_bytes(), RuntimeArgs::default())
+                    .with_authorization_keys(&[sender])
+                    .with_deploy_hash(deploy_hash)
+                    .build();
+                ExecuteRequestBuilder::new().push_deploy(deploy).build()
+            };
+
+            builder.exec(execute_request).commit().expect_success();
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn session_bytes_to_stored_contract_to_stored_session_SHOULD_FAIL() {
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls = vec![
+                super::stored_contract(current_contract_package_hash.into());
+                len.saturating_sub(1)
+            ];
+            if *len > 0 {
+                subcalls.push(super::stored_session(current_contract_hash.into()));
+            }
+
+            let execute_request = {
+                let mut rng = rand::thread_rng();
+                let deploy_hash = rng.gen();
+                let sender = *DEFAULT_ACCOUNT_ADDR;
+                let args = runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                };
+                let deploy = DeployItemBuilder::new()
+                    .with_address(sender)
+                    .with_payment_code(CONTRACT_CALL_RECURSIVE_SUBCALL, args)
+                    .with_session_bytes(wasm::do_nothing_bytes(), RuntimeArgs::default())
+                    .with_authorization_keys(&[sender])
+                    .with_deploy_hash(deploy_hash)
+                    .build();
+                ExecuteRequestBuilder::new().push_deploy(deploy).build()
+            };
+
+            builder.exec(execute_request).commit().expect_success();
+        }
+    }
+    ////
 
     #[ignore]
     #[test]
     fn stored_versioned_session_by_name_to_stored_versioned_session() {
         // going further than 5 will git the gas limit
-        for len in &[0, 1, 5] {
+        for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
@@ -618,7 +960,7 @@ mod payment {
     #[test]
     fn stored_versioned_session_by_hash_to_stored_versioned_session() {
         // going further than 5 will git the gas limit
-        for len in &[0, 1, 5] {
+        for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
@@ -663,7 +1005,7 @@ mod payment {
     #[test]
     fn stored_versioned_session_by_name_to_stored_session() {
         // going further than 5 will git the gas limit
-        for len in &[0, 1, 5] {
+        for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
@@ -712,7 +1054,7 @@ mod payment {
     #[test]
     fn stored_versioned_session_by_hash_to_stored_session() {
         // going further than 5 will git the gas limit
-        for len in &[0, 1, 5] {
+        for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
@@ -764,7 +1106,7 @@ mod payment {
     #[test]
     fn stored_session_by_name_to_stored_versioned_session() {
         // going further than 5 will git the gas limit
-        for len in &[0, 1, 5] {
+        for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
@@ -813,7 +1155,7 @@ mod payment {
     #[test]
     fn stored_session_by_hash_to_stored_versioned_session() {
         // going further than 5 will git the gas limit
-        for len in &[0, 1, 5] {
+        for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
@@ -858,7 +1200,7 @@ mod payment {
     #[test]
     fn stored_session_by_name_to_stored_session() {
         // going further than 5 will git the gas limit
-        for len in &[0, 1, 5] {
+        for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
@@ -902,7 +1244,7 @@ mod payment {
     #[test]
     fn stored_session_by_hash_to_stored_session() {
         // going further than 5 will git the gas limit
-        for len in &[0, 1, 5] {
+        for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
@@ -944,9 +1286,185 @@ mod payment {
 
     #[ignore]
     #[test]
+    fn stored_versioned_session_by_name_to_stored_versioned_contract() {
+        // going further than 5 will git the gas limit
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+
+            let subcalls =
+                vec![super::stored_versioned_contract(current_contract_package_hash.into()); *len];
+
+            let execute_request = {
+                let mut rng = rand::thread_rng();
+                let deploy_hash = rng.gen();
+                let sender = *DEFAULT_ACCOUNT_ADDR;
+                let args = runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                };
+                let deploy = DeployItemBuilder::new()
+                    .with_address(sender)
+                    .with_stored_versioned_payment_named_key(
+                        CONTRACT_PACKAGE_NAME,
+                        CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                        args,
+                    )
+                    .with_session_bytes(wasm::do_nothing_bytes(), RuntimeArgs::default())
+                    .with_authorization_keys(&[sender])
+                    .with_deploy_hash(deploy_hash)
+                    .build();
+                ExecuteRequestBuilder::new().push_deploy(deploy).build()
+            };
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_session(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_versioned_session_by_hash_to_stored_versioned_contract() {
+        // going further than 5 will git the gas limit
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+
+            let subcalls =
+                vec![super::stored_versioned_contract(current_contract_package_hash.into()); *len];
+
+            let execute_request = {
+                let mut rng = rand::thread_rng();
+                let deploy_hash = rng.gen();
+                let sender = *DEFAULT_ACCOUNT_ADDR;
+                let args = runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                };
+                let deploy = DeployItemBuilder::new()
+                    .with_address(sender)
+                    .with_stored_versioned_payment_hash(
+                        current_contract_package_hash.into(),
+                        CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                        args,
+                    )
+                    .with_session_bytes(wasm::do_nothing_bytes(), RuntimeArgs::default())
+                    .with_authorization_keys(&[sender])
+                    .with_deploy_hash(deploy_hash)
+                    .build();
+                ExecuteRequestBuilder::new().push_deploy(deploy).build()
+            };
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_session(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_versioned_session_by_name_to_stored_contract() {
+        // going further than 5 will git the gas limit
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let subcalls = vec![super::stored_contract(current_contract_hash.into()); *len];
+
+            let execute_request = {
+                let mut rng = rand::thread_rng();
+                let deploy_hash = rng.gen();
+                let sender = *DEFAULT_ACCOUNT_ADDR;
+                let args = runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                };
+                let deploy = DeployItemBuilder::new()
+                    .with_address(sender)
+                    .with_stored_versioned_payment_named_key(
+                        CONTRACT_PACKAGE_NAME,
+                        CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                        args,
+                    )
+                    .with_session_bytes(wasm::do_nothing_bytes(), RuntimeArgs::default())
+                    .with_authorization_keys(&[sender])
+                    .with_deploy_hash(deploy_hash)
+                    .build();
+                ExecuteRequestBuilder::new().push_deploy(deploy).build()
+            };
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_session(current_contract_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_versioned_session_by_hash_to_stored_contract() {
+        // going further than 5 will git the gas limit
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let subcalls = vec![super::stored_contract(current_contract_hash.into()); *len];
+
+            let execute_request = {
+                let mut rng = rand::thread_rng();
+                let deploy_hash = rng.gen();
+                let sender = *DEFAULT_ACCOUNT_ADDR;
+                let args = runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                };
+                let deploy = DeployItemBuilder::new()
+                    .with_address(sender)
+                    .with_stored_versioned_payment_hash(
+                        current_contract_package_hash.into(),
+                        CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                        args,
+                    )
+                    .with_session_bytes(wasm::do_nothing_bytes(), RuntimeArgs::default())
+                    .with_authorization_keys(&[sender])
+                    .with_deploy_hash(deploy_hash)
+                    .build();
+                ExecuteRequestBuilder::new().push_deploy(deploy).build()
+            };
+            builder.exec(execute_request).commit().expect_success();
+
+            super::assert_each_context_has_correct_call_stack_info(
+                &mut builder,
+                super::stored_versioned_session(current_contract_package_hash.into()),
+                subcalls,
+                current_contract_package_hash,
+            );
+        }
+    }
+
+    #[ignore]
+    #[test]
     fn stored_session_by_name_to_stored_versioned_contract() {
         // going further than 5 will git the gas limit
-        for len in &[0, 1, 5] {
+        for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
@@ -987,39 +1505,27 @@ mod payment {
         }
     }
 
-    /*
     #[ignore]
     #[test]
     fn stored_session_by_hash_to_stored_versioned_contract() {
         // going further than 5 will git the gas limit
-        for len in &[1, 5] {
+        for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
             let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
 
-            let calls = vec![
-                Call {
-                    contract_address: ContractAddress::ContractPackageHash(
-                        current_contract_package_hash.into()
-                    ),
-                    target_method: CONTRACT_FORWARDER_ENTRYPOINT_CONTRACT.to_string(),
-                    entry_point_type: EntryPointType::Contract,
-                };
-                *len
-            ];
+            let subcalls =
+                vec![super::stored_versioned_contract(current_contract_package_hash.into()); *len];
 
             let execute_request = {
                 let mut rng = rand::thread_rng();
                 let deploy_hash = rng.gen();
-
                 let sender = *DEFAULT_ACCOUNT_ADDR;
-
                 let args = runtime_args! {
-                    ARG_CALLS => calls.clone(),
+                    ARG_CALLS => subcalls.clone(),
                     ARG_CURRENT_DEPTH => 0u8,
                 };
-
                 let deploy = DeployItemBuilder::new()
                     .with_address(sender)
                     .with_stored_payment_hash(
@@ -1031,14 +1537,14 @@ mod payment {
                     .with_authorization_keys(&[sender])
                     .with_deploy_hash(deploy_hash)
                     .build();
-
                 ExecuteRequestBuilder::new().push_deploy(deploy).build()
             };
             builder.exec(execute_request).commit().expect_success();
 
             super::assert_each_context_has_correct_call_stack_info(
                 &mut builder,
-                &calls,
+                super::stored_session(current_contract_hash.into()),
+                subcalls,
                 current_contract_package_hash,
             );
         }
@@ -1048,32 +1554,22 @@ mod payment {
     #[test]
     fn stored_session_by_name_to_stored_contract() {
         // going further than 5 will git the gas limit
-        for len in &[1, 5] {
+        for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
             let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
 
-            let calls = vec![
-                Call {
-                    contract_address: ContractAddress::ContractHash(current_contract_hash.into()),
-                    target_method: CONTRACT_FORWARDER_ENTRYPOINT_CONTRACT.to_string(),
-                    entry_point_type: EntryPointType::Contract,
-                };
-                *len
-            ];
+            let subcalls = vec![super::stored_contract(current_contract_hash.into()); *len];
 
             let execute_request = {
                 let mut rng = rand::thread_rng();
                 let deploy_hash = rng.gen();
-
                 let sender = *DEFAULT_ACCOUNT_ADDR;
-
                 let args = runtime_args! {
-                    ARG_CALLS => calls.clone(),
+                    ARG_CALLS => subcalls.clone(),
                     ARG_CURRENT_DEPTH => 0u8,
                 };
-
                 let deploy = DeployItemBuilder::new()
                     .with_address(sender)
                     .with_stored_payment_named_key(
@@ -1085,14 +1581,14 @@ mod payment {
                     .with_authorization_keys(&[sender])
                     .with_deploy_hash(deploy_hash)
                     .build();
-
                 ExecuteRequestBuilder::new().push_deploy(deploy).build()
             };
             builder.exec(execute_request).commit().expect_success();
 
             super::assert_each_context_has_correct_call_stack_info(
                 &mut builder,
-                &calls,
+                super::stored_session(current_contract_hash.into()),
+                subcalls,
                 current_contract_package_hash,
             );
         }
@@ -1102,32 +1598,22 @@ mod payment {
     #[test]
     fn stored_session_by_hash_to_stored_contract() {
         // going further than 5 will git the gas limit
-        for len in &[1, 5] {
+        for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
             let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
 
-            let calls = vec![
-                Call {
-                    contract_address: ContractAddress::ContractHash(current_contract_hash.into()),
-                    target_method: CONTRACT_FORWARDER_ENTRYPOINT_CONTRACT.to_string(),
-                    entry_point_type: EntryPointType::Contract,
-                };
-                *len
-            ];
+            let subcalls = vec![super::stored_contract(current_contract_hash.into()); *len];
 
             let execute_request = {
                 let mut rng = rand::thread_rng();
                 let deploy_hash = rng.gen();
-
                 let sender = *DEFAULT_ACCOUNT_ADDR;
-
                 let args = runtime_args! {
-                    ARG_CALLS => calls.clone(),
+                    ARG_CALLS => subcalls.clone(),
                     ARG_CURRENT_DEPTH => 0u8,
                 };
-
                 let deploy = DeployItemBuilder::new()
                     .with_address(sender)
                     .with_stored_payment_hash(
@@ -1139,17 +1625,369 @@ mod payment {
                     .with_authorization_keys(&[sender])
                     .with_deploy_hash(deploy_hash)
                     .build();
-
                 ExecuteRequestBuilder::new().push_deploy(deploy).build()
             };
             builder.exec(execute_request).commit().expect_success();
 
             super::assert_each_context_has_correct_call_stack_info(
                 &mut builder,
-                &calls,
+                super::stored_session(current_contract_hash.into()),
+                subcalls,
                 current_contract_package_hash,
             );
         }
     }
-    */
+
+    /////
+    // payment failure cases
+
+    #[ignore]
+    #[test]
+    fn stored_versioned_session_by_name_to_stored_versioned_contract_to_stored_versioned_session_SHOULD_FAIL(
+    ) {
+        // going further than 5 will git the gas limit
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+
+            let mut subcalls =
+                vec![
+                    super::stored_versioned_contract(current_contract_package_hash.into());
+                    len.saturating_sub(1)
+                ];
+            if *len > 0 {
+                subcalls.push(super::stored_versioned_session(
+                    current_contract_package_hash.into(),
+                ))
+            }
+
+            let execute_request = {
+                let mut rng = rand::thread_rng();
+                let deploy_hash = rng.gen();
+                let sender = *DEFAULT_ACCOUNT_ADDR;
+                let args = runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                };
+                let deploy = DeployItemBuilder::new()
+                    .with_address(sender)
+                    .with_stored_versioned_payment_named_key(
+                        CONTRACT_PACKAGE_NAME,
+                        CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                        args,
+                    )
+                    .with_session_bytes(wasm::do_nothing_bytes(), RuntimeArgs::default())
+                    .with_authorization_keys(&[sender])
+                    .with_deploy_hash(deploy_hash)
+                    .build();
+                ExecuteRequestBuilder::new().push_deploy(deploy).build()
+            };
+            builder.exec(execute_request).commit().expect_success();
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_versioned_session_by_hash_to_stored_versioned_contract_to_stored_session_SHOULD_FAIL()
+    {
+        // going further than 5 will git the gas limit
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![
+                    super::stored_versioned_contract(current_contract_package_hash.into());
+                    len.saturating_sub(1)
+                ];
+            if *len > 0 {
+                subcalls.push(super::stored_session(current_contract_hash.into()))
+            }
+
+            let execute_request = {
+                let mut rng = rand::thread_rng();
+                let deploy_hash = rng.gen();
+                let sender = *DEFAULT_ACCOUNT_ADDR;
+                let args = runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                };
+                let deploy = DeployItemBuilder::new()
+                    .with_address(sender)
+                    .with_stored_versioned_payment_hash(
+                        current_contract_package_hash.into(),
+                        CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                        args,
+                    )
+                    .with_session_bytes(wasm::do_nothing_bytes(), RuntimeArgs::default())
+                    .with_authorization_keys(&[sender])
+                    .with_deploy_hash(deploy_hash)
+                    .build();
+                ExecuteRequestBuilder::new().push_deploy(deploy).build()
+            };
+            builder.exec(execute_request).commit().expect_success();
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_versioned_session_by_name_to_stored_contract_to_stored_versioned_session_SHOULD_FAIL()
+    {
+        // going further than 5 will git the gas limit
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![super::stored_contract(current_contract_hash.into()); len.saturating_sub(1)];
+            if *len > 0 {
+                subcalls.push(super::stored_versioned_session(
+                    current_contract_package_hash.into(),
+                ))
+            }
+
+            let execute_request = {
+                let mut rng = rand::thread_rng();
+                let deploy_hash = rng.gen();
+                let sender = *DEFAULT_ACCOUNT_ADDR;
+                let args = runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                };
+                let deploy = DeployItemBuilder::new()
+                    .with_address(sender)
+                    .with_stored_versioned_payment_named_key(
+                        CONTRACT_PACKAGE_NAME,
+                        CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                        args,
+                    )
+                    .with_session_bytes(wasm::do_nothing_bytes(), RuntimeArgs::default())
+                    .with_authorization_keys(&[sender])
+                    .with_deploy_hash(deploy_hash)
+                    .build();
+                ExecuteRequestBuilder::new().push_deploy(deploy).build()
+            };
+            builder.exec(execute_request).commit().expect_success();
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_versioned_session_by_hash_to_stored_contract_to_stored_session_SHOULD_FAIL() {
+        // going further than 5 will git the gas limit
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![super::stored_contract(current_contract_hash.into()); len.saturating_sub(1)];
+            if *len > 0 {
+                subcalls.push(super::stored_session(current_contract_hash.into()))
+            }
+
+            let execute_request = {
+                let mut rng = rand::thread_rng();
+                let deploy_hash = rng.gen();
+                let sender = *DEFAULT_ACCOUNT_ADDR;
+                let args = runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                };
+                let deploy = DeployItemBuilder::new()
+                    .with_address(sender)
+                    .with_stored_versioned_payment_hash(
+                        current_contract_package_hash.into(),
+                        CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                        args,
+                    )
+                    .with_session_bytes(wasm::do_nothing_bytes(), RuntimeArgs::default())
+                    .with_authorization_keys(&[sender])
+                    .with_deploy_hash(deploy_hash)
+                    .build();
+                ExecuteRequestBuilder::new().push_deploy(deploy).build()
+            };
+            builder.exec(execute_request).commit().expect_success();
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_session_by_name_to_stored_versioned_contract_to_stored_versioned_session_SHOULD_FAIL()
+    {
+        // going further than 5 will git the gas limit
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![
+                    super::stored_versioned_contract(current_contract_package_hash.into());
+                    len.saturating_sub(1)
+                ];
+            if *len > 0 {
+                subcalls.push(super::stored_versioned_session(
+                    current_contract_package_hash.into(),
+                ))
+            }
+
+            let execute_request = {
+                let mut rng = rand::thread_rng();
+                let deploy_hash = rng.gen();
+                let sender = *DEFAULT_ACCOUNT_ADDR;
+                let args = runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                };
+                let deploy = DeployItemBuilder::new()
+                    .with_address(sender)
+                    .with_stored_payment_named_key(
+                        CONTRACT_NAME,
+                        CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                        args,
+                    )
+                    .with_session_bytes(wasm::do_nothing_bytes(), RuntimeArgs::default())
+                    .with_authorization_keys(&[sender])
+                    .with_deploy_hash(deploy_hash)
+                    .build();
+                ExecuteRequestBuilder::new().push_deploy(deploy).build()
+            };
+            builder.exec(execute_request).commit().expect_success();
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_session_by_hash_to_stored_versioned_contract_to_stored_session_SHOULD_FAIL() {
+        // going further than 5 will git the gas limit
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![
+                    super::stored_versioned_contract(current_contract_package_hash.into());
+                    len.saturating_sub(1)
+                ];
+            if *len > 0 {
+                subcalls.push(super::stored_session(current_contract_hash.into()))
+            }
+
+            let execute_request = {
+                let mut rng = rand::thread_rng();
+                let deploy_hash = rng.gen();
+                let sender = *DEFAULT_ACCOUNT_ADDR;
+                let args = runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                };
+                let deploy = DeployItemBuilder::new()
+                    .with_address(sender)
+                    .with_stored_payment_hash(
+                        current_contract_hash.into(),
+                        CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                        args,
+                    )
+                    .with_session_bytes(wasm::do_nothing_bytes(), RuntimeArgs::default())
+                    .with_authorization_keys(&[sender])
+                    .with_deploy_hash(deploy_hash)
+                    .build();
+                ExecuteRequestBuilder::new().push_deploy(deploy).build()
+            };
+            builder.exec(execute_request).commit().expect_success();
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_session_by_name_to_stored_contract_to_stored_versioned_session_SHOULD_FAIL() {
+        // going further than 5 will git the gas limit
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![super::stored_contract(current_contract_hash.into()); len.saturating_sub(1)];
+            if *len > 0 {
+                subcalls.push(super::stored_versioned_session(
+                    current_contract_package_hash.into(),
+                ))
+            }
+
+            let execute_request = {
+                let mut rng = rand::thread_rng();
+                let deploy_hash = rng.gen();
+                let sender = *DEFAULT_ACCOUNT_ADDR;
+                let args = runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                };
+                let deploy = DeployItemBuilder::new()
+                    .with_address(sender)
+                    .with_stored_payment_named_key(
+                        CONTRACT_NAME,
+                        CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                        args,
+                    )
+                    .with_session_bytes(wasm::do_nothing_bytes(), RuntimeArgs::default())
+                    .with_authorization_keys(&[sender])
+                    .with_deploy_hash(deploy_hash)
+                    .build();
+                ExecuteRequestBuilder::new().push_deploy(deploy).build()
+            };
+            builder.exec(execute_request).commit().expect_success();
+        }
+    }
+
+    #[ignore]
+    #[test]
+    fn stored_session_by_name_to_stored_contract_to_stored_session_SHOULD_FAIL() {
+        // going further than 5 will git the gas limit
+        for len in DEPTHS {
+            let mut builder = super::setup();
+            let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
+
+            let mut subcalls =
+                vec![super::stored_contract(current_contract_hash.into()); len.saturating_sub(1)];
+            if *len > 0 {
+                subcalls.push(super::stored_session(current_contract_hash.into()))
+            }
+
+            let execute_request = {
+                let mut rng = rand::thread_rng();
+                let deploy_hash = rng.gen();
+                let sender = *DEFAULT_ACCOUNT_ADDR;
+                let args = runtime_args! {
+                    ARG_CALLS => subcalls.clone(),
+                    ARG_CURRENT_DEPTH => 0u8,
+                };
+                let deploy = DeployItemBuilder::new()
+                    .with_address(sender)
+                    .with_stored_payment_named_key(
+                        CONTRACT_NAME,
+                        CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
+                        args,
+                    )
+                    .with_session_bytes(wasm::do_nothing_bytes(), RuntimeArgs::default())
+                    .with_authorization_keys(&[sender])
+                    .with_deploy_hash(deploy_hash)
+                    .build();
+                ExecuteRequestBuilder::new().push_deploy(deploy).build()
+            };
+            builder.exec(execute_request).commit().expect_success();
+        }
+    }
 }
