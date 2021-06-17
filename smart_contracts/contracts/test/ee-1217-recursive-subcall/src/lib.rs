@@ -11,8 +11,8 @@ use casper_contract::{
 use casper_types::{
     bytesrepr,
     bytesrepr::{Error, FromBytes, ToBytes, U8_SERIALIZED_LENGTH},
-    runtime_args, ApiError, CLType, CLTyped, CLValue, ContractHash, ContractPackageHash,
-    EntryPointType, Key, Phase, RuntimeArgs, Tagged, URef, U512,
+    runtime_args, ApiError, CLType, CLTyped, ContractHash, ContractPackageHash, EntryPointType,
+    Key, Phase, RuntimeArgs, Tagged, URef, U512,
 };
 
 const DEFAULT_PAYMENT: u64 = 1_500_000_000_000;
