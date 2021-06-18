@@ -1087,7 +1087,7 @@ mod session {
             let subcalls = vec![super::stored_contract(current_contract_hash.into()); *len];
             let execute_request = ExecuteRequestBuilder::contract_call_by_name(
                 *DEFAULT_ACCOUNT_ADDR,
-                CONTRACT_PACKAGE_NAME,
+                CONTRACT_NAME,
                 CONTRACT_FORWARDER_ENTRYPOINT_CONTRACT,
                 runtime_args! {
                     ARG_CALLS => subcalls.clone(),
@@ -1100,7 +1100,7 @@ mod session {
 
             super::assert_each_context_has_correct_call_stack_info(
                 &mut builder,
-                super::stored_versioned_contract(current_contract_package_hash.into()),
+                super::stored_contract(current_contract_hash.into()),
                 subcalls,
                 current_contract_package_hash,
             );
@@ -1792,8 +1792,9 @@ mod session {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
             let current_contract_package_hash = default_account.get_hash(CONTRACT_PACKAGE_NAME);
+            let current_contract_hash = default_account.get_hash(CONTRACT_NAME);
 
-            let subcalls = vec![super::stored_contract(current_contract_package_hash.into()); *len];
+            let subcalls = vec![super::stored_session(current_contract_hash.into()); *len];
             let execute_request = ExecuteRequestBuilder::versioned_contract_call_by_name(
                 *DEFAULT_ACCOUNT_ADDR,
                 CONTRACT_PACKAGE_NAME,
@@ -1928,7 +1929,7 @@ mod session {
             let subcalls = vec![super::stored_session(current_contract_hash.into()); *len];
             let execute_request = ExecuteRequestBuilder::contract_call_by_name(
                 *DEFAULT_ACCOUNT_ADDR,
-                CONTRACT_PACKAGE_NAME,
+                CONTRACT_NAME,
                 CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
                 runtime_args! {
                     ARG_CALLS => subcalls.clone(),
@@ -1941,7 +1942,7 @@ mod session {
 
             super::assert_each_context_has_correct_call_stack_info(
                 &mut builder,
-                super::stored_versioned_session(current_contract_package_hash.into()),
+                super::stored_session(current_contract_hash.into()),
                 subcalls,
                 current_contract_package_hash,
             );
@@ -1973,7 +1974,7 @@ mod session {
 
             super::assert_each_context_has_correct_call_stack_info(
                 &mut builder,
-                super::stored_versioned_contract(current_contract_package_hash.into()),
+                super::stored_session(current_contract_hash.into()),
                 subcalls,
                 current_contract_package_hash,
             );
@@ -2040,7 +2041,7 @@ mod session {
 
             super::assert_each_context_has_correct_call_stack_info(
                 &mut builder,
-                super::stored_versioned_contract(current_contract_package_hash.into()),
+                super::stored_versioned_session(current_contract_package_hash.into()),
                 subcalls,
                 current_contract_package_hash,
             );
@@ -2190,7 +2191,7 @@ mod session {
             let subcalls = vec![super::stored_contract(current_contract_hash.into()); *len];
             let execute_request = ExecuteRequestBuilder::contract_call_by_name(
                 *DEFAULT_ACCOUNT_ADDR,
-                CONTRACT_PACKAGE_NAME,
+                CONTRACT_NAME,
                 CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
                 runtime_args! {
                     ARG_CALLS => subcalls.clone(),
@@ -2203,7 +2204,7 @@ mod session {
 
             super::assert_each_context_has_correct_call_stack_info(
                 &mut builder,
-                super::stored_session(current_contract_package_hash.into()),
+                super::stored_session(current_contract_hash.into()),
                 subcalls,
                 current_contract_package_hash,
             );
@@ -2235,7 +2236,7 @@ mod session {
 
             super::assert_each_context_has_correct_call_stack_info(
                 &mut builder,
-                super::stored_session(current_contract_package_hash.into()),
+                super::stored_session(current_contract_hash.into()),
                 subcalls,
                 current_contract_package_hash,
             );
