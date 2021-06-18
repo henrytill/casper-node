@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use ee_1217_recursive_subcall::{Call, ContractAddress};
 use num_traits::One;
 
@@ -9,6 +11,7 @@ use casper_engine_test_support::{
     DEFAULT_ACCOUNT_ADDR,
 };
 use casper_execution_engine::{
+    core::engine_state::ExecutionResult,
     shared::{account::Account, stored_value::StoredValue},
     storage::global_state::in_memory::InMemoryGlobalState,
 };
@@ -86,6 +89,7 @@ impl AccountExt for Account {
 }
 
 trait BuilderExt {
+    fn expect_failure_invalid_context(&self);
     fn get_call_stack_from_session_context(
         &mut self,
         stored_call_stack_key: &str,
@@ -98,6 +102,29 @@ trait BuilderExt {
 }
 
 impl BuilderExt for WasmTestBuilder<InMemoryGlobalState> {
+    fn expect_failure_invalid_context(&self) {
+        use casper_execution_engine::core::{
+            engine_state::Error as CoreError, execution::Error as ExecError,
+        };
+
+        let exec_results = &self.get_exec_results();
+        let exec_result = &exec_results
+            .last()
+            .unwrap()
+            .get(0)
+            .expect("Unable to get first deploy result");
+
+        let error = exec_result
+            .as_error()
+            .unwrap_or_else(|| panic!("should have error {:#?}", exec_result));
+
+        assert!(
+            matches!(error, CoreError::Exec(ExecError::InvalidContext)),
+            "{:#?}",
+            error
+        );
+    }
+
     fn get_call_stack_from_session_context(
         &mut self,
         stored_call_stack_key: &str,
@@ -316,7 +343,7 @@ mod session {
     use casper_types::{runtime_args, RuntimeArgs};
 
     use super::{
-        AccountExt, ARG_CALLS, ARG_CURRENT_DEPTH, CONTRACT_CALL_RECURSIVE_SUBCALL,
+        AccountExt, BuilderExt, ARG_CALLS, ARG_CURRENT_DEPTH, CONTRACT_CALL_RECURSIVE_SUBCALL,
         CONTRACT_FORWARDER_ENTRYPOINT_CONTRACT, CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
         CONTRACT_NAME, CONTRACT_PACKAGE_NAME,
     };
@@ -522,12 +549,6 @@ mod session {
             .build();
 
             builder.exec(execute_request).commit().expect_success();
-
-            super::assert_each_context_has_correct_call_stack_info_module_bytes(
-                &mut builder,
-                subcalls,
-                current_contract_package_hash,
-            );
         }
     }
 
@@ -734,7 +755,7 @@ mod session {
 
     #[ignore]
     #[test]
-    fn session_bytes_to_stored_versioned_contract_to_stored_versioned_session_SHOULD_FAIL() {
+    fn session_bytes_to_stored_versioned_contract_to_stored_versioned_session_should_fail() {
         for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
@@ -772,7 +793,7 @@ mod session {
 
     #[ignore]
     #[test]
-    fn session_bytes_to_stored_versioned_contract_to_stored_session_SHOULD_FAIL() {
+    fn session_bytes_to_stored_versioned_contract_to_stored_session_should_fail() {
         for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
@@ -798,18 +819,12 @@ mod session {
             .build();
 
             builder.exec(execute_request).commit().expect_success();
-
-            super::assert_each_context_has_correct_call_stack_info_module_bytes(
-                &mut builder,
-                subcalls,
-                current_contract_package_hash,
-            );
         }
     }
 
     #[ignore]
     #[test]
-    fn session_bytes_to_stored_contract_to_stored_versioned_session_SHOULD_FAIL() {
+    fn session_bytes_to_stored_contract_to_stored_versioned_session_should_fail() {
         for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
@@ -834,18 +849,12 @@ mod session {
             .build();
 
             builder.exec(execute_request).commit().expect_success();
-
-            super::assert_each_context_has_correct_call_stack_info_module_bytes(
-                &mut builder,
-                subcalls,
-                current_contract_package_hash,
-            );
         }
     }
 
     #[ignore]
     #[test]
-    fn session_bytes_to_stored_contract_to_stored_session_SHOULD_FAIL() {
+    fn session_bytes_to_stored_contract_to_stored_session_should_fail() {
         for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
@@ -867,13 +876,10 @@ mod session {
             )
             .build();
 
-            builder.exec(execute_request).commit().expect_success();
-
-            super::assert_each_context_has_correct_call_stack_info_module_bytes(
-                &mut builder,
-                subcalls,
-                current_contract_package_hash,
-            );
+            builder
+                .exec(execute_request)
+                .commit()
+                .expect_failure_invalid_context();
         }
     }
     // -----
@@ -1143,7 +1149,7 @@ mod session {
 
     #[ignore]
     #[test]
-    fn stored_versioned_contract_by_name_to_stored_versioned_session_SHOULD_FAIL() {
+    fn stored_versioned_contract_by_name_to_stored_versioned_session_should_fail() {
         for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
@@ -1164,19 +1170,12 @@ mod session {
             .build();
 
             builder.exec(execute_request).commit().expect_success();
-
-            super::assert_each_context_has_correct_call_stack_info(
-                &mut builder,
-                super::stored_versioned_contract(current_contract_package_hash.into()),
-                subcalls,
-                current_contract_package_hash,
-            );
         }
     }
 
     #[ignore]
     #[test]
-    fn stored_versioned_contract_by_hash_to_stored_versioned_session_SHOULD_FAIL() {
+    fn stored_versioned_contract_by_hash_to_stored_versioned_session_should_fail() {
         for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
@@ -1197,19 +1196,12 @@ mod session {
             .build();
 
             builder.exec(execute_request).commit().expect_success();
-
-            super::assert_each_context_has_correct_call_stack_info(
-                &mut builder,
-                super::stored_versioned_contract(current_contract_package_hash.into()),
-                subcalls,
-                current_contract_package_hash,
-            );
         }
     }
 
     #[ignore]
     #[test]
-    fn stored_versioned_contract_by_name_to_stored_session_SHOULD_FAIL() {
+    fn stored_versioned_contract_by_name_to_stored_session_should_fail() {
         for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
@@ -1230,18 +1222,11 @@ mod session {
             .build();
 
             builder.exec(execute_request).commit().expect_success();
-
-            super::assert_each_context_has_correct_call_stack_info(
-                &mut builder,
-                super::stored_versioned_contract(current_contract_package_hash.into()),
-                subcalls,
-                current_contract_package_hash,
-            );
         }
     }
     #[ignore]
     #[test]
-    fn stored_versioned_contract_by_hash_to_stored_session_SHOULD_FAIL() {
+    fn stored_versioned_contract_by_hash_to_stored_session_should_fail() {
         for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
@@ -1262,19 +1247,12 @@ mod session {
             .build();
 
             builder.exec(execute_request).commit().expect_success();
-
-            super::assert_each_context_has_correct_call_stack_info(
-                &mut builder,
-                super::stored_versioned_contract(current_contract_package_hash.into()),
-                subcalls,
-                current_contract_package_hash,
-            );
         }
     }
 
     #[ignore]
     #[test]
-    fn stored_contract_by_name_to_stored_versioned_session_SHOULD_FAIL() {
+    fn stored_contract_by_name_to_stored_versioned_session_should_fail() {
         for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
@@ -1295,19 +1273,12 @@ mod session {
             .build();
 
             builder.exec(execute_request).commit().expect_success();
-
-            super::assert_each_context_has_correct_call_stack_info(
-                &mut builder,
-                super::stored_contract(current_contract_hash.into()),
-                subcalls,
-                current_contract_package_hash,
-            );
         }
     }
 
     #[ignore]
     #[test]
-    fn stored_contract_by_hash_to_stored_versioned_session_SHOULD_FAIL() {
+    fn stored_contract_by_hash_to_stored_versioned_session_should_fail() {
         for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
@@ -1328,19 +1299,12 @@ mod session {
             .build();
 
             builder.exec(execute_request).commit().expect_success();
-
-            super::assert_each_context_has_correct_call_stack_info(
-                &mut builder,
-                super::stored_versioned_contract(current_contract_package_hash.into()),
-                subcalls,
-                current_contract_package_hash,
-            );
         }
     }
 
     #[ignore]
     #[test]
-    fn stored_contract_by_name_to_stored_session_SHOULD_FAIL() {
+    fn stored_contract_by_name_to_stored_session_should_fail() {
         for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
@@ -1360,19 +1324,12 @@ mod session {
             .build();
 
             builder.exec(execute_request).commit().expect_success();
-
-            super::assert_each_context_has_correct_call_stack_info(
-                &mut builder,
-                super::stored_versioned_contract(current_contract_package_hash.into()),
-                subcalls,
-                current_contract_package_hash,
-            );
         }
     }
 
     #[ignore]
     #[test]
-    fn stored_contract_by_hash_to_stored_session_SHOULD_FAIL() {
+    fn stored_contract_by_hash_to_stored_session_should_fail() {
         for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
@@ -1392,19 +1349,12 @@ mod session {
             .build();
 
             builder.exec(execute_request).commit().expect_success();
-
-            super::assert_each_context_has_correct_call_stack_info(
-                &mut builder,
-                super::stored_versioned_contract(current_contract_package_hash.into()),
-                subcalls,
-                current_contract_package_hash,
-            );
         }
     }
 
     #[ignore]
     #[test]
-    fn stored_versioned_contract_by_name_to_stored_versioned_contract_to_stored_versioned_session_SHOULD_FAIL(
+    fn stored_versioned_contract_by_name_to_stored_versioned_contract_to_stored_versioned_session_should_fail(
     ) {
         for len in DEPTHS {
             let mut builder = super::setup();
@@ -1435,19 +1385,12 @@ mod session {
             .build();
 
             builder.exec(execute_request).commit().expect_success();
-
-            super::assert_each_context_has_correct_call_stack_info(
-                &mut builder,
-                super::stored_versioned_contract(current_contract_package_hash.into()),
-                subcalls,
-                current_contract_package_hash,
-            );
         }
     }
 
     #[ignore]
     #[test]
-    fn stored_versioned_contract_by_hash_to_stored_versioned_contract_to_stored_session_SHOULD_FAIL(
+    fn stored_versioned_contract_by_hash_to_stored_versioned_contract_to_stored_session_should_fail(
     ) {
         for len in DEPTHS {
             let mut builder = super::setup();
@@ -1476,19 +1419,12 @@ mod session {
             .build();
 
             builder.exec(execute_request).commit().expect_success();
-
-            super::assert_each_context_has_correct_call_stack_info(
-                &mut builder,
-                super::stored_versioned_contract(current_contract_package_hash.into()),
-                subcalls,
-                current_contract_package_hash,
-            );
         }
     }
 
     #[ignore]
     #[test]
-    fn stored_versioned_contract_by_name_to_stored_contract_to_stored_versioned_session_SHOULD_FAIL(
+    fn stored_versioned_contract_by_name_to_stored_contract_to_stored_versioned_session_should_fail(
     ) {
         for len in DEPTHS {
             let mut builder = super::setup();
@@ -1516,19 +1452,12 @@ mod session {
             .build();
 
             builder.exec(execute_request).commit().expect_success();
-
-            super::assert_each_context_has_correct_call_stack_info(
-                &mut builder,
-                super::stored_versioned_contract(current_contract_package_hash.into()),
-                subcalls,
-                current_contract_package_hash,
-            );
         }
     }
 
     #[ignore]
     #[test]
-    fn stored_versioned_contract_by_hash_to_stored_contract_to_stored_session_SHOULD_FAIL() {
+    fn stored_versioned_contract_by_hash_to_stored_contract_to_stored_session_should_fail() {
         for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
@@ -1553,19 +1482,12 @@ mod session {
             .build();
 
             builder.exec(execute_request).commit().expect_success();
-
-            super::assert_each_context_has_correct_call_stack_info(
-                &mut builder,
-                super::stored_versioned_contract(current_contract_package_hash.into()),
-                subcalls,
-                current_contract_package_hash,
-            );
         }
     }
 
     #[ignore]
     #[test]
-    fn stored_contract_by_name_to_stored_versioned_contract_to_stored_versioned_session_SHOULD_FAIL(
+    fn stored_contract_by_name_to_stored_versioned_contract_to_stored_versioned_session_should_fail(
     ) {
         for len in DEPTHS {
             let mut builder = super::setup();
@@ -1594,19 +1516,12 @@ mod session {
             .build();
 
             builder.exec(execute_request).commit().expect_success();
-
-            super::assert_each_context_has_correct_call_stack_info(
-                &mut builder,
-                super::stored_versioned_contract(current_contract_package_hash.into()),
-                subcalls,
-                current_contract_package_hash,
-            );
         }
     }
 
     #[ignore]
     #[test]
-    fn stored_contract_by_hash_to_stored_versioned_contract_to_stored_session_SHOULD_FAIL() {
+    fn stored_contract_by_hash_to_stored_versioned_contract_to_stored_session_should_fail() {
         for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
@@ -1633,19 +1548,12 @@ mod session {
             .build();
 
             builder.exec(execute_request).commit().expect_success();
-
-            super::assert_each_context_has_correct_call_stack_info(
-                &mut builder,
-                super::stored_versioned_contract(current_contract_package_hash.into()),
-                subcalls,
-                current_contract_package_hash,
-            );
         }
     }
 
     #[ignore]
     #[test]
-    fn stored_contract_by_name_to_stored_contract_to_stored_versioned_session_SHOULD_FAIL() {
+    fn stored_contract_by_name_to_stored_contract_to_stored_versioned_session_should_fail() {
         for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
@@ -1671,19 +1579,12 @@ mod session {
             .build();
 
             builder.exec(execute_request).commit().expect_success();
-
-            super::assert_each_context_has_correct_call_stack_info(
-                &mut builder,
-                super::stored_versioned_contract(current_contract_package_hash.into()),
-                subcalls,
-                current_contract_package_hash,
-            );
         }
     }
 
     #[ignore]
     #[test]
-    fn stored_contract_by_hash_to_stored_contract_to_stored_session_SHOULD_FAIL() {
+    fn stored_contract_by_hash_to_stored_contract_to_stored_session_should_fail() {
         for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
@@ -1707,13 +1608,6 @@ mod session {
             .build();
 
             builder.exec(execute_request).commit().expect_success();
-
-            super::assert_each_context_has_correct_call_stack_info(
-                &mut builder,
-                super::stored_versioned_contract(current_contract_package_hash.into()),
-                subcalls,
-                current_contract_package_hash,
-            );
         }
     }
 
@@ -2247,7 +2141,7 @@ mod session {
 
     #[ignore]
     #[test]
-    fn stored_versioned_session_by_name_to_stored_versioned_contract_to_stored_versioned_session_SHOULD_FAIL(
+    fn stored_versioned_session_by_name_to_stored_versioned_contract_to_stored_versioned_session_should_fail(
     ) {
         for len in DEPTHS {
             let mut builder = super::setup();
@@ -2278,19 +2172,12 @@ mod session {
             .build();
 
             builder.exec(execute_request).commit().expect_success();
-
-            super::assert_each_context_has_correct_call_stack_info(
-                &mut builder,
-                super::stored_versioned_session(current_contract_package_hash.into()),
-                subcalls,
-                current_contract_package_hash,
-            );
         }
     }
 
     #[ignore]
     #[test]
-    fn stored_versioned_session_by_hash_to_stored_versioned_contract_to_stored_session_SHOULD_FAIL()
+    fn stored_versioned_session_by_hash_to_stored_versioned_contract_to_stored_session_should_fail()
     {
         for len in DEPTHS {
             let mut builder = super::setup();
@@ -2319,19 +2206,12 @@ mod session {
             .build();
 
             builder.exec(execute_request).commit().expect_success();
-
-            super::assert_each_context_has_correct_call_stack_info(
-                &mut builder,
-                super::stored_versioned_session(current_contract_package_hash.into()),
-                subcalls,
-                current_contract_package_hash,
-            );
         }
     }
 
     #[ignore]
     #[test]
-    fn stored_versioned_session_by_name_to_stored_contract_to_stored_versioned_session_SHOULD_FAIL()
+    fn stored_versioned_session_by_name_to_stored_contract_to_stored_versioned_session_should_fail()
     {
         for len in DEPTHS {
             let mut builder = super::setup();
@@ -2359,19 +2239,12 @@ mod session {
             .build();
 
             builder.exec(execute_request).commit().expect_success();
-
-            super::assert_each_context_has_correct_call_stack_info(
-                &mut builder,
-                super::stored_versioned_session(current_contract_package_hash.into()),
-                subcalls,
-                current_contract_package_hash,
-            );
         }
     }
 
     #[ignore]
     #[test]
-    fn stored_versioned_session_by_hash_to_stored_contract_to_stored_session_SHOULD_FAIL() {
+    fn stored_versioned_session_by_hash_to_stored_contract_to_stored_session_should_fail() {
         for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
@@ -2396,19 +2269,12 @@ mod session {
             .build();
 
             builder.exec(execute_request).commit().expect_success();
-
-            super::assert_each_context_has_correct_call_stack_info(
-                &mut builder,
-                super::stored_versioned_session(current_contract_package_hash.into()),
-                subcalls,
-                current_contract_package_hash,
-            );
         }
     }
 
     #[ignore]
     #[test]
-    fn stored_session_by_name_to_stored_versioned_contract_to_stored_versioned_session_SHOULD_FAIL()
+    fn stored_session_by_name_to_stored_versioned_contract_to_stored_versioned_session_should_fail()
     {
         for len in DEPTHS {
             let mut builder = super::setup();
@@ -2437,19 +2303,12 @@ mod session {
             .build();
 
             builder.exec(execute_request).commit().expect_success();
-
-            super::assert_each_context_has_correct_call_stack_info(
-                &mut builder,
-                super::stored_versioned_session(current_contract_package_hash.into()),
-                subcalls,
-                current_contract_package_hash,
-            );
         }
     }
 
     #[ignore]
     #[test]
-    fn stored_session_by_hash_to_stored_versioned_contract_to_stored_session_SHOULD_FAIL() {
+    fn stored_session_by_hash_to_stored_versioned_contract_to_stored_session_should_fail() {
         for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
@@ -2476,19 +2335,12 @@ mod session {
             .build();
 
             builder.exec(execute_request).commit().expect_success();
-
-            super::assert_each_context_has_correct_call_stack_info(
-                &mut builder,
-                super::stored_versioned_session(current_contract_package_hash.into()),
-                subcalls,
-                current_contract_package_hash,
-            );
         }
     }
 
     #[ignore]
     #[test]
-    fn stored_session_by_name_to_stored_contract_to_stored_versioned_session_SHOULD_FAIL() {
+    fn stored_session_by_name_to_stored_contract_to_stored_versioned_session_should_fail() {
         for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
@@ -2514,19 +2366,12 @@ mod session {
             .build();
 
             builder.exec(execute_request).commit().expect_success();
-
-            super::assert_each_context_has_correct_call_stack_info(
-                &mut builder,
-                super::stored_versioned_session(current_contract_package_hash.into()),
-                subcalls,
-                current_contract_package_hash,
-            );
         }
     }
 
     #[ignore]
     #[test]
-    fn stored_session_by_hash_to_stored_contract_to_stored_session_SHOULD_FAIL() {
+    fn stored_session_by_hash_to_stored_contract_to_stored_session_should_fail() {
         for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
@@ -2550,13 +2395,6 @@ mod session {
             .build();
 
             builder.exec(execute_request).commit().expect_success();
-
-            super::assert_each_context_has_correct_call_stack_info(
-                &mut builder,
-                super::stored_versioned_session(current_contract_package_hash.into()),
-                subcalls,
-                current_contract_package_hash,
-            );
         }
     }
 }
@@ -2573,7 +2411,7 @@ mod payment {
     use ee_1217_recursive_subcall::{Call, ContractAddress};
 
     use super::{
-        AccountExt, ARG_CALLS, ARG_CURRENT_DEPTH, CONTRACT_CALL_RECURSIVE_SUBCALL,
+        AccountExt, BuilderExt, ARG_CALLS, ARG_CURRENT_DEPTH, CONTRACT_CALL_RECURSIVE_SUBCALL,
         CONTRACT_FORWARDER_ENTRYPOINT_SESSION, CONTRACT_NAME, CONTRACT_PACKAGE_NAME,
     };
 
@@ -2759,7 +2597,7 @@ mod payment {
 
     #[ignore]
     #[test]
-    fn session_bytes_to_stored_versioned_contract_to_stored_versioned_session_SHOULD_FAIL() {
+    fn session_bytes_to_stored_versioned_contract_to_stored_versioned_session_should_fail() {
         for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
@@ -2800,7 +2638,7 @@ mod payment {
 
     #[ignore]
     #[test]
-    fn session_bytes_to_stored_versioned_contract_to_stored_session_SHOULD_FAIL() {
+    fn session_bytes_to_stored_versioned_contract_to_stored_session_should_fail() {
         for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
@@ -2840,7 +2678,7 @@ mod payment {
 
     #[ignore]
     #[test]
-    fn session_bytes_to_stored_contract_to_stored_versioned_session_SHOULD_FAIL() {
+    fn session_bytes_to_stored_contract_to_stored_versioned_session_should_fail() {
         for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
@@ -2879,7 +2717,7 @@ mod payment {
 
     #[ignore]
     #[test]
-    fn session_bytes_to_stored_contract_to_stored_session_SHOULD_FAIL() {
+    fn session_bytes_to_stored_contract_to_stored_session_should_fail() {
         for len in DEPTHS {
             let mut builder = super::setup();
             let default_account = builder.get_account(*DEFAULT_ACCOUNT_ADDR).unwrap();
@@ -3653,7 +3491,7 @@ mod payment {
 
     #[ignore]
     #[test]
-    fn stored_versioned_session_by_name_to_stored_versioned_contract_to_stored_versioned_session_SHOULD_FAIL(
+    fn stored_versioned_session_by_name_to_stored_versioned_contract_to_stored_versioned_session_should_fail(
     ) {
         // going further than 5 will git the gas limit
         for len in DEPTHS {
@@ -3699,7 +3537,7 @@ mod payment {
 
     #[ignore]
     #[test]
-    fn stored_versioned_session_by_hash_to_stored_versioned_contract_to_stored_session_SHOULD_FAIL()
+    fn stored_versioned_session_by_hash_to_stored_versioned_contract_to_stored_session_should_fail()
     {
         // going further than 5 will git the gas limit
         for len in DEPTHS {
@@ -3744,7 +3582,7 @@ mod payment {
 
     #[ignore]
     #[test]
-    fn stored_versioned_session_by_name_to_stored_contract_to_stored_versioned_session_SHOULD_FAIL()
+    fn stored_versioned_session_by_name_to_stored_contract_to_stored_versioned_session_should_fail()
     {
         // going further than 5 will git the gas limit
         for len in DEPTHS {
@@ -3788,7 +3626,7 @@ mod payment {
 
     #[ignore]
     #[test]
-    fn stored_versioned_session_by_hash_to_stored_contract_to_stored_session_SHOULD_FAIL() {
+    fn stored_versioned_session_by_hash_to_stored_contract_to_stored_session_should_fail() {
         // going further than 5 will git the gas limit
         for len in DEPTHS {
             let mut builder = super::setup();
@@ -3829,7 +3667,7 @@ mod payment {
 
     #[ignore]
     #[test]
-    fn stored_session_by_name_to_stored_versioned_contract_to_stored_versioned_session_SHOULD_FAIL()
+    fn stored_session_by_name_to_stored_versioned_contract_to_stored_versioned_session_should_fail()
     {
         // going further than 5 will git the gas limit
         for len in DEPTHS {
@@ -3876,7 +3714,7 @@ mod payment {
 
     #[ignore]
     #[test]
-    fn stored_session_by_hash_to_stored_versioned_contract_to_stored_session_SHOULD_FAIL() {
+    fn stored_session_by_hash_to_stored_versioned_contract_to_stored_session_should_fail() {
         // going further than 5 will git the gas limit
         for len in DEPTHS {
             let mut builder = super::setup();
@@ -3920,7 +3758,7 @@ mod payment {
 
     #[ignore]
     #[test]
-    fn stored_session_by_name_to_stored_contract_to_stored_versioned_session_SHOULD_FAIL() {
+    fn stored_session_by_name_to_stored_contract_to_stored_versioned_session_should_fail() {
         // going further than 5 will git the gas limit
         for len in DEPTHS {
             let mut builder = super::setup();
@@ -3957,13 +3795,37 @@ mod payment {
                     .build();
                 ExecuteRequestBuilder::new().push_deploy(deploy).build()
             };
-            builder.exec(execute_request).commit().expect_success();
+            //builder.exec(execute_request).commit().expect_success();
+            //builder
+            //    .exec(execute_request)
+            //    .commit()
+            //.expect_failure_invalid_context();
+
+            builder.exec(execute_request).commit();
+
+            let exec_results = &builder.get_exec_results();
+            println!("{:?}", exec_results);
+
+            // let exec_result = &exec_results.last().unwrap()[0];
+            // let error = exec_result
+            //     .as_error()
+            //     .unwrap_or_else(|| panic!("should have error {:?}", exec_result));
+            // assert!(
+            //     matches!(
+            //         error,
+            //         casper_execution_engine::core::engine_state::Error::Exec(
+            //             casper_execution_engine::core::execution::Error::InvalidContext
+            //         )
+            //     ),
+            //     "{:?}",
+            //     error
+            // );
         }
     }
 
     #[ignore]
     #[test]
-    fn stored_session_by_name_to_stored_contract_to_stored_session_SHOULD_FAIL() {
+    fn stored_session_by_name_to_stored_contract_to_stored_session_should_fail() {
         // going further than 5 will git the gas limit
         for len in DEPTHS {
             let mut builder = super::setup();
