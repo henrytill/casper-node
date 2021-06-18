@@ -649,6 +649,18 @@ where
         exec_result.is_failure()
     }
 
+    pub fn get_error(&self) -> Option<engine_state::Error> {
+        let exec_results = &self.get_exec_results();
+
+        let exec_result = exec_results
+            .last()
+            .expect("Expected to be called after run()")
+            .get(0)
+            .expect("Unable to get first deploy result");
+
+        exec_result.as_error().cloned()
+    }
+
     /// Gets the transform map that's cached between runs
     pub fn get_transforms(&self) -> Vec<AdditiveMap<Key, Transform>> {
         self.transforms.clone()
