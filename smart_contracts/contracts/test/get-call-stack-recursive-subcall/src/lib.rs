@@ -20,22 +20,6 @@ const DEFAULT_PAYMENT: u64 = 1_500_000_000_000;
 const ARG_CALLS: &str = "calls";
 const ARG_CURRENT_DEPTH: &str = "current_depth";
 
-pub fn standard_payment(amount: U512) {
-    const METHOD_GET_PAYMENT_PURSE: &str = "get_payment_purse";
-
-    let main_purse = account::get_main_purse();
-
-    let handle_payment_pointer = system::get_handle_payment();
-
-    let payment_purse: URef = runtime::call_contract(
-        handle_payment_pointer,
-        METHOD_GET_PAYMENT_PURSE,
-        RuntimeArgs::default(),
-    );
-
-    system::transfer_from_purse_to_purse(main_purse, payment_purse, amount, None).unwrap_or_revert()
-}
-
 #[repr(u8)]
 enum ContractAddressTag {
     ContractHash = 0,
@@ -151,7 +135,23 @@ impl CLTyped for Call {
     }
 }
 
-pub fn stuff() {
+pub fn standard_payment(amount: U512) {
+    const METHOD_GET_PAYMENT_PURSE: &str = "get_payment_purse";
+
+    let main_purse = account::get_main_purse();
+
+    let handle_payment_pointer = system::get_handle_payment();
+
+    let payment_purse: URef = runtime::call_contract(
+        handle_payment_pointer,
+        METHOD_GET_PAYMENT_PURSE,
+        RuntimeArgs::default(),
+    );
+
+    system::transfer_from_purse_to_purse(main_purse, payment_purse, amount, None).unwrap_or_revert()
+}
+
+pub fn recurse() {
     let calls: Vec<Call> = runtime::get_named_arg(ARG_CALLS);
     let current_depth: u8 = runtime::get_named_arg(ARG_CURRENT_DEPTH);
 

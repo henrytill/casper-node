@@ -1975,6 +1975,7 @@ where
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn execute_contract(
         &mut self,
         key: Key,

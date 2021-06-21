@@ -1,4 +1,4 @@
-use ee_1217_recursive_subcall::{Call, ContractAddress};
+use get_call_stack_recursive_subcall::{Call, ContractAddress};
 use num_traits::One;
 
 use casper_engine_test_support::{
@@ -17,8 +17,8 @@ use casper_types::{
     EntryPointType, HashAddr, Key, RuntimeArgs,
 };
 
-const CONTRACT_RECURSIVE_SUBCALL: &str = "ee_1217_recursive_subcall.wasm";
-const CONTRACT_CALL_RECURSIVE_SUBCALL: &str = "ee_1217_call_recursive_subcall.wasm";
+const CONTRACT_RECURSIVE_SUBCALL: &str = "get_call_stack_recursive_subcall.wasm";
+const CONTRACT_CALL_RECURSIVE_SUBCALL: &str = "get_call_stack_call_recursive_subcall.wasm";
 
 const CONTRACT_PACKAGE_NAME: &str = "forwarder";
 const CONTRACT_NAME: &str = "our_contract_name";
@@ -317,8 +317,7 @@ fn assert_call_stack_matches_calls(call_stack: Vec<CallStackElement>, calls: &[C
                 && *account_hash == *DEFAULT_ACCOUNT_ADDR
                 && *contract_hash == *current_contract_hash => {}
 
-            _ => assert!(
-                false,
+            _ => panic!(
                 "call stack element {:#?} didn't match expected call {:#?} at index {}, {:#?}",
                 expected_call_stack_element, maybe_call, index, call_stack,
             ),
@@ -2500,7 +2499,7 @@ mod payment {
     };
     use casper_execution_engine::shared::wasm;
     use casper_types::{runtime_args, EntryPointType, RuntimeArgs};
-    use ee_1217_recursive_subcall::{Call, ContractAddress};
+    use get_call_stack_recursive_subcall::{Call, ContractAddress};
 
     use super::{
         AccountExt, ARG_CALLS, ARG_CURRENT_DEPTH, CONTRACT_CALL_RECURSIVE_SUBCALL,
@@ -2925,7 +2924,7 @@ mod payment {
                 let deploy = DeployItemBuilder::new()
                     .with_address(sender)
                     .with_stored_versioned_payment_contract_by_hash(
-                        current_contract_package_hash.into(),
+                        current_contract_package_hash,
                         None,
                         CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
                         args,
@@ -3026,7 +3025,7 @@ mod payment {
                 let deploy = DeployItemBuilder::new()
                     .with_address(sender)
                     .with_stored_versioned_payment_contract_by_hash(
-                        current_contract_package_hash.into(),
+                        current_contract_package_hash,
                         None,
                         CONTRACT_FORWARDER_ENTRYPOINT_SESSION,
                         args,

@@ -7,8 +7,7 @@ use alloc::vec::Vec;
 
 use casper_contract::contract_api::{runtime, storage};
 use casper_types::{runtime_args, ApiError, Key, Phase, RuntimeArgs, U512};
-
-use ee_1217_recursive_subcall::{standard_payment, Call, ContractAddress};
+use get_call_stack_recursive_subcall::{standard_payment, Call, ContractAddress};
 
 const DEFAULT_PAYMENT: u64 = 1_500_000_000_000;
 const ARG_CALLS: &str = "calls";

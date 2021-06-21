@@ -21,12 +21,12 @@ const ARG_CURRENT_DEPTH: &str = "current_depth";
 
 #[no_mangle]
 pub extern "C" fn forwarder_contract() {
-    ee_1217_recursive_subcall::stuff()
+    get_call_stack_recursive_subcall::recurse()
 }
 
 #[no_mangle]
 pub extern "C" fn forwarder_session() {
-    ee_1217_recursive_subcall::stuff()
+    get_call_stack_recursive_subcall::recurse()
 }
 
 #[no_mangle]

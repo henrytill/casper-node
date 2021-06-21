@@ -320,8 +320,6 @@ impl ExecutableDeployItem {
                 error::Error::Exec(execution::Error::NoSuchMethod(entry_point_name.to_owned()))
             })?;
 
-        let contract_hash = contract_hash.into();
-
         if protocol_data.system_contracts().contains(&contract_hash) {
             let module = wasm::do_nothing_module(preprocessor)?;
             return Ok(DeployMetadata {
